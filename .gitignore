@@ -179,6 +179,4 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
-Data/.DS_Store
-Data_exploration/figures/.DS_Store
-Data_exploration/.DS_Store
+.DS_Store
