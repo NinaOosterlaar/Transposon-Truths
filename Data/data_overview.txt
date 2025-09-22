@@ -1,0 +1,36 @@
+Already in storage:
+
+Strain FD
+- FD7, 6 replicates
+- FD9, 3 replicates
+- FD11, 1 replicate
+- FD12, 1 replicate
+
+Strain yEK19
+- yEK19a, replicates 6-8
+- yEK19b, replicate 12
+- yEK19c, replicates 7, 9
+
+Strain yEK23
+- yEK23a, replicates 23, 27, 32
+- yEK23b, replicates 1-2
+- yEK23c, replicate 10
+
+Strain yLIC173
+- yLIC137, replicates 7-8
+
+Strain yTW001
+- yTW001, replicates 4, 6
+
+Strain yWT03a
+- yWT03a, replicates 16, 21
+
+Strain yWT04a
+- yWT04a, replicates 14, 23
+
+
+Additional data from E. Kingma et al. (2025)
+
+Strain dnrp1
+- dnrp1-1, replicates a-b
+- dnrp1-2, replicated a-b
