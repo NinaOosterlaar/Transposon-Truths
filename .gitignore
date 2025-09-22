@@ -180,3 +180,5 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 Data/.DS_Store
+Data_exploration/figures/.DS_Store
+Data_exploration/.DS_Store
