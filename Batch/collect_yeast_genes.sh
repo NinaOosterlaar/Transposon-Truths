@@ -21,4 +21,4 @@ conda activate env
 
 cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
-srun python yeast_genes.py
+srun python SGD_API/yeast_genes.py
