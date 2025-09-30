@@ -19,6 +19,6 @@ module load miniconda
 source ~/.bashrc
 conda activate env
 
-cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/SGD_API
+cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
 srun python yeast_genes.py
