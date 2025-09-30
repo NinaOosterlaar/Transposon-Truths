@@ -120,6 +120,6 @@ class SGD_Genes:
 
 
 
-sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/yeast_genes_with_info.json", gene_list_file="SGD_API/test.txt", output_file="SGD_API/yeast_genes_with_info.json")
+sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/yeast_genes_with_info.json", gene_list_file="SGD_API/yeast_genes.txt", output_file="SGD_API/yeast_genes_with_info.json")
 
 
