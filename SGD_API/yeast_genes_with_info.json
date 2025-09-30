@@ -1,0 +1,419 @@
+{
+    "YER023W": {
+        "gene_name": "PRO3",
+        "location": {
+            "chromosome": "Chromosome_V",
+            "start": 201076,
+            "end": 201936
+        },
+        "essentiality": true,
+        "protein_domains": {
+            "PTHR11645": {
+                "description": [
+                    "PYRROLINE-5-CARBOXYLATE REDUCTASE"
+                ],
+                "start": [
+                    3
+                ],
+                "end": [
+                    282
+                ]
+            },
+            "G3DSA:1.10.3730.10": {
+                "description": [
+                    "-"
+                ],
+                "start": [
+                    181
+                ],
+                "end": [
+                    283
+                ]
+            },
+            "G3DSA:3.40.50.720": {
+                "description": [
+                    "-"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    180
+                ]
+            },
+            "MF_01925": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase-like"
+                ],
+                "start": [
+                    3
+                ],
+                "end": [
+                    281
+                ]
+            },
+            "PF03807": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase, catalytic, N-terminal"
+                ],
+                "start": [
+                    5
+                ],
+                "end": [
+                    117
+                ]
+            },
+            "PF14748": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase, dimerisation domain"
+                ],
+                "start": [
+                    177
+                ],
+                "end": [
+                    281
+                ]
+            },
+            "PIRSF000193": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase-like"
+                ],
+                "start": [
+                    2
+                ],
+                "end": [
+                    284
+                ]
+            },
+            "PS00521": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase-like conserved site"
+                ],
+                "start": [
+                    237
+                ],
+                "end": [
+                    259
+                ]
+            },
+            "SSF48179": {
+                "description": [
+                    "6-phosphogluconate dehydrogenase-like, C-terminal domain superfamily"
+                ],
+                "start": [
+                    176
+                ],
+                "end": [
+                    284
+                ]
+            },
+            "SSF51735": {
+                "description": [
+                    "NAD(P)-binding domain superfamily"
+                ],
+                "start": [
+                    5
+                ],
+                "end": [
+                    175
+                ]
+            },
+            "TIGR00112": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase-like"
+                ],
+                "start": [
+                    5
+                ],
+                "end": [
+                    281
+                ]
+            },
+            "G3DSA:3.40.50.720:FF:000557": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    179
+                ]
+            },
+            "G3DSA:1.10.3730.10:FF:000001": {
+                "description": [
+                    "Pyrroline-5-carboxylate reductase"
+                ],
+                "start": [
+                    180
+                ],
+                "end": [
+                    284
+                ]
+            }
+        }
+    },
+    "YDR487C": {
+        "gene_name": "RIB3",
+        "location": {
+            "chromosome": "Chromosome_IV",
+            "start": 1428354,
+            "end": 1428980
+        },
+        "essentiality": true,
+        "protein_domains": {
+            "PTHR21327": {
+                "description": [
+                    "GTP CYCLOHYDROLASE II-RELATED"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    202
+                ]
+            },
+            "G3DSA:3.90.870.10": {
+                "description": [
+                    "DHBP synthase"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    208
+                ]
+            },
+            "PF00926": {
+                "description": [
+                    "3,4-dihydroxy-2-butanone 4-phosphate synthase, RibB"
+                ],
+                "start": [
+                    7
+                ],
+                "end": [
+                    205
+                ]
+            },
+            "SSF55821": {
+                "description": [
+                    "DHBP synthase RibB-like alpha/beta domain superfamily"
+                ],
+                "start": [
+                    2
+                ],
+                "end": [
+                    207
+                ]
+            },
+            "TIGR00506": {
+                "description": [
+                    "3,4-dihydroxy-2-butanone 4-phosphate synthase, RibB"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    205
+                ]
+            },
+            "G3DSA:3.90.870.10:FF:000002": {
+                "description": [
+                    "3,4-dihydroxy-2-butanone 4-phosphate synthase"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    208
+                ]
+            }
+        }
+    },
+    "YPL009C": {
+        "gene_name": "RQC2",
+        "location": {
+            "chromosome": "Chromosome_XVI",
+            "start": 535820,
+            "end": 538936
+        },
+        "essentiality": false,
+        "protein_domains": {
+            "PTHR15239": {
+                "description": [
+                    "Ribosome Quality Control Complex Subunit NEMF"
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    1029
+                ]
+            },
+            "PF05833": {
+                "description": [
+                    "NFACT N-terminal and middle domains"
+                ],
+                "start": [
+                    12
+                ],
+                "end": [
+                    569
+                ]
+            },
+            "PF11923": {
+                "description": [
+                    "NFACT protein, C-terminal"
+                ],
+                "start": [
+                    917
+                ],
+                "end": [
+                    1017
+                ]
+            },
+            "PF05670": {
+                "description": [
+                    "NFACT, RNA-binding domain"
+                ],
+                "start": [
+                    576
+                ],
+                "end": [
+                    685
+                ]
+            },
+            "G3DSA:2.30.310.10": {
+                "description": [
+                    "ibrinogen binding protein from staphylococcus aureus domain"
+                ],
+                "start": [
+                    5
+                ],
+                "end": [
+                    151
+                ]
+            },
+            "G3DSA:2.30.310.10:FF:000003": {
+                "description": [
+                    "Zinc knuckle domain containing protein"
+                ],
+                "start": [
+                    4
+                ],
+                "end": [
+                    152
+                ]
+            },
+            "MobiDBLite": {
+                "description": [
+                    "consensus disorder prediction"
+                ],
+                "start": [
+                    777
+                ],
+                "end": [
+                    798
+                ]
+            }
+        }
+    },
+    "YBR042C": {
+        "gene_name": "CST26",
+        "location": {
+            "chromosome": "Chromosome_II",
+            "start": 320416,
+            "end": 321609
+        },
+        "essentiality": false,
+        "protein_domains": {
+            "PTHR10983": {
+                "description": [
+                    "1-ACYLGLYCEROL-3-PHOSPHATE ACYLTRANSFERASE-RELATED"
+                ],
+                "start": [
+                    15
+                ],
+                "end": [
+                    388
+                ]
+            },
+            "PF16076": {
+                "description": [
+                    "Acyltransferase, C-terminal domain"
+                ],
+                "start": [
+                    301
+                ],
+                "end": [
+                    361
+                ]
+            },
+            "PF01553": {
+                "description": [
+                    "Phospholipid/glycerol acyltransferase"
+                ],
+                "start": [
+                    103
+                ],
+                "end": [
+                    274
+                ]
+            },
+            "PS51257": {
+                "description": [
+                    "Prokaryotic membrane lipoprotein lipid attachment site profile."
+                ],
+                "start": [
+                    1
+                ],
+                "end": [
+                    27
+                ]
+            },
+            "SM00563": {
+                "description": [
+                    "Phospholipid/glycerol acyltransferase"
+                ],
+                "start": [
+                    106
+                ],
+                "end": [
+                    261
+                ]
+            },
+            "SSF69593": {
+                "description": [
+                    "Glycerol-3-phosphate (1)-acyltransferase"
+                ],
+                "start": [
+                    103
+                ],
+                "end": [
+                    165
+                ]
+            },
+            "cd07990": {
+                "description": [
+                    "LPLAT_LCLAT1-like"
+                ],
+                "start": [
+                    103
+                ],
+                "end": [
+                    314
+                ]
+            }
+        }
+    },
+    "YOR044W": {
+        "gene_name": "IRC23",
+        "location": {
+            "chromosome": "Chromosome_XV",
+            "start": 413007,
+            "end": 413480
+        },
+        "essentiality": false,
+        "protein_domains": {}
+    }
+}
