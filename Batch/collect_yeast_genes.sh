@@ -1,14 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=nina-plots
 #SBATCH --partition=general
-#SBATCH --qos=short
 #SBATCH --qos=medium 
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=n.i.m.oosterlaar@tudelft.nl
+#SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%j.out
 #SBATCH --error=slurm_%j.err
 

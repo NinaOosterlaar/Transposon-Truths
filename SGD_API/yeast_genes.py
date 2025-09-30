@@ -24,7 +24,12 @@ class SGD_Genes:
                         print(f"Gene {gene} already processed, skipping.")
                         continue
                     print(f"Processing gene: {gene}")
-                    gene_name = sgd.gene(gene).details.json()["display_name"]
+                    try:
+                        gene_name = sgd.gene(gene).details.json()["display_name"]
+                    except Exception as e:
+                        print(f"Error retrieving details for gene {gene}: {e}")
+                        continue
+                    
                     self.genes[gene] = {
                         "gene_name": gene_name,
                         "location": self.get_location(gene),
