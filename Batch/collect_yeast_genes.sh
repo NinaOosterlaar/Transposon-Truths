@@ -2,7 +2,8 @@
 #SBATCH --job-name=nina-plots
 #SBATCH --partition=general
 #SBATCH --qos=short
-#SBATCH --time=20:00:00
+#SBATCH --qos=medium 
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
