@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/nfs/nimoosterlaar/.local/lib/python3.9/site-packages/sgd/api.py", line 192, in __init__
+    super().__init__(GENES_TO_LOCI[self.gene_name], **kwargs)
+KeyError: 'YGR016C-A'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/SGD_API/yeast_genes.py", line 123, in <module>
+    sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/yeast_genes_with_info.json", gene_list_file="SGD_API/yeast_genes.txt", output_file="SGD_API/yeast_genes_with_info.json")
+  File "/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/SGD_API/yeast_genes.py", line 27, in __init__
+    gene_name = sgd.gene(gene).details.json()["display_name"]
+  File "/home/nfs/nimoosterlaar/.local/lib/python3.9/site-packages/sgd/api.py", line 194, in __init__
+    raise InvalidGene(f"Could not find gene with name '{gene_name}'.") from e
+sgd.exceptions.InvalidGene: Could not find gene with name 'YGR016C-A'.
+srun: error: gpu26: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=11958890.0
