@@ -1,6 +1,5 @@
 import sgd
 import json
-import random
 import time
 
 class SGD_Genes:
@@ -36,13 +35,64 @@ class SGD_Genes:
                         "essentiality": self.get_essentiality(gene),
                         "protein_domains": self.get_protein_domains(gene)
                     }
-                    json.dump(self.genes, open(output_file, 'w'), indent=4)
+                    if output_file:
+                        json.dump(self.genes, open(output_file, 'w'), indent=4)
+                    else:
+                        json.dump(self.genes, open(gene_list_with_info, 'w'), indent=4)
                     time.sleep(3)
                     
          
     def list_all_genes(self):
         """Return the list of all gene names."""
+        return self.genes.keys()
+    
+    def list_all_gene_info(self):
+        """Return the full dictionary of genes and their information."""
         return self.genes
+    
+    def list_essential_genes(self):
+        """Return a list of all essential genes."""
+        return [gene for gene, info in self.genes.items() if info["essentiality"]]
+    
+    def list_nonessential_genes(self):
+        """Return a list of all non-essential genes."""
+        return [gene for gene, info in self.genes.items() if not info["essentiality"]]
+    
+    def retrieve_gene(self, gene, display_name=False):
+        """Return the full information for a given gene."""
+        if display_name:
+            for g, info in self.genes.items():
+                if info["gene_name"] == gene:
+                    gene = g
+                    break
+        return self.genes[gene]
+    
+    def retrieve_location(self, gene, display_name=False):
+        """Return the location information for a given gene."""
+        if display_name:
+            for g, info in self.genes.items():
+                if info["gene_name"] == gene:
+                    gene = g
+                    break
+        return self.genes.get(gene, {}).get("location", None)
+    
+    def retrieve_essentiality(self, gene, display_name=False):
+        """Return the essentiality information for a given gene."""
+        if display_name:
+            for g, info in self.genes.items():
+                if info["gene_name"] == gene:
+                    gene = g
+                    break
+        return self.genes.get(gene, {}).get("essentiality", None)
+    
+    def retrieve_protein_domains(self, gene, display_name=False):
+        """Return the protein domain information for a given gene."""
+        if display_name:
+            for g, info in self.genes.items():
+                if info["gene_name"] == gene:
+                    gene = g
+                    break
+        return self.genes.get(gene, {}).get("protein_domains", None)
     
     def add_gene(self, gene):
         """Add a gene to the list if not already present."""
@@ -125,6 +175,19 @@ class SGD_Genes:
 
 
 
-sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/yeast_genes_with_info.json", gene_list_file="SGD_API/yeast_genes.txt", output_file="SGD_API/yeast_genes_with_info.json")
+# sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/yeast_genes_with_info.json")
+# print(sgd_genes.retrieve_gene("YAL001C"))
+# print(sgd_genes.retrieve_location("YAL001C"))
+# print(sgd_genes.retrieve_essentiality("YAL001C"))
+# print(sgd_genes.retrieve_protein_domains("YAL001C"))
+# print(sgd_genes.retrieve_gene("TFC3", display_name=True))
+# print(sgd_genes.retrieve_location("TFC3", display_name=True))
+# print(sgd_genes.retrieve_essentiality("TFC3", display_name=True))
+# print(sgd_genes.retrieve_protein_domains("TFC3", display_name=True))
+# assert sgd_genes.retrieve_gene("YAL001C") == sgd_genes.retrieve_gene("TFC3", display_name=True)
+# assert sgd_genes.retrieve_location("YAL001C") == sgd_genes.retrieve_location("TFC3", display_name=True)
+# assert sgd_genes.retrieve_essentiality("YAL001C") == sgd_genes.retrieve_essentiality("TFC3", display_name=True)
+# assert sgd_genes.retrieve_protein_domains("YAL001C") == sgd_genes.retrieve_protein_domains("TFC3", display_name=True)
+
 
 
