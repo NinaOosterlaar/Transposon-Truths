@@ -1,0 +1,98 @@
+{
+    "Chromosome_I": {
+        "start": 151465,
+        "end": 151582,
+        "middle": 151523,
+        "length": 117
+    },
+    "Chromosome_II": {
+        "start": 238207,
+        "end": 238323,
+        "middle": 238265,
+        "length": 116
+    },
+    "Chromosome_III": {
+        "start": 114385,
+        "end": 114501,
+        "middle": 114443,
+        "length": 116
+    },
+    "Chromosome_IV": {
+        "start": 449711,
+        "end": 449821,
+        "middle": 449766,
+        "length": 110
+    },
+    "Chromosome_V": {
+        "start": 151987,
+        "end": 152104,
+        "middle": 152045,
+        "length": 117
+    },
+    "Chromosome_VI": {
+        "start": 148510,
+        "end": 148627,
+        "middle": 148568,
+        "length": 117
+    },
+    "Chromosome_VII": {
+        "start": 496920,
+        "end": 497038,
+        "middle": 496979,
+        "length": 118
+    },
+    "Chromosome_VIII": {
+        "start": 105586,
+        "end": 105703,
+        "middle": 105644,
+        "length": 117
+    },
+    "Chromosome_IX": {
+        "start": 355629,
+        "end": 355745,
+        "middle": 355687,
+        "length": 116
+    },
+    "Chromosome_X": {
+        "start": 436307,
+        "end": 436425,
+        "middle": 436366,
+        "length": 118
+    },
+    "Chromosome_XI": {
+        "start": 440129,
+        "end": 440246,
+        "middle": 440187,
+        "length": 117
+    },
+    "Chromosome_XII": {
+        "start": 150828,
+        "end": 150947,
+        "middle": 150887,
+        "length": 119
+    },
+    "Chromosome_XIII": {
+        "start": 268031,
+        "end": 268149,
+        "middle": 268090,
+        "length": 118
+    },
+    "Chromosome_XIV": {
+        "start": 628758,
+        "end": 628875,
+        "middle": 628816,
+        "length": 117
+    },
+    "Chromosome_XV": {
+        "start": 326584,
+        "end": 326702,
+        "middle": 326643,
+        "length": 118
+    },
+    "Chromosome_XVI": {
+        "start": 555957,
+        "end": 556073,
+        "middle": 556015,
+        "length": 116
+    }
+}
