@@ -1,95 +1,95 @@
 {
-    "Chromosome_I": {
+    "ChrI": {
         "start": 151465,
         "end": 151582,
         "middle": 151523,
         "length": 117
     },
-    "Chromosome_II": {
+    "ChrII": {
         "start": 238207,
         "end": 238323,
         "middle": 238265,
         "length": 116
     },
-    "Chromosome_III": {
+    "ChrIII": {
         "start": 114385,
         "end": 114501,
         "middle": 114443,
         "length": 116
     },
-    "Chromosome_IV": {
+    "ChrIV": {
         "start": 449711,
         "end": 449821,
         "middle": 449766,
         "length": 110
     },
-    "Chromosome_V": {
+    "ChrV": {
         "start": 151987,
         "end": 152104,
         "middle": 152045,
         "length": 117
     },
-    "Chromosome_VI": {
+    "ChrVI": {
         "start": 148510,
         "end": 148627,
         "middle": 148568,
         "length": 117
     },
-    "Chromosome_VII": {
+    "ChrVII": {
         "start": 496920,
         "end": 497038,
         "middle": 496979,
         "length": 118
     },
-    "Chromosome_VIII": {
+    "ChrVIII": {
         "start": 105586,
         "end": 105703,
         "middle": 105644,
         "length": 117
     },
-    "Chromosome_IX": {
+    "ChrIX": {
         "start": 355629,
         "end": 355745,
         "middle": 355687,
         "length": 116
     },
-    "Chromosome_X": {
+    "ChrX": {
         "start": 436307,
         "end": 436425,
         "middle": 436366,
         "length": 118
     },
-    "Chromosome_XI": {
+    "ChrXI": {
         "start": 440129,
         "end": 440246,
         "middle": 440187,
         "length": 117
     },
-    "Chromosome_XII": {
+    "ChrXII": {
         "start": 150828,
         "end": 150947,
         "middle": 150887,
         "length": 119
     },
-    "Chromosome_XIII": {
+    "ChrXIII": {
         "start": 268031,
         "end": 268149,
         "middle": 268090,
         "length": 118
     },
-    "Chromosome_XIV": {
+    "ChrXIV": {
         "start": 628758,
         "end": 628875,
         "middle": 628816,
         "length": 117
     },
-    "Chromosome_XV": {
+    "ChrXV": {
         "start": 326584,
         "end": 326702,
         "middle": 326643,
         "length": 118
     },
-    "Chromosome_XVI": {
+    "ChrXVI": {
         "start": 555957,
         "end": 556073,
         "middle": 556015,

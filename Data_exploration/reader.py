@@ -6,23 +6,23 @@ import matplotlib.pyplot as plt
 import seaborn as sns  
 
 chromosome_mapper = {
-    "NC_001133": "chrI",
-    "NC_001134": "chrII",
-    "NC_001135": "chrIII",
-    "NC_001136": "chrIV",
-    "NC_001137": "chrV",
-    "NC_001138": "chrVI",
-    "NC_001139": "chrVII",
-    "NC_001140": "chrVIII",
-    "NC_001141": "chrIX",
-    "NC_001142": "chrX",
-    "NC_001143": "chrXI",
-    "NC_001144": "chrXII",
-    "NC_001145": "chrXIII",
-    "NC_001146": "chrXIV",
-    "NC_001147": "chrXV",
-    "NC_001148": "chrXVI",
-    "NC_001224": "chrM",
+    "chrref|NC_001133|": "chrI",
+    "chrref|NC_001134|": "chrII",
+    "chrref|NC_001135|": "chrIII",
+    "chrref|NC_001136|": "chrIV",
+    "chrref|NC_001137|": "chrV",
+    "chrref|NC_001138|": "chrVI",
+    "chrref|NC_001139|": "chrVII",
+    "chrref|NC_001140|": "chrVIII",
+    "chrref|NC_001141|": "chrIX",
+    "chrref|NC_001142|": "chrX",
+    "chrref|NC_001143|": "chrXI",
+    "chrref|NC_001144|": "chrXII",
+    "chrref|NC_001145|": "chrXIII",
+    "chrref|NC_001146|": "chrXIV",
+    "chrref|NC_001147|": "chrXV",
+    "chrref|NC_001148|": "chrXVI",
+    "chrref|NC_001224|": "chrM",
 }
 
 def read_wig(file_path):
@@ -32,35 +32,31 @@ def read_wig(file_path):
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
     
-    chrom_data = {}
     current_chrom = None
     current_data = []
+    
+    chrom_data = {}
 
     with open(file_path, 'r') as file:
-        for line in file:
-            if line.startswith('track'):
-                continue  # skip metadata lines
+        for line in file:            
+            if line.startswith('track'): continue  # skip metadata lines
 
             if line.startswith(('VariableStep', 'variableStep', 'fixedStep')):
-                # Save previous chromosome before moving on
                 if current_chrom and current_data:
                     chrom_data[current_chrom] = pd.DataFrame(
                         current_data, columns=['Position', 'Value']
                     )
                     current_data = []
-
-                # Detect chromosome ID in line
-                for ncbi_id, mapped_chrom in chromosome_mapper.items():
-                    if ncbi_id in line or mapped_chrom in line:
-                        current_chrom = mapped_chrom
-                        break
-                continue  # skip definition line
-
+                
+                raw_chrom = line.strip().split(sep="=")[1] # chrref|NC_001134| OR chrI
+                current_chrom = chromosome_mapper.get(raw_chrom, raw_chrom).replace("chr", "Chr")
+                continue
+            
             # Parse data lines
             parts = line.strip().split()
             if len(parts) == 2 and current_chrom:
                 position, value = parts
-                current_data.append((int(position), float(value)))
+                current_data.append((int(position), int(value)))
 
     # Save last chromosome
     if current_chrom and current_data:

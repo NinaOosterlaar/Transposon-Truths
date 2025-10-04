@@ -63,9 +63,54 @@ chromosome_length = {
     "2micron": 6318         # 2-micron plasmid
 }
 
+def create_centromere_dict(output_file):
+    """Create a dictionary of centromere locations for each chromosome."""
+    centromeres = {}
+    for i, gene in enumerate(representative_genes, start=1):
+        chrom_name = "Chromosome_" + mapping_to_roman[i]
+        info = sgd.gene(gene).sequence_details.json()
+        start = info['genomic_dna'][0]["contig"]['centromere_start']
+        end = info['genomic_dna'][0]["contig"]['centromere_end']
+        middle = (start + end) // 2
+        length = end - start
+        centromeres[chrom_name] = {
+            "start": start,
+            "end": end,
+            "middle": middle,
+            "length": length
+        }
+    with open(output_file, 'w') as f:
+        json.dump(centromeres, f, indent=4)
+        
+def create_nucleosome_dict(input_file, output_dir):
+    """Create a dictionary of nucleosome positions for each chromosome.
+    A separate file is created for each chromosome in the specified directory.
+    """
+    nucleosomes = {}
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines[2:]:  # Skip header lines
+            parts = line.strip().split('\t')
+            if parts[0] not in nucleosomes:
+                nucleosomes[parts[0]] = []
+            start = int(parts[3])
+            end = int(parts[4])
+            middle = (start + end) // 2
+            fuzzy = True if "fuzzy" in parts[8] else False
+            nucleosomes[parts[0]].append((start, middle, end, fuzzy))
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    for chrom in nucleosomes:
+        print(chrom)
+        number = chrom.replace("chr", "")
+        chrom_name = mapping_to_roman[int(number)]
+        file_path = os.path.join(output_dir, f"Chr{chrom_name}.json")
+        with open(file_path, 'w') as f:
+            json.dump(nucleosomes[chrom], f, indent=4)
+
         
 class Centromeres:
-    def __init__(self, centromere_file):
+    def __init__(self, centromere_file = "SGD_API/centromeres.json"):
         with open(centromere_file, 'r') as f:
             self.centromeres = json.load(f)
     
@@ -73,26 +118,37 @@ class Centromeres:
         """Return the centromere information for a given chromosome."""
         return self.centromeres.get(chromosome, None)
     
+    def get_middle(self, chromosome):
+        """Return the middle position of the centromere for a given chromosome."""
+        centromere = self.get_centromere(chromosome)
+        return centromere["middle"] if centromere else None
+    
+    def get_length(self, chromosome):
+        """Return the length of the centromere for a given chromosome."""
+        centromere = self.get_centromere(chromosome)
+        return centromere["length"] if centromere else None
+    
+    def get_start(self, chromosome):
+        """Return the start position of the centromere for a given chromosome."""
+        centromere = self.get_centromere(chromosome)
+        return centromere["start"] if centromere else None
+    
+    def get_end(self, chromosome):
+        """Return the end position of the centromere for a given chromosome."""
+        centromere = self.get_centromere(chromosome)
+        return centromere["end"] if centromere else None
+    
+    def compute_distance(self, chrom, position):
+        """Compute the distance from a given position to the centromere middle on the specified chromosome."""
+        centromere = self.get_centromere(chrom)
+        if centromere:
+            return abs(position - centromere["middle"])
+        return None
+
     def list_all_centromeres(self):
         """Return the full dictionary of centromeres."""
         return self.centromeres
-    
-    def retrieve_middles(self):
-        """Return a dictionary of chromosome names and their centromere middles."""
-        return {chrom: info["middle"] for chrom, info in self.centromeres.items()}
-    
-    def retrieve_lengths(self):
-        """Return a dictionary of chromosome names and their centromere lengths."""
-        return {chrom: info["length"] for chrom, info in self.centromeres.items()}
-    
-    def retrieve_starts(self):
-        """Return a dictionary of chromosome names and their centromere starts."""
-        return {chrom: info["start"] for chrom, info in self.centromeres.items()}
-    
-    def retrieve_ends(self):
-        """Return a dictionary of chromosome names and their centromere ends."""
-        return {chrom: info["end"] for chrom, info in self.centromeres.items()}
-    
+
     def retrieve_all_middles(self):
         """Return a list of all centromere middles."""
         middles = {}
@@ -120,17 +176,18 @@ class Centromeres:
         for chrom in self.centromeres:
             ends[chrom] = self.centromeres[chrom]["end"]
         return ends
-    
+        
     
 class Nucleosomes:
-    def __init__(self, nucleosome_dir):
+    def __init__(self, nucleosome_dir="SGD_API/nucleosome_data/"):
         """Load all chromosome nucleosome files from a directory."""
         self.nucleosomes = {}
         for chrom in chromosome_length.keys():
-            file_path = os.path.join(nucleosome_dir, f"nucleosome_data_{chrom}.json")
+            file_path = os.path.join(nucleosome_dir, f"{chrom}.json")
             if os.path.exists(file_path):
                 with open(file_path, 'r') as f:
                     self.nucleosomes[chrom] = json.load(f)
+        print(f"Loaded nucleosome data for chromosomes: {list(self.nucleosomes.keys())}")
     
     def get_nucleosomes(self, chrom):
         """Return the list of nucleosomes for a given chromosome."""
@@ -157,24 +214,32 @@ class Nucleosomes:
         number_of_nucleosomes = self.count_nucleosomes(chrom)
         return chromosome_length[chrom] / number_of_nucleosomes if number_of_nucleosomes > 0 else 0
     
-    
-def create_centromere_dict(output_file):
-    """Create a dictionary of centromere locations for each chromosome."""
-    centromeres = {}
-    for i, gene in enumerate(representative_genes, start=1):
-        chrom_name = "Chromosome_" + mapping_to_roman[i]
-        info = sgd.gene(gene).sequence_details.json()
-        start = info['genomic_dna'][0]["contig"]['centromere_start']
-        end = info['genomic_dna'][0]["contig"]['centromere_end']
-        middle = (start + end) // 2
-        length = end - start
-        centromeres[chrom_name] = {
-            "start": start,
-            "end": end,
-            "middle": middle,
-            "length": length
-        }
-    with open(output_file, 'w') as f:
-        json.dump(centromeres, f, indent=4)
+    def compute_distance(self, chrom, position):
+        """Compute the distance to the nearest nucleosome on a given chromosome from a specified position.
+        The nucleosomes are in order of their start positions, however fuzzy nucleosomes are included after the well-positioned ones.
         
+        Args:
+            chrom (str): Chromosome name (e.g., 'ChrI', 'ChrII')
+            position (int): Position to compute distance from
+            
+        Returns:
+            int: Minimum distance to nearest nucleosome center, or None if no nucleosomes found
+        """
+        
+        nucleosomes = self.get_nucleosomes(chrom)
+        if not nucleosomes: return None
+        
+        # Extract all middle positions - this handles both fuzzy and non-fuzzy nucleosomes
+        middles = np.array([nuc[1] for nuc in nucleosomes])
+        
+        # Use vectorized NumPy operations for efficiency with large datasets
+        distances = np.abs(middles - position)
+        min_distance = np.min(distances)
+        
+        return int(min_distance)
+        
+    
+    
+
+
 

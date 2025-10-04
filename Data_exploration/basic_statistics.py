@@ -2,6 +2,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns  
+from reader import read_wig, label_from_filename
+from tqdm import tqdm
 
 
 yeast_chrom_lengths = {
@@ -142,3 +144,38 @@ def plot_presence_transposon(folder, chrom, start, end):
     plt.ylabel('Samples')
     plt.tight_layout()
     plt.show()
+    
+    
+def save_basic_info(folder_name, output_file):
+    """Saves basic statistics to a text file."""
+    wig_files = [f for f in os.listdir(folder_name) if f.endswith('.wig')]
+    wig_files.sort()
+
+    stats = []  # (label, total_sum, mean_count, occupied_sites, unoccupied_sites)
+
+    genome_size = sum(yeast_chrom_lengths.values())
+
+    for wig_file in wig_files:
+        file_path = os.path.join(folder_name, wig_file)
+        wig_dict = read_wig(file_path)  # {chrom: df}
+
+        total_sum = 0
+        occupied_sites = 0
+
+        for chrom, df in wig_dict.items():
+            total_sum += df['Value'].sum()
+            if not df.empty:
+                occupied_sites += (df['Value'] > 0).sum()
+
+        mean_count = total_sum / genome_size
+        unoccupied_sites = genome_size - occupied_sites
+        label = label_from_filename(wig_file)
+        density = occupied_sites / (occupied_sites + unoccupied_sites) 
+
+        stats.append((label, total_sum, mean_count, occupied_sites, unoccupied_sites, density))
+
+    with open(output_file, 'w') as f:
+        f.write("Sample\tTotal_Sum\tMean_Coverage_per_bp\tOccupied_Sites\tUnoccupied_Sites\tDensity\n")
+        for s in stats:
+            f.write(f"{s[0]}\t{s[1]}\t{s[2]:.6f}\t{s[3]}\t{s[4]}\t{s[5]:.6f}\n")
+    
