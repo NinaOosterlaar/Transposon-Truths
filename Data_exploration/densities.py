@@ -133,13 +133,6 @@ def process_single_dataset(strain_name, dataset_path, dataset_name, output_folde
         if df.empty:
             print(f"No data for {chrom} in {strain_name}/{dataset_name}. Skipping.")
             continue
-        
-        # Drop rows with NaN distances
-        df = df.dropna(subset=['Centromere_Distance'])
-        
-        if df.empty:
-            print(f"All distances are NaN for {chrom} in {strain_name}/{dataset_name}. Skipping.")
-            continue
 
         max_distance = max_distance_global if max_distance_global is not None else df['Centromere_Distance'].max()
         bins = np.arange(0, max_distance + bin, bin)
@@ -303,7 +296,9 @@ def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_
             continue
 
 
-density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin = 100, boolean = True)
+density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin = 1000, boolean = True)
+density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere_counts", bin = 1000, boolean = False)
+
     
 # compute_distances("Data/wiggle_format", "Data_exploration/results/distances")
 
