@@ -94,10 +94,10 @@ def compute_distances(input_folder, output_folder):
                 output_file = os.path.join(wig_output_folder, f"{chrom}_distances.csv")
                 distances_df.to_csv(output_file, index=False)
                 
-compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
+# compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
 
               
-def process_single_dataset(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance=None, boolean=False):
+def process_single_dataset(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, boolean=False):
     """Process a single dataset and save results immediately to save memory.
     
     Args:
@@ -109,8 +109,6 @@ def process_single_dataset(strain_name, dataset_path, dataset_name, output_folde
         max_distance_global (int): Maximum distance to consider
         boolean (bool): If True, compute presence/absence density instead of counts
     """
-    centromeres = Centromeres()
-    
     # Create output folders
     strain_output_folder = os.path.join(output_folder, strain_name)
     dataset_output_folder = os.path.join(strain_output_folder, dataset_name)
@@ -143,6 +141,7 @@ def process_single_dataset(strain_name, dataset_path, dataset_name, output_folde
             print(f"All distances are NaN for {chrom} in {strain_name}/{dataset_name}. Skipping.")
             continue
 
+        max_distance = max_distance_global if max_distance_global is not None else df['Centromere_Distance'].max()
         bins = np.arange(0, max_distance + bin, bin)
         df['Distance_Bin'] = pd.cut(df['Centromere_Distance'], bins=bins, right=False)
 
@@ -304,7 +303,7 @@ def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_
             continue
 
 
-density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin = 100, boolean = True)
+density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin = 100, boolean = True)
     
 # compute_distances("Data/wiggle_format", "Data_exploration/results/distances")
 
