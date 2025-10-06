@@ -93,11 +93,9 @@ def compute_distances(input_folder, output_folder):
                 # Save each chromosome to its own file
                 output_file = os.path.join(wig_output_folder, f"{chrom}_distances.csv")
                 distances_df.to_csv(output_file, index=False)
-                
-compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
 
-              
-def process_single_dataset(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, boolean=False):
+
+def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, boolean=False):
     """Process a single dataset and save results immediately to save memory.
     
     Args:
@@ -130,9 +128,6 @@ def process_single_dataset(strain_name, dataset_path, dataset_name, output_folde
         if chrom == "chrM": continue  # Skip mitochondrial chromosome
             
         df = dataset_data[chrom]
-        if df.empty:
-            print(f"No data for {chrom} in {strain_name}/{dataset_name}. Skipping.")
-            continue
 
         max_distance = max_distance_global if max_distance_global is not None else df['Centromere_Distance'].max()
         bins = np.arange(0, max_distance + bin, bin)
@@ -287,19 +282,170 @@ def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_
     
     # Process each dataset individually
     for strain_name, dataset_path, dataset_name in datasets_to_process:
-        try:
-            process_single_dataset(strain_name, dataset_path, dataset_name, output_folder, 
-                                 bin, max_distance_global, boolean)
-            print(f"✓ Completed: {strain_name}/{dataset_name}")
-        except Exception as e:
-            print(f"✗ Error processing {strain_name}/{dataset_name}: {e}")
-            continue
+        process_single_dataset_centromere(strain_name, dataset_path, dataset_name, output_folder, 
+                                bin, max_distance_global, boolean)
+        print(f"✓ Completed: {strain_name}/{dataset_name}")
 
 
-density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin = 1000, boolean = True)
-density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere_counts", bin = 1000, boolean = False)
+def density_from_nucleosome(input_folder, output_folder, boolean=False):
+    """Compute density from nucleosome distances for all datasets in the input folder.
+    
+    Args:
+        input_folder (str): Path to the folder containing distance CSV files (strain/dataset structure).
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+        bin (int): Size of the sliding window for density calculation.
+        max_distance_global (int): Maximum distance to consider globally.
+        boolean (bool): If True, compute presence/absence density instead of counts.
+    """
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    nucleosomes = Nucleosomes()
+    nucleosomes_normalization = {}
+    for chrom in chromosome_length.keys():
+        print(f"Computing normalization for {chrom}")
+        if chrom == "ChrM": continue  # Skip mitochondrial chromosome
+        normalized_counts = nucleosomes.compute_normalization(chrom)
+        nucleosomes_normalization[chrom] = normalized_counts
+
+    # Collect all datasets without loading data
+    datasets_to_process = []
+    
+    for root, dirs, files in os.walk(input_folder):
+        csv_files = [f for f in files if f.endswith(".csv")]
+        if csv_files:  # Only process folders that contain CSV files
+            path_parts = root.split("/")
+            strain_name = path_parts[-2] if len(path_parts) >= 2 else "unknown_strain"
+            dataset_name = path_parts[-1]
+            datasets_to_process.append((strain_name, root, dataset_name))
+    
+    print(f"Found {len(datasets_to_process)} datasets to process")
+    
+    # Process each dataset individually
+    for strain_name, dataset_path, dataset_name in datasets_to_process:
+        process_single_dataset_nucleosome(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization, boolean)
+        print(f"✓ Completed: {strain_name}/{dataset_name}")
 
     
+def process_single_dataset_nucleosome(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization, boolean=False):
+    """Process a single dataset for nucleosome distances and save results immediately to save memory.
+    
+    Args:
+        strain_name (str): Name of the strain
+        dataset_name (str): Name of the dataset
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+        boolean (bool): If True, compute presence/absence density instead of counts.
+    """
+    # Create output folders
+    strain_output_folder = os.path.join(output_folder, strain_name)
+    dataset_output_folder = os.path.join(strain_output_folder, dataset_name)
+    os.makedirs(dataset_output_folder, exist_ok=True)
+    
+    # Load only one dataset's data
+    counts = {}
+    csv_files = [f for f in os.listdir(dataset_path) if f.endswith(".csv")]
+    
+    for csv_file in csv_files:
+        chrom = csv_file.split("_")[0]
+        if chrom == "ChrM": continue
+        print(f"Processing {chrom} data from {csv_file}")
+        file_path = os.path.join(dataset_path, csv_file)
+        df = pd.read_csv(file_path)
+        counts[chrom] = {}
+
+        for index, item in df.iterrows():
+            # print(item)
+            if boolean and item['Value'] > 0: 
+                value = 1 
+            else: 
+                value = item['Value']
+                # Search if a value is larger than 1000 and set it to 0
+                if value > 1000:
+                    value = 0
+            nucleosome_distance = item['Nucleosome_Distance']
+            if nucleosome_distance in counts[chrom]:
+                counts[chrom][nucleosome_distance] += value
+            else:
+                counts[chrom][nucleosome_distance] = value
+        
+        
+        for distance in counts[chrom]:
+            if distance in nucleosomes_normalization[chrom]:
+                counts[chrom][distance] /= nucleosomes_normalization[chrom][distance]
+                counts[chrom][distance] /= chromosome_length[chrom]
+            else:
+                counts[chrom][distance] = 0  
+
+        # Save the processed counts to a CSV file
+        output_file = os.path.join(dataset_output_folder, f"{chrom}_Boolean:_{boolean}_nucleosome_density.csv")
+        with open(output_file, "w") as f:
+            f.write("distance,density\n")  # Add header
+            for dist, count in counts[chrom].items():
+                f.write(f"{dist},{count}\n")
+        create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chrom, counts[chrom], boolean)
+
+    # Clear counts from memory
+    del counts
+
+def create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chrom, counts, boolean):
+    """Create a plot for nucleosome distance density for a single chromosome.
+    It should show each density value as a dot, and show a fitted polynomial line.
+    """
+
+    distances = np.array(list(counts.keys()))
+    densities = np.array(list(counts.values()))
+    
+    # Create the plot
+    fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+    
+    # Scatter plot of the raw data points
+    ax.scatter(distances, densities, color='steelblue', alpha=0.6, edgecolor='darkblue', s=20, label='Data Points')
+    
+
+    coeffs = np.polyfit(distances, densities, deg=3)
+    poly = np.poly1d(coeffs)
+    x_fit = np.linspace(distances.min(), distances.max(), 500)
+    y_fit = poly(x_fit)
+    ax.plot(x_fit, y_fit, color='orange', linewidth=2, label='Fitted Polynomial (deg=5)')
+    
+    # Add the polynomial equation to the plot (simplified for readability)
+    equation_text = f"y = {coeffs[0]:.2e}x³ + {coeffs[1]:.2e}x² + {coeffs[2]:.2e}x + {coeffs[3]:.2e}"
+    ax.text(0.05, 0.95, equation_text, transform=ax.transAxes, fontsize=10,
+            verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.5))
+
+    # Customize the plot
+    ax.set_title(f'Nucleosome Distance Density - {chrom}\n{strain_name}/{dataset_name}', 
+                 fontsize=14, fontweight='bold')
+    ax.set_xlabel('Distance from Nearest Nucleosome (bp)', fontsize=12)
+    ax.set_ylabel('Density per bp', fontsize=12)
+    
+    # Add grid for better readability
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.set_axisbelow(True)
+    
+    # Format x-axis
+    max_distance = distances.max()
+    if max_distance > 10000:
+        # Show fewer ticks for large distances
+        tick_interval = int(max_distance / 8)  # About 8 ticks
+        tick_interval = (tick_interval // 1000) * 1000  # Round to nearest 1000
+        if tick_interval == 0:
+            tick_interval = 1000
+        ax.set_xticks(np.arange(0, max_distance + tick_interval, tick_interval))
+        ax.tick_params(axis='x', rotation=45)
+
+    # Show legend
+    ax.legend(loc='upper right', fontsize=12)
+
+    # Save the plot
+    output_file = os.path.join(dataset_output_folder, f"{chrom}_nucleosome_density.png")
+    
+    try:
+        plt.savefig(output_file, dpi=150, bbox_inches='tight', facecolor='white')
+    except Exception as e:
+        print(f"✗ Error saving nucleosome plot: {e}")
+    
+    plt.close(fig)
+
 # compute_distances("Data/wiggle_format", "Data_exploration/results/distances")
 
 # def fit_data_to_GAM(input_folder, output_folder): # Work in Progress
@@ -328,3 +474,9 @@ density_from_centromere("Data_exploration/results/distances_new", "Data_explorat
 #         output_file = os.path.join(output_folder, f"{chrom}_gam_results.csv")
 #         with open(output_file, "w") as f:
 #             f.write(gam_results.summary().as_text())
+
+
+if __name__ == "__main__":
+    # Example usage:
+    # compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
+    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)

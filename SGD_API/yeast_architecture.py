@@ -237,9 +237,31 @@ class Nucleosomes:
         min_distance = np.min(distances)
         
         return int(min_distance)
+    
+    
+    def compute_normalization(self, chrom):
+        """ Compute how often each distance from a nucleosome occurs on a chromosome
         
+        Args:
+            chrom (str): Chromosome name (e.g., 'ChrI', 'ChrII')
+        Returns:
+            dict: Dictionary with distances as keys and their normalized frequency as values
+        """
+        nucleosome_count = self.count_nucleosomes(chrom)
+        if nucleosome_count == 0: return {}
+        distance_counts = {}
+        for position in range(1, chromosome_length[chrom] + 1):
+            distance = self.compute_distance(chrom, position)
+            if distance in distance_counts:
+                distance_counts[distance] += 1
+            else:
+                distance_counts[distance] = 1
+        # Normalize counts by total number of positions on the chromosome
+        total_positions = chromosome_length[chrom]
+        normalized_counts = {dist: count / total_positions for dist, count in distance_counts.items()}
+        json.dump(normalized_counts, open(f"SGD_API/nucleosome_data/{chrom}_normalization.json", 'w'), indent=4)
+        return normalized_counts
     
-    
-
+        
 
 
