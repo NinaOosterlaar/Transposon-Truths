@@ -7,8 +7,8 @@ from tqdm import tqdm
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from SGD_API.yeast_architecture import Centromeres, Nucleosomes
 from reader import read_wig
-import statsmodels.api as sm
-from statsmodels.gam.api import GLMGam, BSplines
+# import statsmodels.api as sm
+# from statsmodels.gam.api import GLMGam, BSplines
 
 chromosome_length = {
     "ChrI": 230218,
