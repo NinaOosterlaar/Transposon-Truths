@@ -94,7 +94,7 @@ def compute_distances(input_folder, output_folder):
                 output_file = os.path.join(wig_output_folder, f"{chrom}_distances.csv")
                 distances_df.to_csv(output_file, index=False)
                 
-# compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
+compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
 
               
 def process_single_dataset(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, boolean=False):
