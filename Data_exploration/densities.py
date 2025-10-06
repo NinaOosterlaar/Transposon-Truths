@@ -303,7 +303,7 @@ def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_
             continue
 
 
-density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin = 100, boolean = True)
+density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin = 100, boolean = True)
     
 # compute_distances("Data/wiggle_format", "Data_exploration/results/distances")
 
