@@ -95,7 +95,7 @@ def compute_distances(input_folder, output_folder):
                 distances_df.to_csv(output_file, index=False)
 
 
-def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, boolean=False):
+def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, min_distance_global=None, boolean=False):
     """Process a single dataset and save results immediately to save memory.
     
     Args:
@@ -129,8 +129,17 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
             
         df = dataset_data[chrom]
 
-        max_distance = max_distance_global if max_distance_global is not None else df['Centromere_Distance'].max()
-        bins = np.arange(0, max_distance + bin, bin)
+        if max_distance_global is not None:
+            max_distance = max_distance_global
+        else:
+            max_distance = df['Centromere_Distance'].max()
+        if min_distance_global is not None:
+            min_distance = min_distance_global
+        else:
+            min_distance = df['Centromere_Distance'].min()
+
+
+        bins = np.arange(min_distance, max_distance + bin, bin)
         df['Distance_Bin'] = pd.cut(df['Centromere_Distance'], bins=bins, right=False)
 
         if boolean:
@@ -197,12 +206,17 @@ def create_individual_chromosome_plots(strain_name, dataset_name, dataset_output
         bars = ax.bar(x_values, y_values, width=bar_width, 
                      color='steelblue', alpha=0.7, edgecolor='darkblue', linewidth=0.5)
         
-        # Customize the plot
-        ax.set_title(f'Centromere Distance Density - {chrom}\n{strain_name}/{dataset_name}', 
-                    fontsize=14, fontweight='bold')
-        ax.set_xlabel('Distance from Centromere (bp)', fontsize=12)
-        ax.set_ylabel('Density per bp', fontsize=12)
-        
+        if boolean: 
+            ax.set_title(f'Centromere Distance Insertion Rate - {chrom}\n{strain_name}/', 
+                        fontsize=14, fontweight='bold')
+            ax.set_xlabel('Distance from Centromere (bp)', fontsize=12)
+            ax.set_ylabel('Insertion Rate', fontsize=12)
+        else:
+            ax.set_title(f'Centromere Distance Density - {chrom}\n{strain_name}/', 
+                        fontsize=14, fontweight='bold')
+            ax.set_xlabel('Distance from Centromere (bp)', fontsize=12)
+            ax.set_ylabel('Density per bp', fontsize=12)
+
         # Add grid for better readability
         ax.grid(True, alpha=0.3, axis='y')
         ax.set_axisbelow(True)
@@ -412,12 +426,19 @@ def create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chr
     ax.text(0.05, 0.95, equation_text, transform=ax.transAxes, fontsize=10,
             verticalalignment='top', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.5))
 
-    # Customize the plot
-    ax.set_title(f'Nucleosome Distance Density - {chrom}\n{strain_name}/{dataset_name}', 
-                 fontsize=14, fontweight='bold')
-    ax.set_xlabel('Distance from Nearest Nucleosome (bp)', fontsize=12)
-    ax.set_ylabel('Density per bp', fontsize=12)
-    
+    if boolean:
+        # Customize the plot
+        ax.set_title(f'Nucleosome Distance Insertion Rate- {chrom}\n{strain_name}', 
+                    fontsize=14, fontweight='bold')
+        ax.set_xlabel('Distance from Nearest Nucleosome (bp)', fontsize=12)
+        ax.set_ylabel('Insertion Rate per bp', fontsize=12)
+    else:
+        # Customize the plot
+        ax.set_title(f'Nucleosome Distance Density - {chrom}\n{strain_name}/{dataset_name}', 
+                    fontsize=14, fontweight='bold')
+        ax.set_xlabel('Distance from Nearest Nucleosome (bp)', fontsize=12)
+        ax.set_ylabel('Density per bp', fontsize=12)
+
     # Add grid for better readability
     ax.grid(True, alpha=0.3, axis='y')
     ax.set_axisbelow(True)
@@ -478,5 +499,11 @@ def create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chr
 
 if __name__ == "__main__":
     # Example usage:
-    # compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
-    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
+    print("Starting distance computation...")
+    compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
+    print("Starting density computation from nucleosome distances...")
+    density_from_nucleosome("Data_exploration/results/distances_new", "Data_exploration/results/densities/nucleosome", boolean=True)
+    print("Starting density computation from centromere distances...")
+    density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin=1000, boolean=True)
+    density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin=1000, boolean=False)
+    
