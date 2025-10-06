@@ -1,0 +1,34 @@
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                  Value   No. Observations:                11777
+Model:                         GLMGam   Df Residuals:                 11758.07
+Model Family:        NegativeBinomial   Df Model:                        17.93
+Link Function:                    Log   Scale:                          1.0000
+Method:                         PIRLS   Log-Likelihood:                -57517.
+Date:                Mon, 06 Oct 2025   Deviance:                       28346.
+Time:                        13:48:20   Pearson chi2:                 2.08e+05
+No. Iterations:                    16   Pseudo R-squ. (CS):             0.1468
+Covariance Type:            nonrobust                                         
+==========================================================================================
+                             coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------
+Intercept                  3.1334      0.121     25.868      0.000       2.896       3.371
+Nucleosome_Distance_s0    -0.0711      0.150     -0.475      0.635      -0.365       0.222
+Nucleosome_Distance_s1     0.1329      0.095      1.405      0.160      -0.053       0.318
+Nucleosome_Distance_s2    -0.2449      0.112     -2.178      0.029      -0.465      -0.025
+Nucleosome_Distance_s3     0.4639      0.091      5.102      0.000       0.286       0.642
+Nucleosome_Distance_s4     0.0671      0.092      0.730      0.466      -0.113       0.247
+Nucleosome_Distance_s5     0.4405      0.088      5.030      0.000       0.269       0.612
+Nucleosome_Distance_s6     2.0173      0.177     11.366      0.000       1.669       2.365
+Nucleosome_Distance_s7    -1.7069      0.345     -4.948      0.000      -2.383      -1.031
+Nucleosome_Distance_s8     2.5925      0.324      8.006      0.000       1.958       3.227
+Centromere_Distance_s0     2.1083      0.156     13.498      0.000       1.802       2.414
+Centromere_Distance_s1    -1.1024      0.093    -11.807      0.000      -1.285      -0.919
+Centromere_Distance_s2     1.5888      0.112     14.143      0.000       1.369       1.809
+Centromere_Distance_s3     0.0819      0.102      0.807      0.420      -0.117       0.281
+Centromere_Distance_s4     0.4986      0.108      4.632      0.000       0.288       0.710
+Centromere_Distance_s5     0.2206      0.112      1.961      0.050       0.000       0.441
+Centromere_Distance_s6     0.9426      0.125      7.531      0.000       0.697       1.188
+Centromere_Distance_s7     0.2954      0.123      2.405      0.016       0.055       0.536
+Centromere_Distance_s8     0.3484      0.122      2.854      0.004       0.109       0.588
+==========================================================================================

@@ -142,7 +142,7 @@ class Centromeres:
         """Compute the distance from a given position to the centromere middle on the specified chromosome."""
         centromere = self.get_centromere(chrom)
         if centromere:
-            return abs(position - centromere["middle"])
+            return position - centromere["middle"]
         return None
 
     def list_all_centromeres(self):
