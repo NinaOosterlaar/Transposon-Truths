@@ -511,6 +511,10 @@ def combine_nucleosome_data(data = "All", boolean=False):
                         with open(file_path, 'r') as f:
                             data = pd.read_csv(f)
                             # Combine the data as needed
+                            if chrom not in combined_dataset:
+                                combined_dataset[chrom] = data
+                            else:
+                                
                         # Save combined data
                         combined_file = os.path.join(combined_output_folder, f"{chrom}_combined_Boolean_{boolean}_nucleosome_density.csv")
                         # data.to_csv(combined_file, index=False)  # Uncomment and implement actual combining logic
@@ -525,4 +529,4 @@ def combine_nucleosome_data(data = "All", boolean=False):
 if __name__ == "__main__":
     # Example usage:
     density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
-    
+    # combine_nucleosome_data(data="Chromosomes", boolean=True)
