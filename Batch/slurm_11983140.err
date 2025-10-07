@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/Data_exploration/densities.py", line 9, in <module>
+    from SGD_API.yeast_architecture import Centromeres, Nucleosomes
+ModuleNotFoundError: No module named 'SGD_API.yeast_architecture'
+srun: error: 3dgi2: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=11983140.0

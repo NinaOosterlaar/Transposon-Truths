@@ -1,0 +1,5 @@
+  File "/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/Data_exploration/densities.py", line 519
+    combined_file = os.path.join(combined_output_folder, f"{chrom}_combined_Boolean_{boolean}_nucleosome_density.csv")
+IndentationError: expected an indented block
+srun: error: 3dgi2: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=11983142.0
