@@ -529,5 +529,5 @@ def combine_nucleosome_data(data = "All", boolean=False):
 
 if __name__ == "__main__":
     # Example usage:
-    # density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
-    combine_nucleosome_data(data="Chromosomes", boolean=True)
+    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
+    # combine_nucleosome_data(data="Chromosomes", boolean=True)
