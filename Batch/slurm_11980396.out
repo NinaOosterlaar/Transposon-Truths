@@ -1,0 +1,700 @@
+Starting distance computation...
+Loaded nucleosome data for chromosomes: ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+root: Data/wiggle_format, files: [], dirs: ['strain_FD', 'strain_dnrp', 'strain_yEK19', 'strain_yEK23', 'strain_yTW001', 'strain_yWT03a', 'strain_yWT04a', 'strain_ylic137']
+root: Data/wiggle_format/strain_FD, files: ['FD11_FDDP210435830-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig', 'FD12_FDDP210435831-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig', 'FD7_1_FDDP210435821-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig', 'FD7_2_FDDP210435822-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig', 'FD7_3_FDDP210435823-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig', 'FD7_4_FDDP210435824-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig', 'FD7_5_FDDP210435825-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig', 'FD7_6_FDDP210435826-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig', 'FD9_1_FDDP210435827-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig', 'FD9_2_FDDP210435828-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig', 'FD9_3_FDDP210435829-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig'], dirs: []
+Processing wig file: FD11_FDDP210435830-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD11_FDDP210435830-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD12_FDDP210435831-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD12_FDDP210435831-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD7_1_FDDP210435821-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD7_1_FDDP210435821-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD7_2_FDDP210435822-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD7_2_FDDP210435822-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD7_3_FDDP210435823-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD7_3_FDDP210435823-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD7_4_FDDP210435824-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD7_4_FDDP210435824-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD7_5_FDDP210435825-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD7_5_FDDP210435825-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD7_6_FDDP210435826-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD7_6_FDDP210435826-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD9_1_FDDP210435827-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD9_1_FDDP210435827-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD9_2_FDDP210435828-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD9_2_FDDP210435828-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: FD9_3_FDDP210435829-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_FD/FD9_3_FDDP210435829-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_dnrp, files: ['dnrp1-1_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig', 'dnrp1-1_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig', 'dnrp1-2_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig', 'dnrp1-2_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig'], dirs: []
+Processing wig file: dnrp1-1_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-1_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: dnrp1-1_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-1_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+Processing wig file: dnrp1-2_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-2_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: dnrp1-2_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-2_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_yEK19, files: ['yEK19a_6_FDDP220013497-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK19a_8_FDDP220013499-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK19b_12_FDDP220013501-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK19c_7_FDDP220013502-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK19c_9_FDDP220013503-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig'], dirs: []
+Processing wig file: yEK19a_6_FDDP220013497-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19a_6_FDDP220013497-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19a_8_FDDP220013499-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19a_8_FDDP220013499-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19b_12_FDDP220013501-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19b_12_FDDP220013501-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19c_7_FDDP220013502-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19c_7_FDDP220013502-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19c_9_FDDP220013503-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19c_9_FDDP220013503-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_yEK23, files: ['yEK23a_23_FDDP220013504-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK23a_27_FDDP220013505-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK23a_32_FDDP220013506-2a_HW_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK23b_1_FDDP220013508-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK23b_2_FDDP220013509-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig', 'yEK23c_10_FDDP220013511-2a_HWTTJDSX2_L3_trimmed_forward_notrimmed.sorted.bam.wig'], dirs: []
+Processing wig file: yEK23a_23_FDDP220013504-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK23/yEK23a_23_FDDP220013504-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK23a_27_FDDP220013505-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK23/yEK23a_27_FDDP220013505-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK23a_32_FDDP220013506-2a_HW_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK23/yEK23a_32_FDDP220013506-2a_HW_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK23b_1_FDDP220013508-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK23/yEK23b_1_FDDP220013508-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK23b_2_FDDP220013509-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK23/yEK23b_2_FDDP220013509-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK23c_10_FDDP220013511-2a_HWTTJDSX2_L3_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK23/yEK23c_10_FDDP220013511-2a_HWTTJDSX2_L3_trimmed_forward_notrimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_yTW001, files: ['yTW001_4_FDDP210317595-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig', 'yTW001_6_FDDP210317596-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig'], dirs: []
+Processing wig file: yTW001_4_FDDP210317595-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yTW001/yTW001_4_FDDP210317595-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yTW001_6_FDDP210317596-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yTW001/yTW001_6_FDDP210317596-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_yWT03a, files: ['yWT03a_16_FDDP210317591-2a_L4_trimmed_forward_notrimmed.sorted.bam.wig', 'yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig'], dirs: []
+Processing wig file: yWT03a_16_FDDP210317591-2a_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yWT03a/yWT03a_16_FDDP210317591-2a_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yWT03a/yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_yWT04a, files: ['yWT04a_14_FDDP210317593-2a_H22KNDSX3_L4_trimmed_forward_notrimmed.sorted.bam.wig', 'yWT04a_23_FDDP210317594-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig'], dirs: []
+Processing wig file: yWT04a_14_FDDP210317593-2a_H22KNDSX3_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yWT04a/yWT04a_14_FDDP210317593-2a_H22KNDSX3_L4_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yWT04a_23_FDDP210317594-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yWT04a/yWT04a_23_FDDP210317594-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam.wig
+root: Data/wiggle_format/strain_ylic137, files: ['yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted.bam.wig', 'yLIC137_8_merged_cleaned_forward_reads_trimmed.sorted.bam.wig'], dirs: []
+Processing wig file: yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_ylic137/yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted.bam.wig
+Processing wig file: yLIC137_8_merged_cleaned_forward_reads_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_ylic137/yLIC137_8_merged_cleaned_forward_reads_trimmed.sorted.bam.wig
+Starting density computation from nucleosome distances...
+Loaded nucleosome data for chromosomes: ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+Computing normalization for ChrI
+Computing normalization for ChrII
+Computing normalization for ChrIII
+Computing normalization for ChrIV
+Computing normalization for ChrV
+Computing normalization for ChrVI
+Computing normalization for ChrVII
+Computing normalization for ChrVIII
+Computing normalization for ChrIX
+Computing normalization for ChrX
+Computing normalization for ChrXI
+Computing normalization for ChrXII
+Computing normalization for ChrXIII
+Computing normalization for ChrXIV
+Computing normalization for ChrXV
+Computing normalization for ChrXVI
+Computing normalization for ChrM
+Computing normalization for 2micron
+Found 35 datasets to process
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD11_FDDP210435830-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD12_FDDP210435831-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD7_1_FDDP210435821-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD7_2_FDDP210435822-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD7_3_FDDP210435823-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD7_4_FDDP210435824-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD7_5_FDDP210435825-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD7_6_FDDP210435826-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD9_1_FDDP210435827-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD9_2_FDDP210435828-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_FD/FD9_3_FDDP210435829-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_dnrp/dnrp1-1_merged-DpnII-NlaIII-a_trimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_dnrp/dnrp1-1_merged-DpnII-NlaIII-b_trimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_dnrp/dnrp1-2_merged-DpnII-NlaIII-a_trimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_dnrp/dnrp1-2_merged-DpnII-NlaIII-b_trimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK19/yEK19a_6_FDDP220013497-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK19/yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK19/yEK19a_8_FDDP220013499-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK19/yEK19b_12_FDDP220013501-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK19/yEK19c_7_FDDP220013502-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK19/yEK19c_9_FDDP220013503-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK23/yEK23a_23_FDDP220013504-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK23/yEK23a_27_FDDP220013505-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK23/yEK23a_32_FDDP220013506-2a_HW_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK23/yEK23b_1_FDDP220013508-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK23/yEK23b_2_FDDP220013509-1a_HY_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yEK23/yEK23c_10_FDDP220013511-2a_HWTTJDSX2_L3_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yTW001/yTW001_4_FDDP210317595-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yTW001/yTW001_6_FDDP210317596-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yWT03a/yWT03a_16_FDDP210317591-2a_L4_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yWT03a/yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yWT04a/yWT04a_14_FDDP210317593-2a_H22KNDSX3_L4_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_yWT04a/yWT04a_23_FDDP210317594-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_ylic137/yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted.bam
+Processing ChrI data from ChrI_distances.csv
+Processing ChrII data from ChrII_distances.csv
+Processing ChrIII data from ChrIII_distances.csv
+Processing ChrIV data from ChrIV_distances.csv
+Processing ChrV data from ChrV_distances.csv
+Processing ChrVI data from ChrVI_distances.csv
+Processing ChrVII data from ChrVII_distances.csv
+Processing ChrVIII data from ChrVIII_distances.csv
+Processing ChrIX data from ChrIX_distances.csv
+Processing ChrX data from ChrX_distances.csv
+Processing ChrXI data from ChrXI_distances.csv
+Processing ChrXII data from ChrXII_distances.csv
+Processing ChrXIII data from ChrXIII_distances.csv
+Processing ChrXIV data from ChrXIV_distances.csv
+Processing ChrXV data from ChrXV_distances.csv
+Processing ChrXVI data from ChrXVI_distances.csv
+✓ Completed: strain_ylic137/yLIC137_8_merged_cleaned_forward_reads_trimmed.sorted.bam
+Starting density computation from centromere distances...
+Found 35 datasets to process
+Processing strain: strain_FD, dataset: FD11_FDDP210435830-2a_HWYKKDSX2_L1_trimmed_forward_notrimmed.sorted.bam
