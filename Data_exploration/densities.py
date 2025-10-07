@@ -331,7 +331,7 @@ def density_from_nucleosome(input_folder, output_folder, boolean=False):
     for chrom in chromosome_length.keys():
         print(f"Computing normalization for {chrom}")
         if chrom == "ChrM": continue  # Skip mitochondrial chromosome
-        normalized_counts = nucleosomes.compute_normalization(chrom)
+        normalized_counts = nucleosomes.compute_exposure(chrom)
         nucleosomes_normalization[chrom] = normalized_counts
 
     # Collect all datasets without loading data
@@ -514,6 +514,7 @@ def combine_nucleosome_data(data = "All", boolean=False):
                             if chrom not in combined_dataset:
                                 combined_dataset[chrom] = data
                             else:
+                                pass
                                 
                         # Save combined data
                         combined_file = os.path.join(combined_output_folder, f"{chrom}_combined_Boolean_{boolean}_nucleosome_density.csv")
@@ -528,5 +529,5 @@ def combine_nucleosome_data(data = "All", boolean=False):
 
 if __name__ == "__main__":
     # Example usage:
-    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
-    # combine_nucleosome_data(data="Chromosomes", boolean=True)
+    # density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
+    combine_nucleosome_data(data="Chromosomes", boolean=True)
