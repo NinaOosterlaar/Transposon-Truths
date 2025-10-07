@@ -32,6 +32,9 @@ chromosome_length = {
     "2micron": 6318         # 2-micron plasmid
 }
 
+mean_chrom_length = 754457.5  # average length of the 16 nuclear chromosomes
+
+
 def compute_distances(input_folder, output_folder):
     """For each signal in the SATAY wig file, compute its distance from the nearest nucleosome and centromere.
 
@@ -536,11 +539,18 @@ def _combine_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, pl
 
     os.makedirs(out_dir, exist_ok=True)
 
-    print(f"[debug] Nucleosome: Starting combination with {len(df)} total rows")
-    print(f"[debug] Nucleosome: Group by keys: {group_by}")
-    print(f"[debug] Nucleosome: Unique datasets: {df['dataset'].nunique()}")
     if 'chrom' in df.columns:
         print(f"[debug] Nucleosome: Unique chromosomes: {sorted(df['chrom'].unique())}")
+
+    # # weight each chromosome based on its length
+    # for chrom in chromosome_length:
+    #     if chrom in df['chrom'].values:
+    #         df.loc[df['chrom'] == chrom, 'density'] *= chromosome_length[chrom] / sum(chromosome_length.values())
+    
+    if group_by != ["chrom"]:
+        for chrom in chromosome_length:
+            if chrom in df['chrom'].values:
+                df.loc[df['chrom'] == chrom, 'density'] *= chromosome_length[chrom] / mean_chrom_length
 
     keys = group_by + ["distance"]
     combined = (df.groupby(keys, as_index=False)
@@ -549,20 +559,7 @@ def _combine_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, pl
                        n_datasets  =("density","size")))
     combined["se_density"] = combined["sd_density"] / combined["n_datasets"].clip(lower=1).pow(0.5)
     combined = combined.sort_values(keys)
-    # # 1) average within (dataset, distance, + group keys)
-    # within_keys = group_by + ["dataset", "distance"]
-    # per_ds = df.groupby(within_keys, as_index=False)["density"].mean()
-    
-    # print(f"[debug] Nucleosome: After step 1: {len(per_ds)} rows from {per_ds['dataset'].nunique()} unique datasets")
 
-    # # 2) average across datasets for each group+distance
-    # across_keys = group_by + ["distance"]
-    # combined = (per_ds.groupby(across_keys, as_index=False)
-    #                   .agg(mean_density=("density","mean"),
-    #                        sd_density  =("density","std"),
-    #                        n_datasets  =("density","size")))
-    # combined["se_density"] = combined["sd_density"] / combined["n_datasets"].clip(lower=1).pow(0.5)
-    # combined = combined.sort_values(across_keys)
     
     print(f"[debug] Nucleosome: After step 2: {len(combined)} rows, max n_datasets = {combined['n_datasets'].max()}")
 
@@ -841,7 +838,7 @@ if __name__ == "__main__":
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=1000, boolean=True)
     
     # # Generate nucleosome densities:
-    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
+    # density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
     
     # Combine nucleosome data:
     combine_nucleosome_data(data="All", boolean=True, plot=True)
