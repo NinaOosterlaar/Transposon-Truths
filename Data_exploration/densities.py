@@ -1,3 +1,4 @@
+import json
 import os 
 import numpy as np 
 import pandas as pd 
@@ -112,7 +113,7 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
     dataset_output_folder = os.path.join(strain_output_folder, dataset_name)
     os.makedirs(dataset_output_folder, exist_ok=True)
     
-    print(f"Processing strain: {strain_name}, dataset: {dataset_name}")
+    print(f"Processing strain: {strain_name}")
     
     # Load only one dataset's data
     dataset_data = {}
@@ -125,9 +126,13 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
     
     # Process each chromosome in this dataset
     for chrom in dataset_data:
-        if chrom == "chrM": continue  # Skip mitochondrial chromosome
+        if chrom == "ChrM": continue  # Skip mitochondrial chromosome
+        print(chrom)
             
         df = dataset_data[chrom]
+        print(df.head())
+        
+        print(f"max distance: {max_distance_global}, min distance: {min_distance_global}")
 
         if max_distance_global is not None:
             max_distance = max_distance_global
@@ -137,9 +142,11 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
             min_distance = min_distance_global
         else:
             min_distance = df['Centromere_Distance'].min()
+            
+        print(f"max_distance: {max_distance}, min_distance: {min_distance}")
 
 
-        bins = np.arange(min_distance, max_distance + bin, bin)
+        bins = np.arange(min_distance - bin, max_distance + bin, bin)
         df['Distance_Bin'] = pd.cut(df['Centromere_Distance'], bins=bins, right=False)
 
         if boolean:
@@ -186,19 +193,16 @@ def create_individual_chromosome_plots(strain_name, dataset_name, dataset_output
         
         density = pd.read_csv(density_file)
         
-        # Filter out values > 1000 (outliers)
-        density_filtered = density[density['Density_per_bp'] <= 1000]
-        
-        if density_filtered.empty:
-            print(f"No valid data for {chrom} after filtering")
+        if density.empty:
+            print(f"No valid data for {chrom} after reading CSV")
             continue
         
         # Create individual plot for this chromosome
         fig, ax = plt.subplots(1, 1, figsize=(12, 6))
         
-        # Create clean histogram/bar plot
-        x_values = density_filtered['Bin_Center']
-        y_values = density_filtered['Density_per_bp']
+        # Extract x and y values from the density data
+        x_values = density['Bin_Center']
+        y_values = density['Density_per_bp']
         
         # Create bar plot with proper width
         bar_width = bin * 0.8  # Make bars slightly smaller than bin size for cleaner look
@@ -221,16 +225,25 @@ def create_individual_chromosome_plots(strain_name, dataset_name, dataset_output
         ax.grid(True, alpha=0.3, axis='y')
         ax.set_axisbelow(True)
         
-        # Format x-axis
+        # Format x-axis (now handling negative to positive range)
+        min_distance = x_values.min()
         max_distance = x_values.max()
-        if max_distance > 10000:
-            # Show fewer ticks for large distances
-            tick_interval = int(max_distance / 8)  # About 8 ticks
+        distance_range = max_distance - min_distance
+        
+        if distance_range > 10000:
+            # Show fewer ticks for large ranges
+            tick_interval = int(distance_range / 8)  # About 8 ticks
             tick_interval = (tick_interval // 1000) * 1000  # Round to nearest 1000
             if tick_interval == 0:
                 tick_interval = 1000
-            ax.set_xticks(np.arange(0, max_distance + tick_interval, tick_interval))
+            # Create ticks that span from min to max distance
+            tick_start = int(min_distance // tick_interval) * tick_interval
+            tick_end = int(max_distance // tick_interval + 1) * tick_interval
+            ax.set_xticks(np.arange(tick_start, tick_end + tick_interval, tick_interval))
             ax.tick_params(axis='x', rotation=45)
+        
+        # Add vertical line at x=0 (centromere position)
+        ax.axvline(x=0, color='red', linestyle='-', alpha=0.8, linewidth=2, label='Centromere')
         
         # Set y-axis to start from 0
         ax.set_ylim(bottom=0)
@@ -268,7 +281,7 @@ def create_dataset_plot(strain_name, dataset_name, dataset_output_folder, boolea
     create_individual_chromosome_plots(strain_name, dataset_name, dataset_output_folder, boolean, bin)
 
 
-def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_global=None, boolean=False):
+def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_global=None, min_distance_global=None, boolean=False):
     """Memory-efficient version that processes one dataset at a time.
     
     Args:
@@ -297,7 +310,7 @@ def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_
     # Process each dataset individually
     for strain_name, dataset_path, dataset_name in datasets_to_process:
         process_single_dataset_centromere(strain_name, dataset_path, dataset_name, output_folder, 
-                                bin, max_distance_global, boolean)
+                                bin, max_distance_global, min_distance_global, boolean)
         print(f"✓ Completed: {strain_name}/{dataset_name}")
 
 
@@ -385,7 +398,6 @@ def process_single_dataset_nucleosome(strain_name, dataset_path, dataset_name, o
         for distance in counts[chrom]:
             if distance in nucleosomes_normalization[chrom]:
                 counts[chrom][distance] /= nucleosomes_normalization[chrom][distance]
-                counts[chrom][distance] /= chromosome_length[chrom]
             else:
                 counts[chrom][distance] = 0  
 
@@ -399,6 +411,7 @@ def process_single_dataset_nucleosome(strain_name, dataset_path, dataset_name, o
 
     # Clear counts from memory
     del counts
+
 
 def create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chrom, counts, boolean):
     """Create a plot for nucleosome distance density for a single chromosome.
@@ -419,7 +432,7 @@ def create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chr
     poly = np.poly1d(coeffs)
     x_fit = np.linspace(distances.min(), distances.max(), 500)
     y_fit = poly(x_fit)
-    ax.plot(x_fit, y_fit, color='orange', linewidth=2, label='Fitted Polynomial (deg=5)')
+    ax.plot(x_fit, y_fit, color='orange', linewidth=2, label='Fitted Polynomial (deg=3)')
     
     # Add the polynomial equation to the plot (simplified for readability)
     equation_text = f"y = {coeffs[0]:.2e}x³ + {coeffs[1]:.2e}x² + {coeffs[2]:.2e}x + {coeffs[3]:.2e}"
@@ -467,43 +480,49 @@ def create_nucleosome_plot(strain_name, dataset_name, dataset_output_folder, chr
     
     plt.close(fig)
 
-# compute_distances("Data/wiggle_format", "Data_exploration/results/distances")
 
-# def fit_data_to_GAM(input_folder, output_folder): # Work in Progress
-#     """Fit the distance data to a Generalized Additive Model (GAM) and save the results.
+def combine_nucleosome_data(data = "All", boolean=False):
+    """Combine nucleosome density data across all strains and datasets for a given chromosome.
+    
+    Args:
+        data (str): Specifies which data to combine. 
+            "All" combines all strains and datasets.
+            "Chromosomes" combines all the same chromosome across strains and datasets.
+            "Strains" combines all datasets within the same strain.
+            "Datasets" combines all strains for the same dataset.
+        boolean (bool): If True, combine presence/absence density data instead of counts.
+    """
+    base_folder = "Data_exploration/results/densities/nucleosome"
+    combined_output_folder = os.path.join(base_folder, f"combined_{data}_Boolean_{boolean}")
+    os.makedirs(combined_output_folder, exist_ok=True)
 
-#     Args:
-#         input_folder (str): Path to the folder containing distance CSV files (including subfolders).
-#         output_folder (str): Path to the folder where the output CSV files will be saved.
-#     """
-#     files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.endswith(".csv")]
-#     data = {}
-#     for file in files:
-#         chrom = file.split("/")[-1].split("_")[0]
-#         print(f"Fitting GAM for chromosome: {chrom} from file: {file}")
-#         data[chrom] = pd.read_csv(file)
-
-#     for chrom, df in data.items():
-#         # Fit a GAM model to the data
-#         print(f"Fitting GAM for chromosome: {chrom}")
-#         x_spline = df[['Nucleosome_Distance', 'Centromere_Distance']]
-#         bs = BSplines(x_spline, df=[10, 10], degree=[3, 3])
-#         gam = GLMGam.from_formula("Value ~ 1", data=df, smoother = bs, family=sm.families.NegativeBinomial())
-#         gam_results = gam.fit()
-
-#         # Save the GAM results
-#         output_file = os.path.join(output_folder, f"{chrom}_gam_results.csv")
-#         with open(output_file, "w") as f:
-#             f.write(gam_results.summary().as_text())
+    # Combine data logic goes here
+    if data == "All":
+        # Combine all strains and datasets
+        pass
+    elif data == "Chromosomes":
+        # Combine all the same chromosome across strains and datasets
+        combined_dataset = {}
+        for chrom in chromosome_length.keys():
+            for root, dir, files in os.walk(base_folder):
+                for file in files:
+                    if file.endswith(f"{chrom}_Boolean:{boolean}_nucleosome_density.csv"):
+                        file_path = os.path.join(root, file)
+                        with open(file_path, 'r') as f:
+                            data = pd.read_csv(f)
+                            # Combine the data as needed
+                        # Save combined data
+                        combined_file = os.path.join(combined_output_folder, f"{chrom}_combined_Boolean_{boolean}_nucleosome_density.csv")
+                        # data.to_csv(combined_file, index=False)  # Uncomment and implement actual combining logic
+    elif data == "Strains":
+        # Combine all datasets within the same strain
+        pass
+    elif data == "Datasets":
+        # Combine all strains for the same dataset
+        pass
 
 
 if __name__ == "__main__":
     # Example usage:
-    print("Starting distance computation...")
-    compute_distances("Data/wiggle_format", "Data_exploration/results/distances_new")
-    print("Starting density computation from nucleosome distances...")
-    density_from_nucleosome("Data_exploration/results/distances_new", "Data_exploration/results/densities/nucleosome", boolean=True)
-    print("Starting density computation from centromere distances...")
-    density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin=1000, boolean=True)
-    density_from_centromere("Data_exploration/results/distances_new", "Data_exploration/results/densities/centromere", bin=1000, boolean=False)
+    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
     
