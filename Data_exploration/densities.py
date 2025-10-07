@@ -162,7 +162,7 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
         density['Bin_Center'] = density['Distance_Bin'].apply(lambda x: x.left + bin / 2)
         
         # Debug: print some bin centers to verify alignment
-        if chrom == "ChrI":  # Only print for one chromosome to avoid spam
+        if chrom != "ChrM":  # Only print for one chromosome to avoid spam
             print(f"[debug] {strain_name}/{dataset_name} bin centers around 0: {sorted(density['Bin_Center'].values)[:10]}")
         density['Density_per_bp'] = density['Value'] / (bin)
         
@@ -401,10 +401,14 @@ def process_single_dataset_nucleosome(strain_name, dataset_path, dataset_name, o
         
         
         for distance in counts[chrom]:
+            distance = int(distance)
             if distance in nucleosomes_normalization[chrom]:
                 counts[chrom][distance] /= nucleosomes_normalization[chrom][distance]
             else:
-                counts[chrom][distance] = 0  
+                del counts[chrom][distance]
+        for distance in nucleosomes_normalization[chrom]:
+            if distance not in counts[chrom]:
+                counts[chrom][distance] = 0
 
         # Save the processed counts to a CSV file
         output_file = os.path.join(dataset_output_folder, f"{chrom}_Boolean:_{boolean}_nucleosome_density.csv")
@@ -588,7 +592,9 @@ def _combine_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, pl
             ax.set_ylabel("Density")
             ax.set_title(f"Combined nucleosome density — {label}")
             ax.legend(loc="best")
-            ax.grid(True, alpha=0.3)
+            ax.grid(True, which='both', axis='both', alpha=0.4, linestyle='--')
+            ax.minorticks_on()  # enable minor ticks on both axes
+
             fig.tight_layout()
 
             out_png = os.path.join(out_dir, f"{label}_combined_{tag}.png")
@@ -834,15 +840,16 @@ if __name__ == "__main__":
     # Generate centromere densities with specific bin size:
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=1000, boolean=True)
     
-    # Generate nucleosome densities:
-    # density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
+    # # Generate nucleosome densities:
+    density_from_nucleosome("Data_exploration/results/distances", "Data_exploration/results/densities/nucleosome", boolean=True)
     
     # Combine nucleosome data:
-    # combine_nucleosome_data(data="All", boolean=True, plot=True)
+    combine_nucleosome_data(data="All", boolean=True, plot=True)
+    combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
     # bin_size = 10000
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=bin_size, boolean=True)
     # combine_centromere_data(mode="All", boolean=True, bin_size=bin_size, plot=True)
     # combine_centromere_data(mode="Chromosomes", boolean=True, bin_size=bin_size, plot=True)
-    pass
+    

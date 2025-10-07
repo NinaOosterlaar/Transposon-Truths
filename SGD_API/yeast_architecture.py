@@ -248,7 +248,10 @@ class Nucleosomes:
             dict: Dictionary with distances as keys and their exposure frequency as values
         """
         if os.path.exists(f"SGD_API/nucleosome_data/{chrom}_exposure.json"):
-            return json.load(open(f"SGD_API/nucleosome_data/{chrom}_exposure.json", 'r'))
+            temp = json.load(open(f"SGD_API/nucleosome_data/{chrom}_exposure.json", 'r'))
+            # Make sure keys are integers
+            temp = {int(k): v for k, v in temp.items()}
+            return temp
         else:
             nucleosome_count = self.count_nucleosomes(chrom)
             if nucleosome_count == 0: return {}
