@@ -2,6 +2,7 @@
 #SBATCH --job-name=distances
 #SBATCH --account=ewi-insy-prb
 #SBATCH --partition=general,insy
+#SBATCH --qos=medium 
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
