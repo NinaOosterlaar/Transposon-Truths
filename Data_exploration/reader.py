@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
-import os
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 import re
-import matplotlib.pyplot as plt
-import seaborn as sns  
+from tqdm import tqdm 
+from SGD_API.yeast_architecture import Nucleosomes, Centromeres
 
 chromosome_mapper = {
     "chrref|NC_001133|": "chrI",
@@ -23,6 +24,27 @@ chromosome_mapper = {
     "chrref|NC_001147|": "chrXV",
     "chrref|NC_001148|": "chrXVI",
     "chrref|NC_001224|": "chrM",
+}
+
+chromosome_length = {
+    "ChrI": 230218,
+    "ChrII": 813184,
+    "ChrIII": 316620,
+    "ChrIV": 1531933,
+    "ChrV": 576874,
+    "ChrVI": 270161,
+    "ChrVII": 1090940,
+    "ChrVIII": 562643,
+    "ChrIX": 439888,
+    "ChrX": 745751,
+    "ChrXI": 666816,
+    "ChrXII": 1078171,
+    "ChrXIII": 924431,
+    "ChrXIV": 784333,
+    "ChrXV": 1091291,
+    "ChrXVI": 948066,
+    "ChrM": 85779,          # mitochondrial genome (approx for S288C)
+    "2micron": 6318         # 2-micron plasmid
 }
 
 def read_wig(file_path):
@@ -109,9 +131,126 @@ def label_from_filename(fname: str) -> str:
 
     # fallback: keep head
     return head
-        
+
+
+def compute_distances(input_folder, output_folder, with_zeros = True):
+    """For each signal in the SATAY wig file, compute its distance from the nearest nucleosome and centromere.
+
+    Args:
+        input_folder (str): Path to the folder containing SATAY wig files (including subfolders).
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+    """
+
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    nucleosome_obj = Nucleosomes()
+    centromere_obj = Centromeres()
+    
+    for root, dirs, files in os.walk(input_folder):
+        for wig_file in files:
+            if not wig_file.endswith(".wig"): continue
+            
+            print(f"Processing wig file: {wig_file}")
+            
+            relative_path = os.path.relpath(root, input_folder)
+            
+            # Create an output folder structure that mirrors the input structure
+            if relative_path == ".": wig_output_folder = os.path.join(output_folder, wig_file.replace(".wig", ""))
+            else: wig_output_folder = os.path.join(output_folder, relative_path, wig_file.replace(".wig", ""))
+
+            os.makedirs(wig_output_folder, exist_ok=True)
+
+            # Read the wig file
+            wig_file_path = os.path.join(root, wig_file)
+            print(f"Processing wig file: {wig_file_path}")
+            wig_data = read_wig(wig_file_path)
+
+            for i, chrom in tqdm(enumerate(wig_data), total=len(wig_data)):
+                df = wig_data[chrom]
+                if df.empty:
+                    print(f"No data for {chrom} in {wig_file}. Skipping.")
+                    continue
+                # Initialize lists to store distances
+                distances = []
+                
+                for _, row in df.iterrows():
+                    position = int(row['Position'])
+                    value = row['Value']
+
+                    # Compute distance to nearest nucleosome
+                    nucleosome_distance = nucleosome_obj.compute_distance(chrom, position)
+                    centromere_distance = centromere_obj.compute_distance(chrom, position)
+                    distances.append({
+                        'Position': position,
+                        'Value': value,
+                        'Nucleosome_Distance': nucleosome_distance,
+                        'Centromere_Distance': centromere_distance
+                    })
+                    
+                if with_zeros:
+                    for i in range(1, chromosome_length[chrom] + 1):
+                        if i not in df['Position'].values:
+                            nucleosome_distance = nucleosome_obj.compute_distance(chrom, i)
+                            centromere_distance = centromere_obj.compute_distance(chrom, i)
+                            distances.append({
+                                'Position': i,
+                                'Value': 0,
+                                'Nucleosome_Distance': nucleosome_distance,
+                                'Centromere_Distance': centromere_distance
+                            })
+                # Sort by Position
+                distances = sorted(distances, key=lambda x: x['Position'])
+                    
+                # Convert to DataFrame
+                distances_df = pd.DataFrame(distances)
+
+                # Save each chromosome to its own file
+                output_file = os.path.join(wig_output_folder, f"{chrom}_distances.csv")
+                distances_df.to_csv(output_file, index=False)
+
+
+def read_csv_file_with_distances(input_folder = "Data_exploration/results/distances"):
+    """
+    Reads CSV files from the input folder and organizes them into a nested dictionary structure.
+    Parameters:
+    input_folder : str
+        Path to the folder containing CSV files.
+    Returns:
+    datasets : dict
+        A dictionary where keys are dataset labels and values are dictionaries of chromosomes with their corresponding DataFrames.
+    """
+    # Collect all datasets without loading data
+    datasets_paths = []
+    
+    for root, dirs, files in os.walk(input_folder):
+        csv_files = [f for f in files if f.endswith(".csv")]
+        if csv_files:  # Only process folders that contain CSV files
+            path_parts = root.split("/")
+            strain_name = path_parts[-2] if len(path_parts) >= 2 else "unknown_strain"
+            dataset_name = path_parts[-1]
+            datasets_paths.append((strain_name, root, dataset_name))
+    
+    datasets = {}
+    for strain_name, dataset_path, dataset_name in datasets_paths:
+        genome = {}
+        for file in os.listdir(dataset_path):
+            if file.endswith(".csv"):
+                file_path = os.path.join(dataset_path, file)
+                df = pd.read_csv(file_path)
+                chrom = file_path.split("/")[-1].split("_")[0]  # Extract chromosome from filename
+                if chrom == "ChrM": continue
+                genome[chrom] = df
+                datasets_key = f"{label_from_filename(dataset_name)}"
+                datasets[datasets_key] = genome
+    return datasets
+
+
+    
+
 
 if __name__ == "__main__":
 # Example of showing counts for a specific region
     # show_counts_part_chromosome("Data/E-MTAB-14476/FD7_1_FDDP210435821-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig", "chrI", 10000, 20000)  # Change as needed
-    pass 
+    # datasets = read_csv_file_with_distances("Data_exploration/results/distances")
+    compute_distances("Data/wiggle_format", "Data_exploration/results/distances_with_zeros", with_zeros=True)

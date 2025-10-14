@@ -4,9 +4,8 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt 
 import os, sys
-from tqdm import tqdm 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from SGD_API.yeast_architecture import Centromeres, Nucleosomes
+from SGD_API.yeast_architecture import Nucleosomes
 from reader import read_wig
 # import statsmodels.api as sm
 # from statsmodels.gam.api import GLMGam, BSplines
@@ -34,68 +33,6 @@ chromosome_length = {
 
 mean_chrom_length = 754457.5  # average length of the 16 nuclear chromosomes
 
-
-def compute_distances(input_folder, output_folder):
-    """For each signal in the SATAY wig file, compute its distance from the nearest nucleosome and centromere.
-
-    Args:
-        input_folder (str): Path to the folder containing SATAY wig files (including subfolders).
-        output_folder (str): Path to the folder where the output CSV files will be saved.
-    """
-
-    # Create output folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)
-
-    nucleosome_obj = Nucleosomes()
-    centromere_obj = Centromeres()
-    
-    for root, dirs, files in os.walk(input_folder):
-        for wig_file in files:
-            if not wig_file.endswith(".wig"): continue
-            
-            print(f"Processing wig file: {wig_file}")
-            
-            relative_path = os.path.relpath(root, input_folder)
-            
-            # Create an output folder structure that mirrors the input structure
-            if relative_path == ".": wig_output_folder = os.path.join(output_folder, wig_file.replace(".wig", ""))
-            else: wig_output_folder = os.path.join(output_folder, relative_path, wig_file.replace(".wig", ""))
-
-            os.makedirs(wig_output_folder, exist_ok=True)
-
-            # Read the wig file
-            wig_file_path = os.path.join(root, wig_file)
-            print(f"Processing wig file: {wig_file_path}")
-            wig_data = read_wig(wig_file_path)
-
-            for i, chrom in tqdm(enumerate(wig_data), total=len(wig_data)):
-                df = wig_data[chrom]
-                if df.empty:
-                    print(f"No data for {chrom} in {wig_file}. Skipping.")
-                    continue
-                # Initialize lists to store distances
-                distances = []
-
-                for _, row in df.iterrows():
-                    position = int(row['Position'])
-                    value = row['Value']
-
-                    # Compute distance to nearest nucleosome
-                    nucleosome_distance = nucleosome_obj.compute_distance(chrom, position)
-                    centromere_distance = centromere_obj.compute_distance(chrom, position)
-                    distances.append({
-                        'Position': position,
-                        'Value': value,
-                        'Nucleosome_Distance': nucleosome_distance,
-                        'Centromere_Distance': centromere_distance
-                    })
-                    
-                # Convert to DataFrame
-                distances_df = pd.DataFrame(distances)
-
-                # Save each chromosome to its own file
-                output_file = os.path.join(wig_output_folder, f"{chrom}_distances.csv")
-                distances_df.to_csv(output_file, index=False)
 
 
 def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, min_distance_global=None, boolean=False):
@@ -129,6 +66,8 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
     # Process each chromosome in this dataset
     for chrom in dataset_data:
         if chrom == "ChrM": continue  # Skip mitochondrial chromosome
+        if chrom == "ChrXV":
+            dataset_data[chrom].loc[dataset_data[chrom]['Position'] == 565392, 'Value'] = 0
             
         df = dataset_data[chrom]
 
@@ -169,8 +108,6 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
             print(f"[debug] {strain_name}/{dataset_name} bin centers around 0: {sorted(density['Bin_Center'].values)[:10]}")
         density['Density_per_bp'] = density['Value'] / (bin)
         
-        # Filter out outlier values > 1000
-        density = density[density['Density_per_bp'] <= 1000]
         
         if density.empty:
             print(f"No valid density data for {chrom} in {strain_name}/{dataset_name} after filtering outliers. Skipping.")
@@ -184,7 +121,7 @@ def process_single_dataset_centromere(strain_name, dataset_path, dataset_name, o
     del dataset_data
     
     # Create plot for this dataset
-    create_dataset_plot(strain_name, dataset_name, dataset_output_folder, boolean, bin)
+    create_individual_chromosome_plots(strain_name, dataset_name, dataset_output_folder, boolean, bin)
 
 
 def create_individual_chromosome_plots(strain_name, dataset_name, dataset_output_folder, boolean, bin=100):
@@ -284,11 +221,6 @@ def create_individual_chromosome_plots(strain_name, dataset_name, dataset_output
             print(f"✗ Error saving plot for {chrom}: {e}")
         
         plt.close()  # Important: close figure to free memory
-
-
-def create_dataset_plot(strain_name, dataset_name, dataset_output_folder, boolean, bin=100):
-    """Create plots for a single dataset - now creates individual chromosome plots."""
-    create_individual_chromosome_plots(strain_name, dataset_name, dataset_output_folder, boolean, bin)
 
 
 def density_from_centromere(input_folder, output_folder, bin=1000, max_distance_global=None, min_distance_global=None, boolean=False):
@@ -393,8 +325,8 @@ def process_single_dataset_nucleosome(strain_name, dataset_path, dataset_name, o
                 value = 1 
             else: 
                 value = item['Value']
-                # Search if a value is larger than 1000 and set it to 0
-                if value > 1000:
+                # Change the value of position 565392 in chromosome XV to 0
+                if chrom == "ChrXV" and item['Position'] == 565392:
                     value = 0
             nucleosome_distance = item['Nucleosome_Distance']
             if nucleosome_distance in counts[chrom]:
@@ -546,7 +478,7 @@ def _combine_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, pl
     # for chrom in chromosome_length:
     #     if chrom in df['chrom'].values:
     #         df.loc[df['chrom'] == chrom, 'density'] *= chromosome_length[chrom] / sum(chromosome_length.values())
-    
+
     if group_by != ["chrom"]:
         for chrom in chromosome_length:
             if chrom in df['chrom'].values:
@@ -581,9 +513,9 @@ def _combine_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, pl
             # main line
             ax.plot(sub["distance"], sub["mean_density"], label="Mean density")
             # ribbon: ±1 SE
-            lo = sub["mean_density"] - sub["se_density"].fillna(0)
-            hi = sub["mean_density"] + sub["se_density"].fillna(0)
-            ax.fill_between(sub["distance"], lo, hi, alpha=0.2, label="±1 SE")
+            # lo = sub["mean_density"] - sub["se_density"].fillna(0)
+            # hi = sub["mean_density"] + sub["se_density"].fillna(0)
+            # ax.fill_between(sub["distance"], lo, hi, alpha=0.2, label="±1 SE")
 
             ax.set_xlabel("Distance from nucleosome (bp)")
             ax.set_ylabel("Density")
@@ -703,7 +635,7 @@ def _load_cen_density_tables(base_folder: str, boolean: bool = None, bin_size: i
 
 
 # ---------- 2) Combiner: unweighted mean ± SE, optional plotting ----------
-def _combine_cen_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, plot: bool):
+def _combine_cen_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, plot: bool, bin_size: int):
     """
     Unweighted means across datasets per Bin_Center (no exposure weighting).
     Writes one CSV (and PNG if plot=True) per group.
@@ -761,24 +693,31 @@ def _combine_cen_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str
         out_csv = os.path.join(out_dir, f"{label}_combined_{tag}.csv")
         sub.to_csv(out_csv, index=False)
         print(f"[write] {out_csv}  (max N={sub['n_datasets'].max()})")
+        
+        if not plot:
+            continue
+        
+        sub_filtered = sub[sub["mean_density"] > 0]
 
-        if plot:
-            sub_sorted = sub.sort_values("Bin_Center").copy()
+        if len(sub_filtered) > 0:
+            sub_sorted = sub_filtered.sort_values("Bin_Center").copy()
             fig, ax = plt.subplots(figsize=(7,4))
             ax.plot(sub_sorted["Bin_Center"], sub_sorted["mean_density"], label="Mean density")
-            lo = sub_sorted["mean_density"] - sub_sorted["se_density"].fillna(0)
-            hi = sub_sorted["mean_density"] + sub_sorted["se_density"].fillna(0)
-            ax.fill_between(sub_sorted["Bin_Center"], lo, hi, alpha=0.2, label="±1 SE")
+            # lo = sub_sorted["mean_density"] - sub_sorted["se_density"].fillna(0)
+            # hi = sub_sorted["mean_density"] + sub_sorted["se_density"].fillna(0)
+            # ax.fill_between(sub_sorted["Bin_Center"], lo, hi, alpha=0.2, label="±1 SE")
             ax.axvline(0, linestyle="--", linewidth=1, color="red", alpha=0.7, label="Centromere")
-            ax.set_xlabel("Signed distance from centromere (bp)")
-            ax.set_ylabel("Density (per bp)")
-            ax.set_title(f"Centromere meta-curve — {label}")
-            ax.legend(loc="best")
+            ax.set_xlabel("Distance from centromere (bp)")
+            ax.set_ylabel("Transposon Insertion Rate")
+            ax.set_title(f"Centromere bias — {label}, Bin:{bin_size}")
+            # ax.legend(loc="best")
             ax.grid(True, alpha=0.3)
             fig.tight_layout()
             out_png = os.path.join(out_dir, f"{label}_combined_{tag}.png")
             fig.savefig(out_png, dpi=150)
             plt.close(fig)
+        else:
+            print(f"[warning] No non-zero data points for {label}, skipping plot")
 
 
 # ---------- 3) Public API ----------
@@ -821,13 +760,13 @@ def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True):
     tag = "_".join(tag_parts)
 
     if mode == "All":
-        _combine_cen_curves(df, group_by=[], out_dir=out_dir, tag=tag, plot=plot)
+        _combine_cen_curves(df, group_by=[], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size)
     elif mode == "Chromosomes":
-        _combine_cen_curves(df, group_by=["chrom"], out_dir=out_dir, tag=tag, plot=plot)
+        _combine_cen_curves(df, group_by=["chrom"], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size)
     elif mode == "Strains":
-        _combine_cen_curves(df, group_by=["strain"], out_dir=out_dir, tag=tag, plot=plot)
+        _combine_cen_curves(df, group_by=["strain"], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size)
     elif mode == "Datasets":
-        _combine_cen_curves(df, group_by=["dataset"], out_dir=out_dir, tag=tag, plot=plot)
+        _combine_cen_curves(df, group_by=["dataset"], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size)
     else:
         raise ValueError("mode must be one of: 'All', 'Chromosomes', 'Strains', 'Datasets'")
 
@@ -842,11 +781,11 @@ if __name__ == "__main__":
     
     # Combine nucleosome data:
     combine_nucleosome_data(data="All", boolean=True, plot=True)
-    combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
+    # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
-    # bin_size = 10000
+    bin_size = 10000
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=bin_size, boolean=True)
-    # combine_centromere_data(mode="All", boolean=True, bin_size=bin_size, plot=True)
+    combine_centromere_data(mode="All", boolean=True, bin_size=bin_size, plot=True)
     # combine_centromere_data(mode="Chromosomes", boolean=True, bin_size=bin_size, plot=True)
     
