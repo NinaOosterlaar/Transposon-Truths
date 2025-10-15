@@ -3,6 +3,7 @@ import pandas as pd
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 import re
+import argparse
 from tqdm import tqdm 
 from SGD_API.yeast_architecture import Nucleosomes, Centromeres
 
@@ -249,8 +250,44 @@ def read_csv_file_with_distances(input_folder = "Data_exploration/results/distan
     
 
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Process SATAY wig files and compute distances to nucleosomes and centromeres."
+    )
+    
+    parser.add_argument(
+        "--input_dir", 
+        type=str, 
+        required=True,
+        help="Path to the folder containing SATAY wig files (including subfolders)"
+    )
+    
+    parser.add_argument(
+        "--output_dir", 
+        type=str, 
+        default="Data_exploration/results/distances_with_zeros",
+        help="Path to the folder where the output CSV files will be saved (default: Data_exploration/results/distances_with_zeros)"
+    )
+    
+    parser.add_argument(
+        "--with_zeros", 
+        action="store_true",
+        help="Include positions with zero values in the output"
+    )
+    
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-# Example of showing counts for a specific region
+    args = parse_arguments()
+    
+    # Example of showing counts for a specific region
     # show_counts_part_chromosome("Data/E-MTAB-14476/FD7_1_FDDP210435821-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig", "chrI", 10000, 20000)  # Change as needed
     # datasets = read_csv_file_with_distances("Data_exploration/results/distances")
-    compute_distances("Data/wiggle_format", "Data_exploration/results/distances_with_zeros", with_zeros=True)
+    
+    compute_distances(
+        input_folder=args.input_dir, 
+        output_folder=args.output_dir, 
+        with_zeros=args.with_zeros
+    )

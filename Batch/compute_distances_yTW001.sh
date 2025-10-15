@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=distances
+#SBATCH --job-name=distances_yTW001
 #SBATCH --account=ewi-insy-prb
 #SBATCH --partition=general,insy
 #SBATCH --qos=medium 
-#SBATCH --time=24:00:00
+#SBATCH --time=08:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
@@ -22,4 +22,4 @@ conda activate env
 
 cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
-srun python Data_exploration/reader.py
+srun python Data_exploration/reader.py --input_dir Data/wiggle_format/strain_yTW001 --output_dir Data_exploration/results/distances_with_zeros --with_zeros
