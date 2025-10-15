@@ -22,4 +22,4 @@ conda activate env
 
 cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
-srun python Data_exploration/reader.py --input_dir Data/wiggle_format/strain_yTW04a --output_dir Data_exploration/results/distances_with_zeros --with_zeros
+srun python Data_exploration/reader.py --input_dir Data/wiggle_format/strain_yWT04a --output_dir Data_exploration/results/distances_with_zeros --with_zeros

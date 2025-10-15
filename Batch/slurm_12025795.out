@@ -1,5 +1,0 @@
-Loaded nucleosome data for chromosomes: ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
-Processing wig file: yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted.bam.wig
-Processing wig file: Data/wiggle_format/strain_ylic137/yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted.bam.wig
-Processing wig file: yLIC137_8_merged_cleaned_forward_reads_trimmed.sorted.bam.wig
-Processing wig file: Data/wiggle_format/strain_ylic137/yLIC137_8_merged_cleaned_forward_reads_trimmed.sorted.bam.wig

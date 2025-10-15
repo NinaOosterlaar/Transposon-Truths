@@ -1,5 +1,0 @@
-Loaded nucleosome data for chromosomes: ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
-Processing wig file: yWT03a_16_FDDP210317591-2a_L4_trimmed_forward_notrimmed.sorted.bam.wig
-Processing wig file: Data/wiggle_format/strain_yWT03a/yWT03a_16_FDDP210317591-2a_L4_trimmed_forward_notrimmed.sorted.bam.wig
-Processing wig file: yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
-Processing wig file: Data/wiggle_format/strain_yWT03a/yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted.bam.wig
