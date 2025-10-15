@@ -1,0 +1,9 @@
+Loaded nucleosome data for chromosomes: ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+Processing wig file: dnrp1-1_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-1_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: dnrp1-1_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-1_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+Processing wig file: dnrp1-2_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-2_merged-DpnII-NlaIII-a_trimmed.sorted.bam.wig
+Processing wig file: dnrp1-2_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_dnrp/dnrp1-2_merged-DpnII-NlaIII-b_trimmed.sorted.bam.wig

@@ -1,0 +1,13 @@
+Loaded nucleosome data for chromosomes: ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+Processing wig file: yEK19a_6_FDDP220013497-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19a_6_FDDP220013497-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19a_8_FDDP220013499-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19a_8_FDDP220013499-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19b_12_FDDP220013501-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19b_12_FDDP220013501-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19c_7_FDDP220013502-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19c_7_FDDP220013502-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: yEK19c_9_FDDP220013503-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
+Processing wig file: Data/wiggle_format/strain_yEK19/yEK19c_9_FDDP220013503-1a_HY_trimmed_forward_notrimmed.sorted.bam.wig
