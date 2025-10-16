@@ -366,6 +366,7 @@ def parse_args():
     p.add_argument("--piecewise", action="store_true", help="Enable piecewise split at threshold (reference coding unless --separate).")
     p.add_argument("--separate", action="store_true", help="Use fully separate Low/High (requires --piecewise).")
     p.add_argument("--degree", type=int, default=3, choices=[1,2,3], help="Polynomial degree (max 3).")
+    return p.parse_args()
 
 
 # =========================
