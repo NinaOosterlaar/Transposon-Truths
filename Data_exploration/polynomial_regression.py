@@ -376,7 +376,7 @@ if __name__ == "__main__":
     args = parse_args()
     # Example 1: per-dataset, fully separate Low/High (your requested mode)
     regression_results = perform_regression_on_datasets(
-        input_folder="Data_exploration/results/test_dataset",
+        input_folder="Data_exploration/results/distances_with_zeros",
         range_bp=None,
         combine_all=False,
         piecewise=args.piecewise,
@@ -391,7 +391,7 @@ if __name__ == "__main__":
 
     # Example 2 (optional): combined, reference coding (shared baseline + High tweaks)
     combined_results = perform_regression_on_datasets(
-        input_folder="Data_exploration/results/test_dataset",
+        input_folder="Data_exploration/results/distances_with_zeros",
         range_bp=None,
         combine_all=True,
         piecewise=True,
@@ -404,7 +404,7 @@ if __name__ == "__main__":
     )
 
     # Write compact outputs
-    output_file = f"Data_exploration/results/regression/poly_piecewise_{args.degree}_separate_{args.separate}_degree_{args.degree}.txt"
+    output_file = f"Data_exploration/results/regression/poly/poly_piecewise_{args.degree}_separate_{args.separate}_degree_{args.degree}.txt"
     with open(output_file, "w") as f:
         for dataset, result in regression_results.items():
             print(f"\nResults for {dataset}:")
@@ -429,6 +429,6 @@ if __name__ == "__main__":
         
     # Now save the result instance to be sure as pickle file 
     for dataset, result in regression_results.items():
-        result.save(f"Data_exploration/results/regression/linear/{dataset}_poly_result.pickle")
+        result.save(f"Data_exploration/results/regression/poly/{dataset}_poly_result.pickle")
     for dataset, result in combined_results.items():
-        result.save(f"Data_exploration/results/regression/linear/{dataset}_poly_result.pickle")
+        result.save(f"Data_exploration/results/regression/poly/{dataset}_poly_result.pickle")

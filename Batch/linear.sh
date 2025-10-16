@@ -1,13 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=distances_yTW001
-#SBATCH --account=ewi-insy-prb
+#SBATCH --job-name=linear
 #SBATCH --partition=general,insy
-#SBATCH --qos=medium 
-#SBATCH --time=08:00:00
+#SBATCH --account=ewi-insy-prb
+#SBATCH --time=30:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=1G
-#SBATCH --mail-type=ALL
+#SBATCH --cpus-per-task=10
+#SBATCH --mem-per-cpu=3G
+#SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%j.out
 #SBATCH --error=slurm_%j.err
@@ -22,4 +21,4 @@ conda activate env
 
 cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
-srun python Data_exploration/reader.py --input_dir Data/wiggle_format/strain_yTW001 --output_dir Data_exploration/results/distances_with_zeros --with_zeros
+srun python Data_exploration/regression_parallel.py

@@ -152,7 +152,7 @@ if __name__ == "__main__":
     regression_results = perform_regression_on_datasets("Data_exploration/results/distances_with_zeros")
     combined_results = perform_regression_on_datasets("Data_exploration/results/distances_with_zeros", combine_all=True)
     # Optionally, save or further process regression_results
-    output_file = "Data_exploration/results/regression_results.txt"
+    output_file = "Data_exploration/results/regression/linear/regression_results.txt"
     with open(output_file, "w") as f:
         for dataset, result in regression_results.items():
             print("params:", result.params)
@@ -176,8 +176,8 @@ if __name__ == "__main__":
             
     # Now save the result instance to be sure as pickle file 
     for dataset, result in regression_results.items():
-        result.save(f"Data_exploration/results/{dataset}_poly_result.pickle")
+        result.save(f"Data_exploration/results/regression/linear/{dataset}_poly_result.pickle")
     for dataset, result in combined_results.items():
-        result.save(f"Data_exploration/results/{dataset}_poly_result.pickle")
+        result.save(f"Data_exploration/results/regression/linear/{dataset}_poly_result.pickle")
 
 
