@@ -383,7 +383,7 @@ if __name__ == "__main__":
         piecewise=args.piecewise,
         separate_piecewise=args.separate,    # << fully separate regimes
         threshold_kb=200.0,         # split at 200 kb
-        regularized=None,           # try None first; then 'l1_cvxopt_cp' with small alpha
+        regularized='l1_cvxopt_cp',           # try None first; then 'l1_cvxopt_cp' with small alpha
         alpha=1e-4,
         maxiter=5000,
         disp=False,
@@ -398,7 +398,7 @@ if __name__ == "__main__":
         piecewise=True,
         separate_piecewise=False,   # << reference coding
         threshold_kb=200.0,
-        regularized=None,
+        regularized='l1_cvxopt_cp',  # try regularization on combined
         alpha=1e-4,
         maxiter=5000,
         disp=False,
