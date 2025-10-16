@@ -2,6 +2,7 @@
 #SBATCH --job-name=linear
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
+#SBATCH --qos=medium
 #SBATCH --time=30:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10
