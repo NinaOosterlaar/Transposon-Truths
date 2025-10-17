@@ -1,13 +1,15 @@
 import os
 import pickle
 from multiprocessing import Pool
+import gc
 
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import argparse
+from reader import label_from_filename
 
-from reader import read_csv_file_with_distances  # your existing loader
+print("Available CPUs:", os.cpu_count())
 
 
 # =========================
@@ -235,9 +237,45 @@ def ZINB_regression(
 # Worker & Orchestrator
 # =========================
 
+def _load_and_filter_dataset(args):
+    """
+    Load a single dataset folder in parallel and optionally filter by centromere range.
+    Returns (dataset_name, df_all) or None if empty.
+    """
+    dataset_path, dataset_name, range_bp = args
+    
+    genome = {}
+    for file in os.listdir(dataset_path):
+        if file.endswith(".csv"):
+            file_path = os.path.join(dataset_path, file)
+            df = pd.read_csv(file_path)
+            chrom = file.split("_")[0]  # Extract chromosome from filename
+            if chrom == "ChrM":
+                continue
+            
+            # Apply centromere filter immediately if specified
+            if range_bp is not None:
+                mask = np.abs(df["Centromere_Distance"]) <= range_bp
+                df = df.loc[mask].copy()  # Copy to avoid fragmentation
+            
+            if not df.empty:
+                genome[chrom] = df
+    
+    if not genome:
+        return None
+    
+    # Concatenate all chromosomes for this dataset
+    df_all = pd.concat(genome.values(), ignore_index=True)
+    del genome  # Free chromosome dict
+    gc.collect()  # Force garbage collection
+    
+    return dataset_name, df_all
+
+
 def _fit_worker(args):
     """
-    Run one fit in a separate process and return (dataset_name, pickled_result).
+    Load, filter, and fit a single dataset in one worker process.
+    This avoids loading all data in the main process.
     """
     # Avoid BLAS oversubscription per worker
     os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -246,8 +284,9 @@ def _fit_worker(args):
     os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
     (
+        dataset_path,
         dataset_name,
-        df_all,
+        range_bp,
         piecewise,            # reference-coding flag
         separate_piecewise,   # fully separate Low/High flag
         threshold_kb,
@@ -258,6 +297,13 @@ def _fit_worker(args):
         degree
     ) = args
 
+    # Load the dataset in this worker process
+    result = _load_and_filter_dataset((dataset_path, dataset_name, range_bp))
+    if result is None:
+        return dataset_name, None
+    
+    _, df_all = result
+    
     # Clean & units handled in builders
     df_all = df_all.dropna(subset=["Value", "Nucleosome_Distance", "Centromere_Distance"]).copy()
     Y = df_all["Value"].astype(int).values
@@ -275,6 +321,10 @@ def _fit_worker(args):
         )
         add_int = True
 
+    # Free memory before fitting
+    del df_all
+    gc.collect()
+    
     _, result = ZINB_regression(
         Y=Y,
         X=X_poly,
@@ -287,18 +337,42 @@ def _fit_worker(args):
         disp=disp,
         add_intercept=add_int,
     )
+    
+    # Free design matrices after fitting
+    del Y, X_poly, Z_poly
+    gc.collect()
+    
     return dataset_name, pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def set_centromere_range(datasets, distance_from_centromere_bp):
-    """Filter to |Centromere_Distance| <= threshold (bp)."""
-    filtered = {}
-    for ds in datasets:
-        filtered[ds] = {}
-        for chrom, df in datasets[ds].items():
-            m = np.abs(df["Centromere_Distance"]) <= distance_from_centromere_bp
-            filtered[ds][chrom] = df.loc[m]
-    return filtered
+def _discover_dataset_paths(input_folder):
+    """
+    Discover all dataset paths without loading any data.
+    Returns list of (dataset_path, dataset_name) tuples.
+    """
+    dataset_paths = []
+    
+    # Walk through strain folders
+    for strain_folder in os.listdir(input_folder):
+        strain_path = os.path.join(input_folder, strain_folder)
+        if not os.path.isdir(strain_path):
+            continue
+        
+        # Each subfolder in strain_xxx is a separate dataset
+        for dataset_folder in os.listdir(strain_path):
+            dataset_path = os.path.join(strain_path, dataset_folder)
+            if not os.path.isdir(dataset_path):
+                continue
+            
+            # Check if it contains CSV files
+            csv_files = [f for f in os.listdir(dataset_path) if f.endswith(".csv")]
+            if csv_files:
+                # Use label_from_filename from reader to get consistent naming
+                
+                dataset_name = label_from_filename(dataset_folder)
+                dataset_paths.append((dataset_path, dataset_name))
+    
+    return dataset_paths
 
 
 def perform_regression_on_datasets(
@@ -313,6 +387,8 @@ def perform_regression_on_datasets(
     maxiter=5000,
     disp=False,
     degree=3,                      # polynomial degree (1, 2, or 3)
+    output_dir="Data_exploration/results/regression/poly",  # NEW: output directory
+    write_immediately=True,        # NEW: write results as they complete
 ):
     """
     Fits a polynomial (up to cubic) ZINB per dataset.
@@ -320,28 +396,46 @@ def perform_regression_on_datasets(
       - piecewise=False, separate_piecewise=False : global polynomials (no split)
       - piecewise=True,  separate_piecewise=False : reference coding (global + High deviations)
       - piecewise=True,  separate_piecewise=True  : fully separate Low/High
+      
+    MEMORY EFFICIENT: Loads and processes each dataset in parallel workers,
+    never holding all data in main process memory.
+    
+    If write_immediately=True, results are written to disk as each worker completes,
+    reducing memory usage and providing fault tolerance.
     """
-    datasets = read_csv_file_with_distances(input_folder)
-    if range_bp is not None:
-        datasets = set_centromere_range(datasets, range_bp)
-
-    # Optionally combine all datasets into a single "combined"
+    
+    # Create output directory if needed
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Discover dataset paths WITHOUT loading data
+    dataset_paths = _discover_dataset_paths(input_folder)
+    print(f"Found {len(dataset_paths)} datasets to process")
+    
     if combine_all:
-        combined_df = pd.concat(
-            [df for ds in datasets.values() for df in ds.values()],
-            ignore_index=True,
-        )
-        datasets = {"combined": {"all_chromosomes": combined_df}}
-
-    # Build tasks
-    tasks = []
-    for dataset_name, chrom_dict in datasets.items():
-        print(f"\n--- Fitting ZINB (poly ≤ x^3) for dataset: {dataset_name} ---")
-        df_all = pd.concat(chrom_dict.values(), ignore_index=True)
-        print(f"  rows: {len(df_all):,}")
-        tasks.append((
-            dataset_name,
-            df_all,
+        # For combine_all mode, we need to load all data
+        # Do this in parallel then combine
+        print("\n--- Loading all datasets for combined analysis ---")
+        load_tasks = [(path, name, range_bp) for path, name in dataset_paths]
+        
+        all_dfs = []
+        with Pool(processes=os.cpu_count()) as pool:
+            for result in pool.imap_unordered(_load_and_filter_dataset, load_tasks):
+                if result is not None:
+                    _, df = result
+                    all_dfs.append(df)
+        
+        if not all_dfs:
+            return {}
+        
+        combined_df = pd.concat(all_dfs, ignore_index=True)
+        del all_dfs  # Free memory
+        gc.collect()
+        
+        # Build single task for combined dataset
+        tasks = [(
+            "combined",  # dataset_path (not used in fit_worker for pre-loaded data)
+            "combined",  # dataset_name
+            None,        # range_bp (already applied)
             piecewise,
             separate_piecewise,
             threshold_kb,
@@ -350,16 +444,102 @@ def perform_regression_on_datasets(
             maxiter,
             disp,
             degree,
-        ))
-
-    # Parallel fits
-    results = {}
-    if tasks:
-        with Pool(processes=os.cpu_count()) as pool:
-            for dataset_name, result_bytes in pool.imap_unordered(_fit_worker, tasks):
-                results[dataset_name] = pickle.loads(result_bytes)
-
-    return results
+        )]
+        
+        # We need a special path for combined - pass the dataframe directly
+        # This requires modifying the approach slightly
+        print(f"Combined dataset rows: {len(combined_df):,}")
+        
+        # Process combined directly (can't pickle DataFrame easily in args)
+        combined_df = combined_df.dropna(subset=["Value", "Nucleosome_Distance", "Centromere_Distance"]).copy()
+        Y = combined_df["Value"].astype(int).values
+        
+        if piecewise and separate_piecewise:
+            X_poly, Z_poly, _ = build_polynomial_design_separate(
+                combined_df, threshold_kb=threshold_kb, max_deg=degree
+            )
+            add_int = False
+        else:
+            X_poly, Z_poly, _ = build_polynomial_design(
+                combined_df, piecewise=piecewise, threshold_kb=threshold_kb, max_deg=degree
+            )
+            add_int = True
+        
+        del combined_df
+        gc.collect()
+        
+        _, result = ZINB_regression(
+            Y=Y, X=X_poly, Z=Z_poly, p=2,
+            method="lbfgs", regularized=regularized, alpha=alpha,
+            maxiter=maxiter, disp=disp, add_intercept=add_int,
+        )
+        
+        del Y, X_poly, Z_poly
+        gc.collect()
+        
+        # Write combined result immediately if requested
+        if write_immediately:
+            result.save(os.path.join(output_dir, "combined_poly_result.pickle"))
+            print(f"✓ Saved: combined")
+        
+        return {"combined": result}
+    
+    else:
+        # Process each dataset independently in parallel
+        # Build tasks with dataset paths (loading happens in worker)
+        tasks = [
+            (
+                dataset_path,
+                dataset_name,
+                range_bp,
+                piecewise,
+                separate_piecewise,
+                threshold_kb,
+                regularized,
+                alpha,
+                maxiter,
+                disp,
+                degree,
+            )
+            for dataset_path, dataset_name in dataset_paths
+        ]
+        
+        # Parallel load + fit with immediate writing
+        results = {}
+        completed_count = 0
+        if tasks:
+            with Pool(processes=os.cpu_count()) as pool:
+                for dataset_name, result_bytes in pool.imap_unordered(_fit_worker, tasks):
+                    if result_bytes is not None:
+                        result = pickle.loads(result_bytes)
+                        results[dataset_name] = result
+                        completed_count += 1
+                        
+                        # Write immediately to disk
+                        if write_immediately:
+                            result.save(os.path.join(output_dir, f"{dataset_name}_poly_result.pickle"))
+                            # Also write summary to text file
+                            summary_file = os.path.join(output_dir, f"{dataset_name}_summary.txt")
+                            with open(summary_file, "w") as f:
+                                f.write(f"Dataset: {dataset_name}\n")
+                                f.write("=" * 60 + "\n\n")
+                                f.write("Parameters:\n")
+                                f.write(result.params.to_string())
+                                f.write("\n\n")
+                                f.write(f"Log-Likelihood: {result.llf}\n")
+                                f.write(f"AIC: {result.aic}\n")
+                                f.write(f"BIC: {result.bic}\n")
+                            
+                            print(f"✓ Completed ({completed_count}/{len(tasks)}): {dataset_name}")
+                            
+                            # Free memory immediately after writing
+                            del result
+                            results[dataset_name] = None  # Keep track but don't hold in memory
+                            gc.collect()
+                    else:
+                        print(f"✗ Skipped (empty): {dataset_name}")
+        
+        return results
 
 def parse_args():
     p = argparse.ArgumentParser(description="ZINB with polynomial features (optional piecewise splitting).")
@@ -375,7 +555,16 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    
+    # Define output directory
+    output_dir = "Data_exploration/results/regression/poly"
+    os.makedirs(output_dir, exist_ok=True)
+    
     # Example 1: per-dataset, fully separate Low/High (your requested mode)
+    # Results are written immediately as each worker completes
+    print("\n" + "="*60)
+    print("PROCESSING INDIVIDUAL DATASETS")
+    print("="*60)
     regression_results = perform_regression_on_datasets(
         input_folder="Data_exploration/results/distances_with_zeros",
         range_bp=None,
@@ -388,9 +577,14 @@ if __name__ == "__main__":
         maxiter=5000,
         disp=False,
         degree=args.degree,
+        output_dir=output_dir,
+        write_immediately=True,  # Write results as they complete
     )
 
     # Example 2 (optional): combined, reference coding (shared baseline + High tweaks)
+    print("\n" + "="*60)
+    print("PROCESSING COMBINED DATASET")
+    print("="*60)
     combined_results = perform_regression_on_datasets(
         input_folder="Data_exploration/results/distances_with_zeros",
         range_bp=None,
@@ -402,34 +596,54 @@ if __name__ == "__main__":
         alpha=1e-4,
         maxiter=5000,
         disp=False,
+        degree=args.degree,
+        output_dir=output_dir,
+        write_immediately=True,  # Write result when complete
     )
 
-    # Write compact outputs
-    output_file = f"Data_exploration/results/regression/poly/poly_piecewise_{args.degree}_separate_{args.separate}_degree_{args.degree}.txt"
-    with open(output_file, "w") as f:
-        for dataset, result in regression_results.items():
-            print(f"\nResults for {dataset}:")
-            print("params:", result.params)
-            print("loglike:", result.llf, "AIC:", result.aic, "BIC:", result.bic)
-            f.write(f"--- {dataset} ---\n")
-            f.write("params:\n")
-            f.write(result.params.to_string())
-            f.write("\n")
-            f.write(f"loglike: {result.llf}, AIC: {result.aic}, BIC: {result.bic}\n\n")
-
-        f.write("=== Combined Results ===\n")
-        for dataset, result in combined_results.items():
-            print(f"\nResults for {dataset}:")
-            print("params:", result.params)
-            print("loglike:", result.llf, "AIC:", result.aic, "BIC:", result.bic)
-            f.write(f"--- {dataset} ---\n")
-            f.write("params:\n")
-            f.write(result.params.to_string())
-            f.write("\n")
-            f.write(f"loglike: {result.llf}, AIC: {result.aic}, BIC: {result.bic}\n\n")
+    # Write a final summary file with all results
+    summary_file = os.path.join(
+        output_dir, 
+        f"all_results_piecewise_{args.piecewise}_separate_{args.separate}_degree_{args.degree}.txt"
+    )
+    print(f"\nWriting final summary to: {summary_file}")
+    
+    with open(summary_file, "w") as f:
+        f.write("="*60 + "\n")
+        f.write("POLYNOMIAL REGRESSION RESULTS SUMMARY\n")
+        f.write("="*60 + "\n")
+        f.write(f"Piecewise: {args.piecewise}\n")
+        f.write(f"Separate: {args.separate}\n")
+        f.write(f"Degree: {args.degree}\n")
+        f.write("="*60 + "\n\n")
         
-    # Now save the result instance to be sure as pickle file 
-    for dataset, result in regression_results.items():
-        result.save(f"Data_exploration/results/regression/poly/{dataset}_poly_result.pickle")
-    for dataset, result in combined_results.items():
-        result.save(f"Data_exploration/results/regression/poly/{dataset}_poly_result.pickle")
+        f.write("INDIVIDUAL DATASETS\n")
+        f.write("-"*60 + "\n")
+        for dataset_name in sorted(regression_results.keys()):
+            # Read from individual summary files since we freed memory
+            indiv_summary = os.path.join(output_dir, f"{dataset_name}_summary.txt")
+            if os.path.exists(indiv_summary):
+                with open(indiv_summary, "r") as sf:
+                    f.write(sf.read())
+                    f.write("\n")
+            else:
+                f.write(f"Dataset: {dataset_name} - No summary found\n\n")
+
+        f.write("\n" + "="*60 + "\n")
+        f.write("COMBINED RESULTS\n")
+        f.write("-"*60 + "\n")
+        for dataset_name, result in combined_results.items():
+            if result is not None:
+                f.write(f"Dataset: {dataset_name}\n")
+                f.write("Parameters:\n")
+                f.write(result.params.to_string())
+                f.write("\n\n")
+                f.write(f"Log-Likelihood: {result.llf}\n")
+                f.write(f"AIC: {result.aic}\n")
+                f.write(f"BIC: {result.bic}\n\n")
+    
+    print("\n" + "="*60)
+    print("ALL PROCESSING COMPLETE")
+    print("="*60)
+    print(f"Individual results saved to: {output_dir}/")
+    print(f"Summary file: {summary_file}")
