@@ -597,7 +597,7 @@ if __name__ == "__main__":
         separate_piecewise=False,   # << reference coding
         threshold_kb=200.0,
         regularized='l1',  # try regularization on combined
-        alpha=1e-4=6,
+        alpha=1e-6,
         maxiter=5000,
         disp=False,
         degree=args.degree,
