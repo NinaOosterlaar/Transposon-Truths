@@ -6,6 +6,7 @@ import pandas as pd
 from reader import read_csv_file_with_distances
 from multiprocessing import Pool, Process
 import pickle
+import gc  # For explicit memory cleanup
 
 
 
@@ -94,11 +95,58 @@ def _fit_worker(args):
     _, result = ZINB_regression(Y, X, Z=None, regularized='l1_cvxopt_cp', alpha=1e-4)
     return dataset_name, pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
 
-def perform_regression_on_datasets(input_folder="Data_exploration/results/distances_with_zeros", range=None, combine_all=False):
+
+def _write_result_immediately(dataset_name: str, result, output_dir: str) -> None:
+    """
+    Persist results for one dataset immediately to disk (pickle + text summary).
+    Falls back to raw pickle if statsmodels save() is unavailable.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 1) Save full result
+    pickle_path = os.path.join(output_dir, f"{dataset_name}_poly_result.pickle")
+    try:
+        result.save(pickle_path)
+    except Exception:
+        with open(pickle_path, "wb") as f:
+            pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # 2) Save quick human-readable summary
+    summary_path = os.path.join(output_dir, f"{dataset_name}_summary.txt")
+    try:
+        with open(summary_path, "w") as f:
+            f.write(f"--- {dataset_name} ---\n")
+            f.write("params:\n")
+            try:
+                f.write(result.params.to_string())
+                f.write("\n")
+            except Exception:
+                f.write("<params unavailable>\n")
+
+            # Fit metrics if available
+            llf = getattr(result, 'llf', 'NA')
+            aic = getattr(result, 'aic', 'NA')
+            bic = getattr(result, 'bic', 'NA')
+            f.write(f"loglike: {llf}, AIC: {aic}, BIC: {bic}\n")
+    except Exception:
+        # Best-effort; if summary writing fails, continue
+        pass
+
+def perform_regression_on_datasets(
+    input_folder: str = "Data_exploration/results/distances_with_zeros",
+    range=None,
+    combine_all: bool = False,
+    output_dir: str = "Data_exploration/results/regression/linear",
+    write_immediately: bool = True,
+):
     datasets = read_csv_file_with_distances(input_folder)
     if range is not None:
         datasets = set_centromere_range(datasets, range)
     results = {}
+
+    # Ensure output directory exists when immediate writing is enabled
+    if write_immediately:
+        os.makedirs(output_dir, exist_ok=True)
 
     if combine_all:
         combined_df = pd.DataFrame()
@@ -125,7 +173,18 @@ def perform_regression_on_datasets(input_folder="Data_exploration/results/distan
         with Pool(processes=os.cpu_count()) as pool:
             for dataset_name, result_bytes in pool.imap_unordered(_fit_worker, tasks):
                 result = pickle.loads(result_bytes)
-                results[dataset_name] = result
+
+                # Save immediately for crash resilience
+                if write_immediately:
+                    _write_result_immediately(dataset_name, result, output_dir)
+                    print(f"✓ Saved result for {dataset_name}", flush=True)
+
+                # Optionally keep in memory (set to None to minimize memory when writing immediately)
+                results[dataset_name] = None if write_immediately else result
+
+                # Free memory ASAP
+                del result
+                gc.collect()
 
     return results
 
@@ -149,35 +208,49 @@ def set_centromere_range(datasets, distance_from_centromere):
     return filtered_datasets
 
 if __name__ == "__main__":
-    regression_results = perform_regression_on_datasets("Data_exploration/results/distances_with_zeros")
-    combined_results = perform_regression_on_datasets("Data_exploration/results/distances_with_zeros", combine_all=True)
-    # Optionally, save or further process regression_results
-    output_file = "Data_exploration/results/regression/linear/regression_results.txt"
-    with open(output_file, "w") as f:
-        for dataset, result in regression_results.items():
-            print("params:", result.params)
-            print("loglike:", result.llf, "AIC:", result.aic, "BIC:", result.bic)
-            f.write(f"--- {dataset} ---\n")
-            f.write("params:\n")
-            f.write(result.params.to_string())
-            f.write("\n")
-            f.write(f"loglike: {result.llf}, AIC: {result.aic}, BIC: {result.bic}\n")
-            f.write("\n")
-        f.write("=== Combined Results ===\n")
+    out_dir = "Data_exploration/results/regression/linear"
+    # Run per-dataset with immediate writes
+    regression_results = perform_regression_on_datasets(
+        "Data_exploration/results/distances_with_zeros",
+        combine_all=False,
+        output_dir=out_dir,
+        write_immediately=True,
+    )
+
+    # Run combined (note: this may use more memory by design)
+    combined_results = perform_regression_on_datasets(
+        "Data_exploration/results/distances_with_zeros",
+        combine_all=True,
+        output_dir=out_dir,
+        write_immediately=True,
+    )
+
+    # Compose a final summary file from individual summaries (memory-safe)
+    summary_path = os.path.join(out_dir, "regression_results.txt")
+    with open(summary_path, "w") as f:
+        # Per-dataset summaries
+        for dataset in sorted(regression_results.keys()):
+            summary_file = os.path.join(out_dir, f"{dataset}_summary.txt")
+            if os.path.exists(summary_file):
+                with open(summary_file, "r") as sf:
+                    f.write(sf.read())
+                    f.write("\n")
+
+        # Combined result summary (if present)
         for dataset, result in combined_results.items():
-            print("params:", result.params)
-            print("loglike:", result.llf, "AIC:", result.aic, "BIC:", result.bic)
-            f.write(f"--- {dataset} ---\n")
-            f.write("params:\n")
-            f.write(result.params.to_string())
-            f.write("\n")
-            f.write(f"loglike: {result.llf}, AIC: {result.aic}, BIC: {result.bic}\n")
-            f.write("\n")
-            
-    # Now save the result instance to be sure as pickle file 
-    for dataset, result in regression_results.items():
-        result.save(f"Data_exploration/results/regression/linear/{dataset}_poly_result.pickle")
-    for dataset, result in combined_results.items():
-        result.save(f"Data_exploration/results/regression/linear/{dataset}_poly_result.pickle")
+            if result is not None:
+                f.write(f"--- {dataset} ---\n")
+                try:
+                    f.write("params:\n")
+                    f.write(result.params.to_string())
+                    f.write("\n")
+                except Exception:
+                    f.write("<params unavailable>\n")
+                llf = getattr(result, 'llf', 'NA')
+                aic = getattr(result, 'aic', 'NA')
+                bic = getattr(result, 'bic', 'NA')
+                f.write(f"loglike: {llf}, AIC: {aic}, BIC: {bic}\n\n")
+
+    print(f"\nSaved per-dataset results and summary to: {out_dir}")
 
 

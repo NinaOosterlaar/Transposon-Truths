@@ -3,9 +3,9 @@
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --qos=medium
-#SBATCH --time=30:00:00
+#SBATCH --time=32:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=35
 #SBATCH --mem-per-cpu=20G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
