@@ -277,72 +277,76 @@ def _fit_worker(args):
     Load, filter, and fit a single dataset in one worker process.
     This avoids loading all data in the main process.
     """
-    # Avoid BLAS oversubscription per worker
-    os.environ.setdefault("OMP_NUM_THREADS", "1")
-    os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-    os.environ.setdefault("MKL_NUM_THREADS", "1")
-    os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+    try:
+        # Avoid BLAS oversubscription per worker
+        os.environ.setdefault("OMP_NUM_THREADS", "1")
+        os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+        os.environ.setdefault("MKL_NUM_THREADS", "1")
+        os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
-    (
-        dataset_path,
-        dataset_name,
-        range_bp,
-        piecewise,            # reference-coding flag
-        separate_piecewise,   # fully separate Low/High flag
-        threshold_kb,
-        regularized,
-        alpha,
-        maxiter,
-        disp,
-        degree
-    ) = args
+        (
+            dataset_path,
+            dataset_name,
+            range_bp,
+            piecewise,            # reference-coding flag
+            separate_piecewise,   # fully separate Low/High flag
+            threshold_kb,
+            regularized,
+            alpha,
+            maxiter,
+            disp,
+            degree
+        ) = args
 
-    # Load the dataset in this worker process
-    result = _load_and_filter_dataset((dataset_path, dataset_name, range_bp))
-    if result is None:
+        # Load the dataset in this worker process
+        result = _load_and_filter_dataset((dataset_path, dataset_name, range_bp))
+        if result is None:
+            return dataset_name, None
+        
+        _, df_all = result
+        
+        # Clean & units handled in builders
+        df_all = df_all.dropna(subset=["Value", "Nucleosome_Distance", "Centromere_Distance"]).copy()
+        Y = df_all["Value"].astype(int).values
+
+        if piecewise and separate_piecewise:
+            # Fully separate design: DO NOT add a global constant later
+            X_poly, Z_poly, _ = build_polynomial_design_separate(
+                df_all, threshold_kb=threshold_kb, max_deg=degree
+            )
+            add_int = False
+        else:
+            # Reference coding (global + High deviations if piecewise=True)
+            X_poly, Z_poly, _ = build_polynomial_design(
+                df_all, piecewise=piecewise, threshold_kb=threshold_kb, max_deg=degree
+            )
+            add_int = True
+
+        # Free memory before fitting
+        del df_all
+        gc.collect()
+        
+        _, result = ZINB_regression(
+            Y=Y,
+            X=X_poly,
+            Z=Z_poly,
+            p=2,
+            method="lbfgs",
+            regularized=regularized,   # e.g. 'l1_cvxopt_cp' or None
+            alpha=alpha,
+            maxiter=maxiter,
+            disp=disp,
+            add_intercept=add_int,
+        )
+        
+        # Free design matrices after fitting
+        del Y, X_poly, Z_poly
+        gc.collect()
+        
+        return dataset_name, pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception as e:
+        print(f"Error processing dataset at {dataset_path}: {e}")
         return dataset_name, None
-    
-    _, df_all = result
-    
-    # Clean & units handled in builders
-    df_all = df_all.dropna(subset=["Value", "Nucleosome_Distance", "Centromere_Distance"]).copy()
-    Y = df_all["Value"].astype(int).values
-
-    if piecewise and separate_piecewise:
-        # Fully separate design: DO NOT add a global constant later
-        X_poly, Z_poly, _ = build_polynomial_design_separate(
-            df_all, threshold_kb=threshold_kb, max_deg=degree
-        )
-        add_int = False
-    else:
-        # Reference coding (global + High deviations if piecewise=True)
-        X_poly, Z_poly, _ = build_polynomial_design(
-            df_all, piecewise=piecewise, threshold_kb=threshold_kb, max_deg=degree
-        )
-        add_int = True
-
-    # Free memory before fitting
-    del df_all
-    gc.collect()
-    
-    _, result = ZINB_regression(
-        Y=Y,
-        X=X_poly,
-        Z=Z_poly,
-        p=2,
-        method="lbfgs",
-        regularized=regularized,   # e.g. 'l1_cvxopt_cp' or None
-        alpha=alpha,
-        maxiter=maxiter,
-        disp=disp,
-        add_intercept=add_int,
-    )
-    
-    # Free design matrices after fitting
-    del Y, X_poly, Z_poly
-    gc.collect()
-    
-    return dataset_name, pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def _discover_dataset_paths(input_folder):
@@ -572,8 +576,8 @@ if __name__ == "__main__":
         piecewise=args.piecewise,
         separate_piecewise=args.separate,    # << fully separate regimes
         threshold_kb=200.0,         # split at 200 kb
-        regularized='l1_cvxopt_cp',           # try None first; then 'l1_cvxopt_cp' with small alpha
-        alpha=1e-4,
+        regularized='l1',           # try None first; then 'l1_cvxopt_cp' with small alpha
+        alpha=1e-6,
         maxiter=5000,
         disp=False,
         degree=args.degree,
@@ -592,8 +596,8 @@ if __name__ == "__main__":
         piecewise=True,
         separate_piecewise=False,   # << reference coding
         threshold_kb=200.0,
-        regularized='l1_cvxopt_cp',  # try regularization on combined
-        alpha=1e-4,
+        regularized='l1',  # try regularization on combined
+        alpha=1e-4=6,
         maxiter=5000,
         disp=False,
         degree=args.degree,
