@@ -153,20 +153,20 @@ def set_centromere_range(datasets, distance_from_centromere):
     return filtered_datasets
 
 if __name__ == "__main__":
-    regression_results = perform_regression_on_datasets("Data_exploration/results/test_dataset")
+    # regression_results = perform_regression_on_datasets("Data_exploration/results/test_dataset")
     combined_results = perform_regression_on_datasets("Data_exploration/results/test_dataset", combine_all=True)
     # Optionally, save or further process regression_results
     output_file = "Data_exploration/results/regression_results.txt"
     with open(output_file, "w") as f:
-        for dataset, result in regression_results.items():
-            print("params:", result.params)
-            print("loglike:", result.llf, "AIC:", result.aic, "BIC:", result.bic)
-            f.write(f"--- {dataset} ---\n")
-            f.write("params:\n")
-            f.write(result.params.to_string())
-            f.write("\n")
-            f.write(f"loglike: {result.llf}, AIC: {result.aic}, BIC: {result.bic}\n")
-            f.write("\n")
+        # for dataset, result in regression_results.items():
+        #     print("params:", result.params)
+        #     print("loglike:", result.llf, "AIC:", result.aic, "BIC:", result.bic)
+        #     f.write(f"--- {dataset} ---\n")
+        #     f.write("params:\n")
+        #     f.write(result.params.to_string())
+        #     f.write("\n")
+        #     f.write(f"loglike: {result.llf}, AIC: {result.aic}, BIC: {result.bic}\n")
+        #     f.write("\n")
         f.write("=== Combined Results ===\n")
         for dataset, result in combined_results.items():
             print("params:", result.params)

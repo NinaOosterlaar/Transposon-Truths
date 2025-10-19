@@ -209,13 +209,13 @@ def set_centromere_range(datasets, distance_from_centromere):
 
 if __name__ == "__main__":
     out_dir = "Data_exploration/results/regression/linear"
-    # Run per-dataset with immediate writes
-    regression_results = perform_regression_on_datasets(
-        "Data_exploration/results/distances_with_zeros",
-        combine_all=False,
-        output_dir=out_dir,
-        write_immediately=True,
-    )
+    # # Run per-dataset with immediate writes
+    # regression_results = perform_regression_on_datasets(
+    #     "Data_exploration/results/distances_with_zeros",
+    #     combine_all=False,
+    #     output_dir=out_dir,
+    #     write_immediately=True,
+    # )
 
     # Run combined (note: this may use more memory by design)
     combined_results = perform_regression_on_datasets(
@@ -226,31 +226,31 @@ if __name__ == "__main__":
     )
 
     # Compose a final summary file from individual summaries (memory-safe)
-    summary_path = os.path.join(out_dir, "regression_results.txt")
-    with open(summary_path, "w") as f:
+    # summary_path = os.path.join(out_dir, "regression_results.txt")
+    # with open(summary_path, "w") as f:
         # Per-dataset summaries
-        for dataset in sorted(regression_results.keys()):
-            summary_file = os.path.join(out_dir, f"{dataset}_summary.txt")
-            if os.path.exists(summary_file):
-                with open(summary_file, "r") as sf:
-                    f.write(sf.read())
-                    f.write("\n")
+        # for dataset in sorted(regression_results.keys()):
+        #     summary_file = os.path.join(out_dir, f"{dataset}_summary.txt")
+        #     if os.path.exists(summary_file):
+        #         with open(summary_file, "r") as sf:
+        #             f.write(sf.read())
+        #             f.write("\n")
 
         # Combined result summary (if present)
-        for dataset, result in combined_results.items():
-            if result is not None:
-                f.write(f"--- {dataset} ---\n")
-                try:
-                    f.write("params:\n")
-                    f.write(result.params.to_string())
-                    f.write("\n")
-                except Exception:
-                    f.write("<params unavailable>\n")
-                llf = getattr(result, 'llf', 'NA')
-                aic = getattr(result, 'aic', 'NA')
-                bic = getattr(result, 'bic', 'NA')
-                f.write(f"loglike: {llf}, AIC: {aic}, BIC: {bic}\n\n")
+    #     for dataset, result in combined_results.items():
+    #         if result is not None:
+    #             f.write(f"--- {dataset} ---\n")
+    #             try:
+    #                 f.write("params:\n")
+    #                 f.write(result.params.to_string())
+    #                 f.write("\n")
+    #             except Exception:
+    #                 f.write("<params unavailable>\n")
+    #             llf = getattr(result, 'llf', 'NA')
+    #             aic = getattr(result, 'aic', 'NA')
+    #             bic = getattr(result, 'bic', 'NA')
+    #             f.write(f"loglike: {llf}, AIC: {aic}, BIC: {bic}\n\n")
 
-    print(f"\nSaved per-dataset results and summary to: {out_dir}")
+    # print(f"\nSaved per-dataset results and summary to: {out_dir}")
 
 
