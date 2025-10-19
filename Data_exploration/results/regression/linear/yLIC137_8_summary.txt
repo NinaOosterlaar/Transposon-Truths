@@ -1,0 +1,10 @@
+--- yLIC137_8 ---
+params:
+inflate_const                  -0.305267
+inflate_Nucleosome_Distance    -0.642059
+inflate_Centromere_Distance     0.423126
+const                           2.043402
+Nucleosome_Distance             0.000293
+Centromere_Distance             1.120195
+alpha                          61.007962
+loglike: -4859880.053079078, AIC: 9719774.106158156, BIC: 9719874.2505588

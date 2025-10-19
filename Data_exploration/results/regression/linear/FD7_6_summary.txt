@@ -1,0 +1,10 @@
+--- FD7_6 ---
+params:
+inflate_const                   0.216681
+inflate_Nucleosome_Distance    -0.824364
+inflate_Centromere_Distance     0.344601
+const                           2.239773
+Nucleosome_Distance            -0.021585
+Centromere_Distance             0.949107
+alpha                          27.040574
+loglike: -7044515.414321542, AIC: 14089044.828643084, BIC: 14089144.973043727

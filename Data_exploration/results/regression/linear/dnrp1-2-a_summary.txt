@@ -1,0 +1,10 @@
+--- dnrp1-2-a ---
+params:
+inflate_const                   0.880301
+inflate_Nucleosome_Distance    -0.627130
+inflate_Centromere_Distance     0.041686
+const                           1.896622
+Nucleosome_Distance             0.102317
+Centromere_Distance             0.015710
+alpha                          36.292416
+loglike: -4348976.904559938, AIC: 8697967.809119876, BIC: 8698067.95352052

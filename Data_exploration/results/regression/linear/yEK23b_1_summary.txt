@@ -1,0 +1,10 @@
+--- yEK23b_1 ---
+params:
+inflate_const                  -0.191618
+inflate_Nucleosome_Distance    -0.825761
+inflate_Centromere_Distance     0.430736
+const                           1.912843
+Nucleosome_Distance             0.040545
+Centromere_Distance             0.919596
+alpha                          31.828436
+loglike: -6866690.413218196, AIC: 13733394.826436391, BIC: 13733494.970837615

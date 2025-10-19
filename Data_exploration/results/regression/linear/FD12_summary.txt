@@ -1,0 +1,10 @@
+--- FD12 ---
+params:
+inflate_const                  -0.040429
+inflate_Nucleosome_Distance    -0.824878
+inflate_Centromere_Distance     0.397763
+const                           2.016906
+Nucleosome_Distance             0.032711
+Centromere_Distance             0.898047
+alpha                          23.964385
+loglike: -8001178.874928329, AIC: 16002371.749856658, BIC: 16002471.894257301

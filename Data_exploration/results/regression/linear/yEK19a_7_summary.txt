@@ -1,0 +1,10 @@
+--- yEK19a_7 ---
+params:
+inflate_const                  -0.019737
+inflate_Nucleosome_Distance    -0.786868
+inflate_Centromere_Distance     0.362492
+const                           1.995036
+Nucleosome_Distance             0.046708
+Centromere_Distance             0.855051
+alpha                          28.212520
+loglike: -7218832.269068489, AIC: 14437678.538136978, BIC: 14437778.682538781

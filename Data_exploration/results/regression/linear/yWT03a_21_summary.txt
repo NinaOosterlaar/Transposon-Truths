@@ -1,0 +1,10 @@
+--- yWT03a_21 ---
+params:
+inflate_const                  0.010143
+inflate_Nucleosome_Distance    0.010000
+inflate_Centromere_Distance    0.011222
+const                          0.001930
+Nucleosome_Distance            0.002507
+Centromere_Distance            0.017951
+alpha                          3.844334
+loglike: -6514946.451269358, AIC: 13029906.902538717, BIC: 13030007.04693936

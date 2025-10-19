@@ -1,0 +1,10 @@
+--- yTW001_6 ---
+params:
+inflate_const                   0.226271
+inflate_Nucleosome_Distance    -0.737102
+inflate_Centromere_Distance     0.317751
+const                           2.092998
+Nucleosome_Distance            -0.068568
+Centromere_Distance             0.965720
+alpha                          42.811913
+loglike: -5124458.541848073, AIC: 10248931.083696146, BIC: 10249031.22809737
