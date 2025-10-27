@@ -110,7 +110,7 @@ def create_nucleosome_dict(input_file, output_dir):
 
         
 class Centromeres:
-    def __init__(self, centromere_file = "SGD_API/centromeres.json"):
+    def __init__(self, centromere_file = "SGD_API/architecture_info/centromeres.json"):
         with open(centromere_file, 'r') as f:
             self.centromeres = json.load(f)
     
@@ -247,8 +247,9 @@ class Nucleosomes:
         Returns:
             dict: Dictionary with distances as keys and their exposure frequency as values
         """
-        if os.path.exists(f"SGD_API/nucleosome_data/{chrom}_exposure.json"):
-            temp = json.load(open(f"SGD_API/nucleosome_data/{chrom}_exposure.json", 'r'))
+        exposure_file = f"{folder}{chrom}_exposure.json"
+        if os.path.exists(exposure_file):
+            temp = json.load(open(exposure_file, 'r'))
             # Make sure keys are integers
             temp = {int(k): v for k, v in temp.items()}
             return temp

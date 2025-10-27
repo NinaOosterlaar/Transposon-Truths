@@ -175,7 +175,7 @@ class SGD_Genes:
 
 
 
-# sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/yeast_genes_with_info.json")
+# sgd_genes = SGD_Genes(gene_list_with_info="SGD_API/architecture_info/yeast_genes_with_info.json")
 # print(sgd_genes.retrieve_gene("YAL001C"))
 # print(sgd_genes.retrieve_location("YAL001C"))
 # print(sgd_genes.retrieve_essentiality("YAL001C"))

@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from reader import read_wig, label_from_filename
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.reader import read_wig, label_from_filename
                     
 chromosome_length = {
     "ChrI": 230218,
@@ -182,6 +184,6 @@ if __name__ == "__main__":
     #     for line in f:
     #         label_a, label_b, index = line.strip().split('\t')
     #         jaccard_indices[(label_a, label_b)] = float(index)
-    bin_size = 10
+    bin_size = 1
     jaccard_indices, szymkiewicz_simpson_indices = compute_indices_from_folder(folder_path, bin_size=bin_size, Jaccard=False, Szymkiewicz_Simpson=True).values()
     save_and_plot_heatmap("Data_exploration/results/jaccard_indices", bin_size=bin_size, Jaccard_indices=jaccard_indices, Szymkiewicz_Simpson_indices=szymkiewicz_simpson_indices)

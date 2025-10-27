@@ -5,7 +5,7 @@ import json
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from SGD_API.genome import Genome
-from reader import read_wig, label_from_filename
+from Utils.reader import read_wig, label_from_filename
 import math
 from collections import defaultdict, Counter
 from statistics import mean, stdev
@@ -119,7 +119,7 @@ def calculate_kmer_occurrences(sequences, output_file, k_sizes=[3, 5, 7, 9, 11])
         
 def compute_log_ratio(output_file, sequences, k=5, collapse_rc=True):
     genome = Genome()
-    genome_counts_all = genome.compute_kmer_count(input_file="SGD_API/genome_kmer_counts.json")
+    genome_counts_all = genome.compute_kmer_count(input_file="SGD_API/architecture_info/genome_kmer_counts.json")
     if str(k) not in genome_counts_all:
         raise KeyError(f"No genome counts for k={k} in file")
 

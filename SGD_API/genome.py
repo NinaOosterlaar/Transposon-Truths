@@ -111,4 +111,4 @@ if __name__ == "__main__":
     # sequences = genome.get_whole_genome()
     # for chrom in sequences:
     #     print(genome.get_chromosome_lengths()[chrom])
-    genome.compute_kmer_count(chrom=0, k_sizes=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], output_file="SGD_API/genome_kmer_counts.json")
+    genome.compute_kmer_count(chrom=0, k_sizes=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], output_file="SGD_API/architecture_info/genome_kmer_counts.json")

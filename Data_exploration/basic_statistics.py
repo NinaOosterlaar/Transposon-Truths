@@ -2,7 +2,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns  
-from reader import read_wig, label_from_filename
+from Utils.reader import read_wig, label_from_filename
 from tqdm import tqdm
 
 

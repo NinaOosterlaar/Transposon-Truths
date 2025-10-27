@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from SGD_API.yeast_architecture import Nucleosomes
-from reader import read_wig
+from Utils.reader import read_wig
 # import statsmodels.api as sm
 # from statsmodels.gam.api import GLMGam, BSplines
 
