@@ -234,7 +234,7 @@ def calculate_saturation_without_bins(data):
     return saturations
 
 if __name__ == "__main__":
-    bin_sizes = [5, 50]
+    bin_sizes = [1, 5]
     input_folder = "Data/test/"
     output_folder = "AE/results/"
     transposon_data = read_csv_file_with_distances(input_folder)
