@@ -158,7 +158,7 @@ def saturation_against_bin_size(data, bin_sizes, plot = True):
         plot_saturation_vs_bin_size(densities, bin_sizes)
     return densities
 
-def plot_saturation_vs_bin_size(densities, bin_sizes, output_folder="results/"):
+def plot_saturation_vs_bin_size(densities, bin_sizes, output_folder="AE/results/"):
     """Plot saturation against bin sizes for different datasets.
     For each dataset create a plot that shows both the moving_average and binned values.
     Also show a plot with all datasets together for comparison, one with moving_average and one with binned.
