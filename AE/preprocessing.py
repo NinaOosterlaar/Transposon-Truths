@@ -1,9 +1,9 @@
 from copy import deepcopy
 import json
 import numpy as np
-import pandas as pd
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+from bin import bin_data
 from Utils.reader import read_csv_file_with_distances
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -386,58 +386,6 @@ def standardize_data(train_data, test_data, val_data, features):
                         ).flatten()
     return train_data, val_data, test_data, scalers
    
-
-def bin_data(data, bin_size, method, maximum_region_size):
-    """Bin data into specified bin size using the given method.
-    The transposon count should be binned together and then the mean of the features should be taken. 
-    Only bins non-padded values and updates the actual_length accordingly.
-    The shape of arrays is reduced to reflect the binning (maximum_region_size / bin_size).
-    
-    Args:
-        data (Dictionary): Dictionary containing region dictionaries.
-        bin_size (int): Size of bins for data aggregation.
-        method (str): Method for binning ('average', 'sum', 'max', 'min', 'median').
-        maximum_region_size (int): Original maximum region size before binning.
-        
-    Returns:
-        binned_data (Dictionary): Binned data with updated actual_length values and reduced array shapes.
-    """
-    # Calculate new maximum size after binning
-    new_max_size = (maximum_region_size + bin_size - 1) // bin_size
-    
-    for dataset in data:
-        for chrom in data[dataset]:
-            binned_regions = []
-            for region_dict in data[dataset][chrom]:
-                data_sample = region_dict['data']
-                actual_length = region_dict['actual_length']
-                
-                # Only bin the actual data, not the padding
-                num_bins = (actual_length + bin_size - 1) // bin_size
-                # Create array with the new maximum size (based on binning)
-                binned_region = np.zeros((new_max_size, data_sample.shape[1]))
-                for i in range(num_bins):
-                    start = i * bin_size
-                    end = min((i + 1) * bin_size, actual_length)
-                    bin_data = data_sample[start:end, :]
-                    if method == 'average':
-                        binned_region[i, 0] = np.mean(bin_data[:, 0])
-                    elif method == 'sum':
-                        binned_region[i, 0] = np.sum(bin_data[:, 0])
-                    elif method == 'max':
-                        binned_region[i, 0] = np.max(bin_data[:, 0])
-                    elif method == 'min':
-                        binned_region[i, 0] = np.min(bin_data[:, 0])
-                    elif method == 'median':
-                        binned_region[i, 0] = np.median(bin_data[:, 0])
-                    binned_region[i, 1:] = np.mean(bin_data[:, 1:], axis=0)  # Mean of features
-                
-                # Update the region dictionary
-                region_dict['data'] = binned_region
-                region_dict['actual_length'] = num_bins
-                binned_regions.append(region_dict)
-            data[dataset][chrom] = binned_regions
-    return data
 
 def preprocess_counts(data):
     """Preprocess transposon insertion counts.

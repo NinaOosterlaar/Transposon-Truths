@@ -247,8 +247,6 @@ def read_csv_file_with_distances(input_folder = "Data/distances_with_zeros"):
     return datasets
 
 
-    
-
 
 def parse_arguments():
     """Parse command line arguments."""
