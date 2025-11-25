@@ -11,9 +11,23 @@ from sklearn.preprocessing import StandardScaler
 
 replicate_names = ["FD7", "FD9", "drnp1-1", "drnp1-2"]
 
-def combine_replicates(data):
+def combine_replicates(data, method = "average"):
+    """Combine replicate datasets by averaging or summing their data.
+    Assumes replicate datasets have names containing replicate identifiers.
+    Every dataset point in the dataset is combined using the specified method.
+    
+    Args:
+        data (Dictionary): Dictionary containing region dictionaries.
+        method (str): Method to combine replicates, either "average" or "sum".
+    Returns:
+        new_data (Dictionary): Dictionary with combined replicate datasets.
+    """
     new_data = {}
-    print(data.keys())
+    for replicate_name in replicate_names:
+        combined_regions = {}
+        for dataset in data:
+            pass
+                    
 
 def standardize_data(train_data, test_data, val_data, features):
     """Standardize data to have mean 0 and standard deviation 1.

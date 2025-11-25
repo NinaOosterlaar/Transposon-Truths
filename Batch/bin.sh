@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=linear
+#SBATCH --job-name=bin
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --qos=long

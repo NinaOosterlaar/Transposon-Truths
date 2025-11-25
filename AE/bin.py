@@ -140,15 +140,18 @@ def saturation_against_bin_size(data, bin_sizes, plot = True):
     """
     densities = {}
     for dataset in data:
+        print(dataset)
         densities[dataset] = {'bins': [], 'moving_average': []}
         for bin_size in bin_sizes:
+            print(bin_size)
             chrom_windows = {"moving_average": [], "binned": []}
             for chrom in data[dataset]:
-                    data_array = np.array(data[dataset][chrom]['Value'])
-                    moving_average = sliding_window(data_array, window_size=bin_size, step_size=1, moving_average=True)
-                    bins = bin_data_single_array(data_array, length=len(data_array), bin_size=bin_size, method='average')[0]
-                    chrom_windows["moving_average"].extend(moving_average)
-                    chrom_windows["binned"].extend(bins)
+                print(chrom)
+                data_array = np.array(data[dataset][chrom]['Value'])
+                moving_average = sliding_window(data_array, window_size=bin_size, step_size=1, moving_average=True)
+                bins = bin_data_single_array(data_array, length=len(data_array), bin_size=bin_size, method='average')[0]
+                chrom_windows["moving_average"].extend(moving_average)
+                chrom_windows["binned"].extend(bins)
             densities[dataset]['bins'].append(compute_saturation(np.array(chrom_windows["binned"])))
             densities[dataset]['moving_average'].append(compute_saturation(np.array(chrom_windows["moving_average"])))
     if plot:
@@ -231,9 +234,9 @@ def calculate_saturation_without_bins(data):
     return saturations
 
 if __name__ == "__main__":
-    bin_sizes = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
-    input_folder = "Data/distances_with_zeros"
-    output_folder = "results/"
+    bin_sizes = [5, 50]
+    input_folder = "Data/test/"
+    output_folder = "AE/results/"
     transposon_data = read_csv_file_with_distances(input_folder)
     # initial_saturations = calculate_saturation_without_bins(transposon_data)
     # print(initial_saturations)
