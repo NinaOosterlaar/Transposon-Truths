@@ -11,7 +11,26 @@ from sklearn.preprocessing import StandardScaler
 
 replicate_names = ["FD7", "FD9", "drnp1-1", "drnp1-2"]
 
-def combine_replicates(data, method = "average"):
+chromosome_length = {
+    "ChrI": 230218,
+    "ChrII": 813184,
+    "ChrIII": 316620,
+    "ChrIV": 1531933,
+    "ChrV": 576874,
+    "ChrVI": 270161,
+    "ChrVII": 1090940,
+    "ChrVIII": 562643,
+    "ChrIX": 439888,
+    "ChrX": 745751,
+    "ChrXI": 666816,
+    "ChrXII": 1078171,
+    "ChrXIII": 924431,
+    "ChrXIV": 784333,
+    "ChrXV": 1091291,
+    "ChrXVI": 948066,
+}
+
+def combine_replicates(data, method = "average", save = True):
     """Combine replicate datasets by averaging or summing their data.
     Assumes replicate datasets have names containing replicate identifiers.
     Every dataset point in the dataset is combined using the specified method.
@@ -25,9 +44,34 @@ def combine_replicates(data, method = "average"):
     new_data = {}
     for replicate_name in replicate_names:
         combined_regions = {}
-        for dataset in data:
-            pass
-                    
+        for chrom in chromosome_length.keys():
+            combined_regions[chrom] = []
+            for i in range(chromosome_length[chrom]):
+                combined_count = 0.0
+                count_datasets = 0
+                for dataset in data:
+                    if replicate_name in dataset:
+                        combined_count += data[dataset][chrom]['Value'][i]
+                        count_datasets += 1
+                position = data[dataset][chrom]['Position'][i] if count_datasets > 0 else i + 1
+                Nucleosome_Distance = data[dataset][chrom]['Nucleosome_Distance'][i] if count_datasets > 0 else np.nan
+                Centromere_Distance = data[dataset][chrom]['Centromere_Distance'][i] if count_datasets > 0 else np.nan
+            if count_datasets > 0:
+                if method == "average":
+                    combined_count /= count_datasets
+                combined_regions[chrom].append([position, combined_count, Nucleosome_Distance, Centromere_Distance])
+        new_data[replicate_name] = combined_regions
+    if save:
+        output_folder = "Data/combined_replicates/"
+        os.makedirs(output_folder, exist_ok=True)
+        for replicate_name in new_data:
+            output_file = os.path.join(output_folder, f"{replicate_name}_combined.csv")
+            with open(output_file, 'w') as f:
+                f.write("Position,Value,Nucleosome_Distance,Centromere_Distance\n")
+                for chrom in new_data[replicate_name]:
+                    for pos in range(len(new_data[replicate_name][chrom])):
+                        f.write(f"{pos+1},{new_data[replicate_name][chrom][pos]}\n")
+    return new_data
 
 def standardize_data(train_data, test_data, val_data, features):
     """Standardize data to have mean 0 and standard deviation 1.
