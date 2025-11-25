@@ -232,7 +232,7 @@ def calculate_saturation_without_bins(data):
 
 if __name__ == "__main__":
     bin_sizes = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
-    input_folder = "Data/test"
+    input_folder = "Data/distances_with_zeros"
     output_folder = "results/"
     transposon_data = read_csv_file_with_distances(input_folder)
     # initial_saturations = calculate_saturation_without_bins(transposon_data)

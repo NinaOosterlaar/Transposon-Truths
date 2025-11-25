@@ -1,11 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=densities
-#SBATCH --partition=general
-#SBATCH --time=04:00:00
+#SBATCH --job-name=linear
+#SBATCH --partition=general,insy
+#SBATCH --account=ewi-insy-prb
+#SBATCH --qos=long
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=1G
-#SBATCH --mail-type=END,FAIL
+#SBATCH --mem-per-cpu=50G
+#SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%j.out
 #SBATCH --error=slurm_%j.err
@@ -20,4 +22,4 @@ conda activate env
 
 cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
-srun python Data_exploration/densities.py
+srun python AE/bin.py
