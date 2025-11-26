@@ -5,7 +5,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from Utils.reader import read_csv_file_with_distances
 
-def bin_data(data, bin_size, method, maximum_region_size):
+def bin_data(data, bin_size, method):
     """Bin data into specified bin size using the given method.
     The transposon count should be binned together and then the mean of the features should be taken. 
     Only bins non-padded values and updates the actual_length accordingly.
@@ -102,7 +102,7 @@ def bin_data_single_array(data_array, length, bin_size, method):
     return binned_region, num_bins
 
 
-def sliding_window(data, window_size, step_size, moving_average=False):
+def sliding_window_single_array(data, window_size, step_size, moving_average=False):
     """Apply sliding window to data.
     
     Args:
@@ -128,6 +128,26 @@ def sliding_window(data, window_size, step_size, moving_average=False):
         windows.append(window_data)
     return windows
 
+def sliding_window(data, window_size, step_size, moving_average=False):
+    """Apply sliding window to data.
+    
+    Args:
+        data (Dictionary): Dictionary containing different datasets and chromosomes.
+        window_size (int): Size of the sliding window.
+        step_size (int): Step size for the sliding window.
+        moving_average (bool): Whether to compute moving average within the window.
+        
+    Returns:
+        windowed_data (Dictionary): Data after applying sliding window.
+    """
+    windowed_data = {}
+    for dataset in data:
+        windowed_data[dataset] = {}
+        for chrom in data[dataset]:
+            windows = sliding_window_single_array(np.array(data[dataset][chrom]['Value']), window_size, step_size, moving_average)
+            
+    return windowed_data
+
 def saturation_against_bin_size(data, bin_sizes, plot = True):
     """Compute saturation of data against different bin sizes.
     Saturation is defined as the proportion of non-zero bins to total bins.
@@ -148,7 +168,7 @@ def saturation_against_bin_size(data, bin_sizes, plot = True):
             for chrom in data[dataset]:
                 print(chrom)
                 data_array = np.array(data[dataset][chrom]['Value'])
-                moving_average = sliding_window(data_array, window_size=bin_size, step_size=1, moving_average=True)
+                moving_average = sliding_window_single_array(data_array, window_size=bin_size, step_size=1, moving_average=True)
                 bins = bin_data_single_array(data_array, length=len(data_array), bin_size=bin_size, method='average')[0]
                 chrom_windows["moving_average"].extend(moving_average)
                 chrom_windows["binned"].extend(bins)

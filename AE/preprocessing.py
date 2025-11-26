@@ -385,7 +385,6 @@ def standardize_data(train_data, test_data, val_data, features):
                             data_sample[:actual_length, feature_index].reshape(-1, 1)
                         ).flatten()
     return train_data, val_data, test_data, scalers
-   
 
 def preprocess_counts(data):
     """Preprocess transposon insertion counts.
@@ -515,7 +514,6 @@ def get_mask_from_data(region_dict):
     mask = np.zeros(len(data_sample), dtype=bool)
     mask[:actual_length] = True
     return mask
-
 
 def extract_arrays_and_masks(data):
     """Extract data arrays and masks from the dictionary format.
