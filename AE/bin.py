@@ -37,8 +37,6 @@ def bin_data(data, bin_size, method):
             data[dataset][chrom] = binned_regions
     return data
 
-import numpy as np
-
 def bin_data_single_array(data_array, length, bin_size, method):
     """Bin a single data array into specified bin size using the given method.
     
@@ -102,7 +100,7 @@ def bin_data_single_array(data_array, length, bin_size, method):
     return binned_region, num_bins
 
 
-def sliding_window_single_array(data, window_size, step_size, moving_average=False):
+def sliding_window(data, window_size, step_size, moving_average=False):
     """Apply sliding window to data.
     
     Args:
@@ -128,26 +126,6 @@ def sliding_window_single_array(data, window_size, step_size, moving_average=Fal
         windows.append(window_data)
     return windows
 
-def sliding_window(data, window_size, step_size, moving_average=False):
-    """Apply sliding window to data.
-    
-    Args:
-        data (Dictionary): Dictionary containing different datasets and chromosomes.
-        window_size (int): Size of the sliding window.
-        step_size (int): Step size for the sliding window.
-        moving_average (bool): Whether to compute moving average within the window.
-        
-    Returns:
-        windowed_data (Dictionary): Data after applying sliding window.
-    """
-    windowed_data = {}
-    for dataset in data:
-        windowed_data[dataset] = {}
-        for chrom in data[dataset]:
-            windows = sliding_window_single_array(np.array(data[dataset][chrom]['Value']), window_size, step_size, moving_average)
-            
-    return windowed_data
-
 def saturation_against_bin_size(data, bin_sizes, plot = True):
     """Compute saturation of data against different bin sizes.
     Saturation is defined as the proportion of non-zero bins to total bins.
@@ -168,7 +146,7 @@ def saturation_against_bin_size(data, bin_sizes, plot = True):
             for chrom in data[dataset]:
                 print(chrom)
                 data_array = np.array(data[dataset][chrom]['Value'])
-                moving_average = sliding_window_single_array(data_array, window_size=bin_size, step_size=1, moving_average=True)
+                moving_average = sliding_window(data_array, window_size=bin_size, step_size=1, moving_average=True)
                 bins = bin_data_single_array(data_array, length=len(data_array), bin_size=bin_size, method='average')[0]
                 chrom_windows["moving_average"].extend(moving_average)
                 chrom_windows["binned"].extend(bins)
@@ -187,38 +165,45 @@ def plot_saturation_vs_bin_size(densities, bin_sizes, output_folder="AE/results/
         densities (Dictionary): Saturation densities per dataset and bin size.
         bin_sizes (list): List of bin sizes used.
     """
+    # for dataset in densities:
+    #     plt.figure()
+    #     plt.plot(bin_sizes, densities[dataset]['bins'], marker='o', label='Binned')
+    #     plt.plot(bin_sizes, densities[dataset]['moving_average'], marker='o', label='Moving Average')
+    #     plt.xlabel('Bin Size')
+    #     plt.ylabel('Saturation')
+    #     plt.title(f'Saturation vs Bin Size for {dataset}')
+    #     plt.legend()
+    #     plt.grid(True)
+    #     plt.tight_layout()
+    #     # Save plot
+    #     plt.savefig(os.path.join(output_folder, f"saturation_vs_bin_size_{dataset}.png"))
+    # Plot binned saturation for all datasets
+    fig, ax = plt.subplots(figsize=(12, 8))
     for dataset in densities:
-        plt.figure()
-        plt.plot(bin_sizes, densities[dataset]['bins'], marker='o', label='Binned')
-        plt.plot(bin_sizes, densities[dataset]['moving_average'], marker='o', label='Moving Average')
-        plt.xlabel('Bin Size')
-        plt.ylabel('Saturation')
-        plt.title(f'Saturation vs Bin Size for {dataset}')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        # Save plot
-        plt.savefig(os.path.join(output_folder, f"saturation_vs_bin_size_{dataset}.png"))
-    plt.figure()
+        ax.plot(bin_sizes, densities[dataset]['bins'], marker='o', label=dataset, markersize=4)
+    ax.set_xlabel('Bin Size', fontsize=12)
+    ax.set_ylabel('Saturation (Binned)', fontsize=12)
+    ax.set_title('Saturation vs Bin Size (Binned) for All Datasets', fontsize=14)
+    ax.set_ylim(0, 1)  # Saturation is between 0 and 1
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9, framealpha=0.9)
+    ax.grid(True, alpha=0.3)
+    plt.subplots_adjust(left=0.08, right=0.85, top=0.95, bottom=0.08)
+    plt.savefig(os.path.join(output_folder, "saturation_vs_bin_size_binned_all_datasets.png"), dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # Plot moving average saturation for all datasets
+    fig, ax = plt.subplots(figsize=(12, 8))
     for dataset in densities:
-        plt.plot(bin_sizes, densities[dataset]['bins'], marker='o', label=dataset)
-    plt.xlabel('Bin Size')
-    plt.ylabel('Saturation (Binned)')
-    plt.title('Saturation vs Bin Size (Binned) for All Datasets')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, "saturation_vs_bin_size_binned_all_datasets.png"))
-    plt.figure()
-    for dataset in densities:
-        plt.plot(bin_sizes, densities[dataset]['moving_average'], marker='o', label=dataset)
-    plt.xlabel('Bin Size')
-    plt.ylabel('Saturation (Moving Average)')
-    plt.title('Saturation vs Bin Size (Moving Average) for All Datasets')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, "saturation_vs_bin_size_moving_average_all_datasets.png"))
+        ax.plot(bin_sizes, densities[dataset]['moving_average'], marker='o', label=dataset, markersize=4)
+    ax.set_xlabel('Bin Size', fontsize=12)
+    ax.set_ylabel('Saturation (Moving Average)', fontsize=12)
+    ax.set_title('Saturation vs Bin Size (Moving Average) for All Datasets', fontsize=14)
+    ax.set_ylim(0, 1)  # Saturation is between 0 and 1
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9, framealpha=0.9)
+    ax.grid(True, alpha=0.3)
+    plt.subplots_adjust(left=0.08, right=0.85, top=0.95, bottom=0.08)
+    plt.savefig(os.path.join(output_folder, "saturation_vs_bin_size_moving_average_all_datasets.png"), dpi=300, bbox_inches='tight')
+    plt.close()
     
 def compute_saturation(bins):
     """Compute saturation for a single data array given a bin size."""
@@ -255,15 +240,18 @@ def calculate_saturation_without_bins(data):
 
 if __name__ == "__main__":
     bin_sizes = [1, 5, 10, 20, 30, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
-    input_folder = "Data/distances_with_zeros"
-    output_folder = "AE/results/"
-    transposon_data = read_csv_file_with_distances(input_folder)
-    # initial_saturations = calculate_saturation_without_bins(transposon_data)
-    # print(initial_saturations)
-    densities = saturation_against_bin_size(transposon_data, bin_sizes)
-    # Save densities to a file
-    with open(os.path.join(output_folder, "saturation_densities.json"), 'w') as f:
-        json.dump(densities, f, indent=4)
+    # input_folder = "Data/distances_with_zeros"
+    # output_folder = "AE/results/"
+    # transposon_data = read_csv_file_with_distances(input_folder)
+    # # initial_saturations = calculate_saturation_without_bins(transposon_data)
+    # # print(initial_saturations)
+    # densities = saturation_against_bin_size(transposon_data, bin_sizes)
+    # # Save densities to a file
+    # with open(os.path.join(output_folder, "saturation_densities.json"), 'w') as f:
+    #     json.dump(densities, f, indent=4)
+    with open("AE/results/saturation_densities.json", 'r') as f:
+        densities = json.load(f)
+    plot_saturation_vs_bin_size(densities, bin_sizes)
     
     
 
