@@ -1,8 +1,8 @@
-from copy import deepcopy
 import json
 import numpy as np
 import pandas as pd
 import os, sys
+import gc
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from bin import bin_data, sliding_window
 from Utils.reader import read_csv_file_with_distances
@@ -208,7 +208,7 @@ def standardize_data(train_data, val_data, test_data, features):
         features: List of features to use (e.g., ['Pos', 'Chrom', 'Nucl', 'Centr']).
         
     Returns:
-        train_data, val_data, test_data: Data with standardized features.
+        train_data, val_data, test_data: Data with standardized features (same objects, modified in-place).
         scalers: Dictionary of StandardScaler objects for each feature.
     """
     scalers = {}
@@ -239,36 +239,40 @@ def standardize_data(train_data, val_data, test_data, features):
                     all_values.extend(df[column_name].values)
         
         if len(all_values) > 0:
-            all_values = np.array(all_values).reshape(-1, 1)
+            all_values = np.array(all_values, dtype=np.float32).reshape(-1, 1)
             scaler.fit(all_values)
             scalers[feature] = scaler
             
-            # Apply scaler to training data
+            # Clean up
+            del all_values
+            gc.collect()
+            
+            # Apply scaler to training data (in-place)
             for dataset in train_data:
                 for chrom in train_data[dataset]:
                     df = train_data[dataset][chrom]
                     if column_name in df.columns:
                         train_data[dataset][chrom][column_name] = scaler.transform(
                             df[column_name].values.reshape(-1, 1)
-                        ).flatten()
+                        ).flatten().astype(np.float32)
             
-            # Apply scaler to validation data
+            # Apply scaler to validation data (in-place)
             for dataset in val_data:
                 for chrom in val_data[dataset]:
                     df = val_data[dataset][chrom]
                     if column_name in df.columns:
                         val_data[dataset][chrom][column_name] = scaler.transform(
                             df[column_name].values.reshape(-1, 1)
-                        ).flatten()
+                        ).flatten().astype(np.float32)
             
-            # Apply scaler to test data
+            # Apply scaler to test data (in-place)
             for dataset in test_data:
                 for chrom in test_data[dataset]:
                     df = test_data[dataset][chrom]
                     if column_name in df.columns:
                         test_data[dataset][chrom][column_name] = scaler.transform(
                             df[column_name].values.reshape(-1, 1)
-                        ).flatten()
+                        ).flatten().astype(np.float32)
     
     return train_data, val_data, test_data, scalers
 
@@ -281,17 +285,16 @@ def preprocess_counts(data):
         data (Dictionary): Dictionary containing {dataset: {chromosome: DataFrame}} structure.
         
     Returns:
-        preprocessed_data (Dictionary): Preprocessed counts data.
+        data (Dictionary): Preprocessed counts data (same object, modified in-place).
         stats (Dictionary): Statistics about the preprocessing (total insertions and CPM scale factor per dataset).
     """
-    norm_data = deepcopy(data)  # so we don't mutate the original
     stats = {}
 
-    for dataset in norm_data:
+    for dataset in data:
         # 1. Compute total insertions in this dataset across all chromosomes
         total_insertions = 0.0
-        for chrom in norm_data[dataset]:
-            df = norm_data[dataset][chrom]
+        for chrom in data[dataset]:
+            df = data[dataset][chrom]
             total_insertions += df['Value'].sum()
 
         if total_insertions == 0:
@@ -304,20 +307,23 @@ def preprocess_counts(data):
             "cpm_scale_factor": float(cpm_scale_factor),
         }
 
-        # 2. Apply CPM + log1p(CPM) to every chromosome in this dataset
-        for chrom in norm_data[dataset]:
-            df = norm_data[dataset][chrom]
+        # 2. Apply CPM + log1p(CPM) to every chromosome in this dataset (in-place)
+        for chrom in data[dataset]:
+            df = data[dataset][chrom]
             
             # CPM normalization
             cpm = df['Value'] * cpm_scale_factor  # counts per million
 
             # log1p transform
-            log_cpm = np.log1p(cpm)  # natural log(1 + CPM)
+            log_cpm = np.log1p(cpm).astype(np.float32)  # Use float32 to save memory
 
-            # Write back into the DataFrame
-            norm_data[dataset][chrom]['Value'] = log_cpm
+            # Write back into the DataFrame (in-place)
+            data[dataset][chrom]['Value'] = log_cpm
+            
+            # Clean up temporary variables
+            del cpm, log_cpm
 
-    return norm_data, stats
+    return data, stats
 
 def _split_items(items, train_size, val_size, test_size):
     """Helper function to split a list of items into train/val/test."""
@@ -597,9 +603,22 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
                     if segment_df.empty or len(segment_df) < data_point_length:
                         continue
                     
-                    data_array = segment_df.values
+                    data_array = segment_df.values.astype(np.float32)
                     windows = sliding_window(data_array, data_point_length, step_size)
                     data_points.extend(windows)
+                    
+                    # Clean up
+                    del segment_df, data_array, windows
+                
+                # Clean up processed segments as we go
+                processed_segments[dataset][chrom] = None
+            
+            # Clean up dataset
+            processed_segments[dataset] = None
+        
+        # Clean up
+        del processed_segments
+        gc.collect()
     
     else:
         # For Dataset and Chrom splits, data is already consecutive - use simpler processing
@@ -618,6 +637,9 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
                     binned_df = _add_chromosome_encoding(binned_df, chrom)
                 
                 transposon_data[dataset][chrom] = binned_df
+                
+                # Clean up
+                del df, binned_values
         
         # Select and order columns based on features
         cols_to_keep = ['Value']
@@ -645,15 +667,25 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
                 df = transposon_data[dataset][chrom]
                 if df.empty or len(df) < data_point_length:
                     continue
-                data_array = df.values
+                data_array = df.values.astype(np.float32)
                 windows = sliding_window(data_array, data_point_length, step_size, moving_average=False)
                 data_points.extend(windows)
+                
+                # Clean up
+                del df, data_array, windows
+            
+            # Clean up dataset data as we process
+            transposon_data[dataset] = None
+        
+        # Clean up
+        del transposon_data
+        gc.collect()
     
     # Convert list of arrays to 3D numpy array: (num_samples, window_length, num_features)
     if len(data_points) > 0:
-        data_points = np.array(data_points)
+        data_points = np.array(data_points, dtype=np.float32)
     else:
-        data_points = np.array([]).reshape(0, data_point_length, len(cols_to_keep))
+        data_points = np.array([], dtype=np.float32).reshape(0, data_point_length, len(cols_to_keep))
     
     return data_points
             
@@ -709,8 +741,13 @@ def preprocess(input_folder,
     
     # Bin/window and convert to 3D arrays
     train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    gc.collect()  # Clean up memory after processing train
+    
     val = process_data(val, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    gc.collect()  # Clean up memory after processing val
+    
     test = process_data(test, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    gc.collect()  # Clean up memory after processing test
 
     return train, val, test, scalers, count_stats
 
