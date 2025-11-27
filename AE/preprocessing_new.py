@@ -756,8 +756,16 @@ def preprocess(input_folder,
 if __name__ == "__main__":
     input_folder = "Data/combined_replicates/"
     train, val, test, scalers, count_stats = preprocess(input_folder, split_on='Chrom', train_val_test_split=[0.7, 0, 0.3])
+    # print some info
+    print(f"Train data shape: {train.shape}")
+    print(f"Test data shape: {test.shape}")
+    print(f"Validation data shape: {val.shape}")
+    # Create output directory if it doesn't exist
+    output_dir = "Data/processed_data/"
+    os.makedirs(output_dir, exist_ok=True)
+    
     # Save the train and test data as .npy files
-    output_file = "Data/processed_data/train_data.npy"
+    output_file = os.path.join(output_dir, "train_data.npy")
     np.save(output_file, train)
-    output_file = "Data/processed_data/test_data.npy"
+    output_file = os.path.join(output_dir, "test_data.npy")
     np.save(output_file, test)
