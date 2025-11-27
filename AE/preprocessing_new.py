@@ -698,7 +698,7 @@ def preprocess(input_folder,
                bin_size = 10, 
                moving_average = True,
                data_point_length = 2000,
-               step_size = 200
+               step_size = 500
                ):
     """Preprocessing the data before using at as an input for the Autoencoder
 
