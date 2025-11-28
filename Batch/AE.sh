@@ -23,4 +23,4 @@ conda activate env
 
 cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
 
-srun python AE/Autoencoerder.py --model AE
+srun python AE/Autoencoder.py --model AE
