@@ -15,12 +15,19 @@
 
 set -euo pipefail
 
+export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif"
+
+# Your project directory on the cluster
+export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
+
 module use /opt/insy/modulefiles  # If not already
-module load miniconda
+module load cuda/12.4
 
-source ~/.bashrc
-conda activate env
+cd "$PROJECT_DIR"
 
-cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
-
-srun python AE/Autoencoder.py --model AE
+srun apptainer exec \
+    --nv \
+    --bind "$PROJECT_DIR":/workspace \
+    --pwd /workspace \
+    "$APPTAINER_IMAGE" \
+    python AE/Autoencoder.py --model AE
