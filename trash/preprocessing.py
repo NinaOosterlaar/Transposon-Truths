@@ -1,9 +1,9 @@
 from copy import deepcopy
 import json
 import numpy as np
-import pandas as pd
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+from bin import bin_data
 from Utils.reader import read_csv_file_with_distances
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -48,7 +48,9 @@ chromosome_translator = {
 }
 
 def split_genes(genes_list, distance_around_genes):
-    """Split genes into data poitns and add distance around genes.
+    """Split genes into data points and add distance around genes.
+    Removes genes that are completely encompassed by other genes.
+    
     Args:
         genes_list (list): List of genes with their positions.
         distance_around_genes (int): Distance around genes to consider.
@@ -57,16 +59,45 @@ def split_genes(genes_list, distance_around_genes):
         split_genes_list (Dictionary): Dictionary with chromosomes as keys and lists of gene regions as values.
     """
     split_genes_list = {}
+    
+    # First pass: collect all gene regions with distance around them
+    gene_regions = {}  # chromosome -> list of (start, end, gene_name)
+    
     for gene in genes_list:
         chrom = genes_list[gene]['location']['chromosome']
         if chrom not in chromosome_translator:
             continue  # skip if chromosome not recognized
         chrom = chromosome_translator.get(chrom, chrom)
-        if chrom not in split_genes_list:
-            split_genes_list[chrom] = []
+        
+        if chrom not in gene_regions:
+            gene_regions[chrom] = []
+        
         start = max(0, genes_list[gene]['location']['start'] - distance_around_genes)
         end = min(chromosome_length[chrom], genes_list[gene]['location']['end'] + distance_around_genes)
-        split_genes_list[chrom].append([start, end])
+        gene_regions[chrom].append((start, end))
+    
+    # Second pass: remove encompassed genes (smaller regions completely inside larger ones)
+    for chrom in gene_regions:
+        regions = gene_regions[chrom]
+        filtered_regions = []
+        
+        for i, (start_i, end_i) in enumerate(regions):
+            is_encompassed = False
+            
+            # Check if this region is completely inside any other region
+            for j, (start_j, end_j) in enumerate(regions):
+                if i != j:
+                    # Check if region i is completely inside region j
+                    if start_j <= start_i and end_i <= end_j:
+                        # Region i is encompassed by region j
+                        is_encompassed = True
+                        break
+            
+            if not is_encompassed:
+                filtered_regions.append([start_i, end_i])
+        
+        split_genes_list[chrom] = filtered_regions
+    
     return split_genes_list
 
 def fill_gaps(regions_list, minimum_region_size):
@@ -83,88 +114,110 @@ def fill_gaps(regions_list, minimum_region_size):
     """
     for chrom in regions_list:
         regions = sorted(regions_list[chrom], key=lambda x: x[0])
-        prev_end = 0
-        prev_region = None
-        if prev_region is None:
-            first_region = regions[0]
-            if first_region[0] - prev_end >= minimum_region_size:
-                prev_region = [prev_end, first_region[0]]
-            else:
-                prev_region = first_region
-                first_region[0] = prev_end
-        for region in regions:
-            gap_start = prev_region[1]
-            gap_end = region[0]
-            gap_size = gap_end - gap_start
-            if gap_size >= minimum_region_size:
-                regions_list[chrom].append((gap_start, gap_end))
-            else:
-                middle = (gap_start + gap_end) // 2
-                prev_region = [prev_region[0], middle]
-                region = [middle, region[1]]
-            prev_region = region
-            prev_end = region[1]
-        # Handle gap after last region
-        last_region = regions[-1]
-        if chromosome_length[chrom] - last_region[1] >= minimum_region_size:
-            regions_list[chrom].append([last_region[1], chromosome_length[chrom]])
+        filled_regions = []
+        
+        if len(regions) == 0:
+            continue
+        
+        # Handle gap before first region
+        first_region = regions[0]
+        if first_region[0] >= minimum_region_size:
+            # Gap is large enough, add it as a separate region
+            filled_regions.append([0, first_region[0]])
+            filled_regions.append([first_region[0], first_region[1]])
         else:
-            last_region = [last_region[0], chromosome_length[chrom]]
-    # Sort regions again after filling gaps
-    for chrom in regions_list:
-        regions_list[chrom] = sorted(regions_list[chrom], key=lambda x: x[0])
+            # Gap is too small, extend first region to start at 0
+            filled_regions.append([0, first_region[1]])
+        
+        # Process gaps between consecutive regions
+        for i in range(1, len(regions)):
+            prev_region = filled_regions[-1]  # Get the last added region (modifiable by reference)
+            current_region = regions[i]
+            
+            gap_start = prev_region[1]
+            gap_end = current_region[0]
+            gap_size = gap_end - gap_start
+            
+            # Skip if regions are overlapping or touching (no gap or negative gap)
+            if gap_size <= 0:
+                # Just add the current region as-is (overlap will be handled by resolve_overlaps)
+                filled_regions.append([current_region[0], current_region[1]])
+                continue
+            
+            if gap_size >= minimum_region_size:
+                # Gap is large enough to be its own region
+                filled_regions.append([gap_start, gap_end])
+                filled_regions.append([current_region[0], current_region[1]])
+            else:
+                # Gap is too small, split it between adjacent regions
+                middle = (gap_start + gap_end) // 2
+                prev_region[1] = middle  # Extend previous region (modifies in place!)
+                filled_regions.append([middle, current_region[1]])
+        
+        # Handle gap after last region
+        last_region = filled_regions[-1]
+        gap_after = chromosome_length[chrom] - last_region[1]
+        if gap_after >= minimum_region_size:
+            filled_regions.append([last_region[1], chromosome_length[chrom]])
+        else:
+            # Extend last region to chromosome end (modifies in place!)
+            last_region[1] = chromosome_length[chrom]
+        
+        # Update regions_list with filled regions (convert to tuples for consistency)
+        regions_list[chrom] = [tuple(region) for region in filled_regions]
+    
     return regions_list
 
-def resolve_overlaps(regions_list, overlap_allowed, gene_list):
-    """Resolve overlapping regions based on the overlap_allowed flag.
-    If regions overlap in non-coding areas, the non-coding region will be equally divided.
-    If overlap occurs in coding areas:
-        If overlap_allowed is True, the cut-off will be the beginning/end of the coding region of each gene.
-        If overlap_allowed is False, the overlapping region will be divided equally between the two coding regions.
+def resolve_overlaps(regions_list):
+    """Resolve overlapping regions by adjusting their boundaries.
     
     Args:
         regions_list (list): List of regions with their positions.
-        overlap_allowed (bool): Whether overlapping regions are allowed.
     
     Returns:
-        resolved_regions_list (list): List of regions with overlaps resolved.
+        resolved_regions_list (dict): List of regions with overlaps resolved.
     """
     resolved_regions = {}
     for chrom in regions_list:
         regions = regions_list[chrom]
         resolved_regions[chrom] = []
+        
+        if len(regions) == 0:
+            continue
+        
         for i in range(len(regions) - 1):
-            current_region = regions[i]
-            next_region = regions[i + 1]
+            current_region = list(regions[i])  # Convert to list for mutability
+            next_region = list(regions[i + 1])
+            
             if current_region[1] > next_region[0]:  # Overlap detected
                 overlap_start = next_region[0]
                 overlap_end = current_region[1]
-                # Check if overlap is in coding region
-                in_coding = False
-                for gene in gene_list:
-                    if gene_list[gene]['location']['chromosome'] == chrom:
-                        gene_start = gene_list[gene]['location']['start']
-                        gene_end = gene_list[gene]['location']['end']
-                        if not (overlap_end < gene_start or overlap_start > gene_end):
-                            in_coding = True
-                            break
-                if in_coding:
-                    if overlap_allowed:
-                        # Cut-off at the beginning/end of the coding region
-                        current_region = [current_region[0], overlap_start]
-                        next_region = [overlap_end, next_region[1]]
-                    else:
-                        # Divide equally between two coding regions
-                        mid_point = (overlap_start + overlap_end) // 2
-                        current_region = [current_region[0], mid_point]
-                        next_region = [mid_point, next_region[1]]
+
+                mid_point = (overlap_start + overlap_end) // 2
+                current_region[1] = mid_point
+                next_region[0] = mid_point
+                
+                # Validate BOTH regions before updating the list
+                if next_region[0] >= next_region[1]:
+                    # Next region would be invalid, don't update it
+                    print(f"Warning: Overlap resolution would create invalid next region [{next_region[0]}, {next_region[1]}] on {chrom}. Keeping original next region.")
                 else:
-                    # Non-coding overlap, divide equally
-                    mid_point = (overlap_start + overlap_end) // 2
-                    current_region = [current_region[0], mid_point]
-                    next_region = [mid_point, next_region[1]]
-            resolved_regions[chrom].append(current_region)
-        resolved_regions[chrom].append(regions[-1])  # Add the last region
+                    # Update the next_region in the regions list for subsequent iterations
+                    regions[i + 1] = next_region
+                    
+            # Validate region before adding (skip if invalid)
+            if current_region[0] < current_region[1]:
+                resolved_regions[chrom].append(current_region)
+            else:
+                print(f"Warning: Skipping invalid region [{current_region[0]}, {current_region[1]}] on {chrom} after overlap resolution")
+        
+        # Add the last region with validation
+        last_region = list(regions[-1])
+        if last_region[0] < last_region[1]:
+            resolved_regions[chrom].append(tuple(last_region))
+        else:
+            print(f"Warning: Skipping invalid last region [{last_region[0]}, {last_region[1]}] on {chrom}")
+    
     return resolved_regions
 
 def divide_long_sequences(regions_list, maximum_region_size):
@@ -205,23 +258,43 @@ def add_transposon_and_features(transposon_data, regions_list, features, maximum
         transposon_data (Dictionary): Dictionary of DataFrames containing transposon insertion data and additional information.
         regions_list (list): List of regions with their positions.
         features (list): List of features to include in the data, can include the position, chromosome, distance from nucleosome and distance from centromere.
+        maximum_region_size (int): Maximum size for padding arrays.
 
     Returns:
-        enriched_regions_list (Dictionary): Dictionary with datasets as key and tuples of (data_array, actual_length) as values.
+        enriched_regions_list (Dictionary): Dictionary with datasets as key and region dictionaries as values.
+            Each region is a dict: {'data': array, 'actual_length': int, 'start': int, 'end': int}
     """
     regions = {}
     for dataset in transposon_data:
         data = transposon_data[dataset]
         regions[dataset] = {}
         for chrom in regions_list:
+            # Skip if chromosome not in data
+            if chrom not in data:
+                print(f"Warning: Chromosome {chrom} not found in dataset {dataset}. Skipping.")
+                continue
+            
             data_chrom = data[chrom]
             regions[dataset][chrom] = []
             for region in regions_list[chrom]:
                 data_sample = np.zeros((maximum_region_size, len(features) + 1))  # +1 for transposon insertion counts
                 start, end = region
+                
+                # Validate region
+                if start >= end:
+                    print(f"Warning: Invalid region {start}-{end} on {chrom} in dataset {dataset} (start >= end). Skipping.")
+                    continue
+                
                 region_data = data_chrom[(data_chrom['Position'] >= start) & (data_chrom['Position'] < end)]
                 actual_length = len(region_data)  # Track the actual data length
-                # Remove features not in the selected list
+                
+                # Skip regions with no data points (this shouldn't happen if your data includes all positions)
+                if actual_length == 0:
+                    print(f"Warning: Region {start}-{end} on {chrom} in dataset {dataset} has no data points. "
+                          f"This may indicate missing data in your dataset. Skipping.")
+                    continue
+                
+                # Fill the data array
                 data_sample[:actual_length, 0] = region_data['Value'].values  # Transposon insertion counts
                 for feature in features:
                     if feature == 'Pos':
@@ -235,8 +308,15 @@ def add_transposon_and_features(transposon_data, regions_list, features, maximum
                     elif feature == 'Chrom':
                         chrom_value = list(chromosome_length.keys()).index(chrom) + 1  # +1 to avoid zero
                         data_sample[:actual_length, features.index('Chrom') + 1] = chrom_value
-                # Store as tuple: (data_array, actual_length)
-                regions[dataset][chrom].append((data_sample, actual_length))           
+                
+                # Store as dictionary with metadata
+                region_dict = {
+                    'data': data_sample,
+                    'actual_length': actual_length,
+                    'start': start,
+                    'end': end
+                }
+                regions[dataset][chrom].append(region_dict)           
     return regions
             
         
@@ -246,7 +326,7 @@ def standardize_data(train_data, test_data, val_data, features):
     Only standardizes non-padded values (actual data).
     
     Args:
-        train_data, test_data, val_data: Dictionaries containing tuples of (data_array, actual_length).
+        train_data, test_data, val_data: Dictionaries containing region dictionaries.
         features: List of features to standardize.
         
     Returns:
@@ -261,7 +341,9 @@ def standardize_data(train_data, test_data, val_data, features):
         all_values = []
         for dataset in train_data:
             for chrom in train_data[dataset]:
-                for data_sample, actual_length in train_data[dataset][chrom]:
+                for region_dict in train_data[dataset][chrom]:
+                    data_sample = region_dict['data']
+                    actual_length = region_dict['actual_length']
                     feature_index = features.index(feature) + 1  # +1 because column 0 is counts
                     # Only collect non-padded values
                     all_values.extend(data_sample[:actual_length, feature_index])
@@ -271,7 +353,9 @@ def standardize_data(train_data, test_data, val_data, features):
         # Apply the scaler to training data (only non-padded values)
         for dataset in train_data:
             for chrom in train_data[dataset]:
-                for i, (data_sample, actual_length) in enumerate(train_data[dataset][chrom]):
+                for region_dict in train_data[dataset][chrom]:
+                    data_sample = region_dict['data']
+                    actual_length = region_dict['actual_length']
                     feature_index = features.index(feature) + 1
                     # Only transform non-padded values
                     if actual_length > 0:
@@ -281,7 +365,9 @@ def standardize_data(train_data, test_data, val_data, features):
         # Apply the scaler to validation data (only non-padded values)
         for dataset in val_data:
             for chrom in val_data[dataset]:
-                for i, (data_sample, actual_length) in enumerate(val_data[dataset][chrom]):
+                for region_dict in val_data[dataset][chrom]:
+                    data_sample = region_dict['data']
+                    actual_length = region_dict['actual_length']
                     feature_index = features.index(feature) + 1
                     if actual_length > 0:
                         data_sample[:actual_length, feature_index] = scaler.transform(
@@ -290,59 +376,15 @@ def standardize_data(train_data, test_data, val_data, features):
         # Apply the scaler to testing data (only non-padded values)
         for dataset in test_data:
             for chrom in test_data[dataset]:
-                for i, (data_sample, actual_length) in enumerate(test_data[dataset][chrom]):
+                for region_dict in test_data[dataset][chrom]:
+                    data_sample = region_dict['data']
+                    actual_length = region_dict['actual_length']
                     feature_index = features.index(feature) + 1
                     if actual_length > 0:
                         data_sample[:actual_length, feature_index] = scaler.transform(
                             data_sample[:actual_length, feature_index].reshape(-1, 1)
                         ).flatten()
     return train_data, val_data, test_data, scalers
-   
-
-def bin_data(data, bin_size, method, maximum_region_size):
-    """Bin data into specified bin size using the given method.
-    The transposon count should be binned together and then the mean of the features should be taken. 
-    Only bins non-padded values and updates the actual_length accordingly.
-    The shape of arrays is reduced to reflect the binning (maximum_region_size / bin_size).
-    
-    Args:
-        data (Dictionary): Dictionary containing tuples of (data_array, actual_length).
-        bin_size (int): Size of bins for data aggregation.
-        method (str): Method for binning ('average', 'sum', 'max', 'min', 'median').
-        maximum_region_size (int): Original maximum region size before binning.
-        
-    Returns:
-        binned_data (Dictionary): Binned data with updated actual_length values and reduced array shapes.
-    """
-    # Calculate new maximum size after binning
-    new_max_size = (maximum_region_size + bin_size - 1) // bin_size
-    
-    for dataset in data:
-        for chrom in data[dataset]:
-            binned_regions = []
-            for data_sample, actual_length in data[dataset][chrom]:
-                # Only bin the actual data, not the padding
-                num_bins = (actual_length + bin_size - 1) // bin_size
-                # Create array with the new maximum size (based on binning)
-                binned_region = np.zeros((new_max_size, data_sample.shape[1]))
-                for i in range(num_bins):
-                    start = i * bin_size
-                    end = min((i + 1) * bin_size, actual_length)
-                    bin_data = data_sample[start:end, :]
-                    if method == 'average':
-                        binned_region[i, 0] = np.mean(bin_data[:, 0])
-                    elif method == 'sum':
-                        binned_region[i, 0] = np.sum(bin_data[:, 0])
-                    elif method == 'max':
-                        binned_region[i, 0] = np.max(bin_data[:, 0])
-                    elif method == 'min':
-                        binned_region[i, 0] = np.min(bin_data[:, 0])
-                    elif method == 'median':
-                        binned_region[i, 0] = np.median(bin_data[:, 0])
-                    binned_region[i, 1:] = np.mean(bin_data[:, 1:], axis=0)  # Mean of features
-                binned_regions.append((binned_region, num_bins))  # Update actual_length to num_bins
-            data[dataset][chrom] = binned_regions
-    return data
 
 def preprocess_counts(data):
     """Preprocess transposon insertion counts.
@@ -352,7 +394,7 @@ def preprocess_counts(data):
     Only processes non-padded values.
     
     Args:
-        data (Dictionary): Dictionary containing tuples of (data_array, actual_length).
+        data (Dictionary): Dictionary containing region dictionaries.
         
     Returns:
         preprocessed_data (Dictionary): Preprocessed counts data.
@@ -365,7 +407,9 @@ def preprocess_counts(data):
         # 1. compute total insertions in this dataset (ONLY from non-padded values)
         total_insertions = 0.0
         for chrom in norm_data[dataset]:
-            for data_sample, actual_length in norm_data[dataset][chrom]:
+            for region_dict in norm_data[dataset][chrom]:
+                data_sample = region_dict['data']
+                actual_length = region_dict['actual_length']
                 # column 0 is raw counts, only sum non-padded values
                 total_insertions += np.nansum(data_sample[:actual_length, 0])
 
@@ -381,7 +425,9 @@ def preprocess_counts(data):
 
         # 2. apply CPM + log1p(CPM) to every region for this dataset (only non-padded values)
         for chrom in norm_data[dataset]:
-            for i, (data_sample, actual_length) in enumerate(norm_data[dataset][chrom]):
+            for region_dict in norm_data[dataset][chrom]:
+                data_sample = region_dict['data']
+                actual_length = region_dict['actual_length']
                 # Only process non-padded values
                 raw_counts = data_sample[:actual_length, 0].astype(float)
 
@@ -454,6 +500,50 @@ def split_data(data, train_val_test_split, split_on):
                 test_data[dataset] = data[dataset]
     return train_data, val_data, test_data
 
+def get_mask_from_data(region_dict):
+    """Create a boolean mask indicating which positions contain real data vs padding.
+    
+    Args:
+        region_dict (dict): Region dictionary with 'data' and 'actual_length'.
+        
+    Returns:
+        mask (np.array): Boolean array where True = real data, False = padding.
+    """
+    data_sample = region_dict['data']
+    actual_length = region_dict['actual_length']
+    mask = np.zeros(len(data_sample), dtype=bool)
+    mask[:actual_length] = True
+    return mask
+
+def extract_arrays_and_masks(data):
+    """Extract data arrays and masks from the dictionary format.
+    Useful for preparing data for neural network training.
+    
+    Args:
+        data (Dict): Data dictionary with structure {dataset: {chrom: [region_dicts, ...]}}.
+        
+    Returns:
+        arrays (list): List of all data arrays.
+        masks (list): List of corresponding boolean masks.
+        metadata (list): List of metadata dicts with 'dataset', 'chrom', 'start', 'end', 'actual_length'.
+    """
+    arrays = []
+    masks = []
+    metadata = []
+    for dataset in data:
+        for chrom in data[dataset]:
+            for region_dict in data[dataset][chrom]:
+                arrays.append(region_dict['data'])
+                masks.append(get_mask_from_data(region_dict))
+                metadata.append({
+                    'dataset': dataset,
+                    'chrom': chrom,
+                    'start': region_dict['start'],
+                    'end': region_dict['end'],
+                    'actual_length': region_dict['actual_length']
+                })
+    return arrays, masks, metadata
+
 def preprocess_data(input_folder, 
                     gene_file,
                     features = ['Pos', 'Chrom', 'Nucl', 'Centr'], 
@@ -461,14 +551,18 @@ def preprocess_data(input_folder,
                     split_on = 'Chrom',
                     bin = 5, bin_method = 'average', 
                     distance_around_genes = 160, 
-                    overlap_allowed = True,
                     minimum_region_size = 200,
                     maximum_region_size = 3000,
                     scaling = True):
     """Preprocess data for autoencoder training and testing.
     
-    Data is returned as dictionaries where each region is a tuple of (data_array, actual_length).
-    The data_array is padded to maximum_region_size, and actual_length indicates how many rows contain real data.
+    Data is returned as dictionaries where each region is a dict with:
+        - 'data': padded numpy array
+        - 'actual_length': number of real data points
+        - 'start': genomic start position
+        - 'end': genomic end position
+    
+    Regions with zero data points are automatically filtered out.
     
     Args:
         input_folder (str): Path to the folder containing input data files.
@@ -479,13 +573,12 @@ def preprocess_data(input_folder,
         bin (int): Size of bins for data aggregation.
         bin_method (str): Method for binning ('average', 'sum', 'max', 'min', 'median').
         distance_around_genes (int): Distance around genes to consider.
-        overlap_allowed (bool): Whether overlapping regions are allowed.
         minimum_region_size (int): Minimum size of regions to become its own data point.
         maximum_region_size (int): Maximum size of regions.
         scaling (bool): Whether to standardize features.
         
     Returns:
-        train_data (Dict): Training data with structure {dataset: {chrom: [(array, length), ...]}}.
+        train_data (Dict): Training data with structure {dataset: {chrom: [region_dicts, ...]}}.
         val_data (Dict): Validation data with same structure.
         test_data (Dict): Testing data with same structure.
         scalers (Dict): Dictionary of StandardScaler objects used for each feature.
@@ -500,7 +593,7 @@ def preprocess_data(input_folder,
     # Fill gaps between regions
     regions_list = fill_gaps(regions_list, minimum_region_size)
     # Resolve overlapping regions
-    regions_list = resolve_overlaps(regions_list, overlap_allowed, genes_data)
+    regions_list = resolve_overlaps(regions_list)
     # Divide long sequences into smaller regions
     regions_list = divide_long_sequences(regions_list, maximum_region_size)
     # Add transposon insertion data and features
@@ -510,7 +603,6 @@ def preprocess_data(input_folder,
         regions_list = bin_data(regions_list, bin, bin_method, maximum_region_size)
     # Preprocess counts
     regions_list, stats = preprocess_counts(regions_list)
-    print("Preprocessing stats:", stats)
     # Split data into training, validation, and testing sets
     train_data, val_data, test_data = split_data(regions_list, train_val_test_split, split_on)
     # Standardize features of the training set and apply the same transformation to validation and testing sets
@@ -522,62 +614,38 @@ def preprocess_data(input_folder,
     return train_data, val_data, test_data, scalers
 
 
-def get_mask_from_data(data_sample, actual_length):
-    """Create a boolean mask indicating which positions contain real data vs padding.
-    
-    Args:
-        data_sample (np.array): The padded data array.
-        actual_length (int): Number of rows containing real data.
-        
-    Returns:
-        mask (np.array): Boolean array of shape (len(data_sample),) where True = real data, False = padding.
-    """
-    mask = np.zeros(len(data_sample), dtype=bool)
-    mask[:actual_length] = True
-    return mask
-
-
-def extract_arrays_and_masks(data):
-    """Extract data arrays and masks from the tuple format.
-    Useful for preparing data for neural network training.
-    
-    Args:
-        data (Dict): Data dictionary with structure {dataset: {chrom: [(array, length), ...]}}.
-        
-    Returns:
-        arrays (list): List of all data arrays.
-        masks (list): List of corresponding boolean masks.
-    """
-    arrays = []
-    masks = []
-    for dataset in data:
-        for chrom in data[dataset]:
-            for data_sample, actual_length in data[dataset][chrom]:
-                arrays.append(data_sample)
-                masks.append(get_mask_from_data(data_sample, actual_length))
-    return arrays, masks
-
 
 if __name__ == "__main__":
     input_folder = "Data/test"
     gene_file = "SGD_API/architecture_info/yeast_genes_with_info.json"
     train_data, val_data, test_data, scalers = preprocess_data(input_folder, gene_file, train_val_test_split=[1, 0, 0], scaling=True)
+    # This gives 9153 regions in total
+    
     # print the shapes of the datasets
-    for dataset in train_data:
-        for chrom in train_data[dataset]:
-            for data_sample, actual_length in train_data[dataset][chrom]:
-                print(f"Dataset: {dataset}, Chromosome: {chrom}, Region shape: {data_sample.shape}, Actual length: {actual_length}")
-        # Save the training data as a json file after converting numpy arrays to lists
-    train_data_json = {}
-    for dataset in train_data:
-        train_data_json[dataset] = {}
-        for chrom in train_data[dataset]:
-            train_data_json[dataset][chrom] = [
-                (data_sample.tolist(), actual_length)
-                for data_sample, actual_length in train_data[dataset][chrom]
-            ]
-    with open("Data/train_data_with_scalers.json", "w") as f:
-        json.dump(train_data_json, f, indent=4)
+    # for dataset in train_data:
+    #     for chrom in train_data[dataset]:
+    #         for region_dict in train_data[dataset][chrom]:
+    #             print(f"Dataset: {dataset}, Chromosome: {chrom}, "
+    #                   f"Region: {region_dict['start']}-{region_dict['end']}, "
+    #                   f"Shape: {region_dict['data'].shape}, "
+    #                   f"Actual length: {region_dict['actual_length']}")
+    
+    # Save the training data as a json file after converting numpy arrays to lists
+    # train_data_json = {}
+    # for dataset in train_data:
+    #     train_data_json[dataset] = {}
+    #     for chrom in train_data[dataset]:
+    #         train_data_json[dataset][chrom] = [
+    #             {
+    #                 'data': region_dict['data'].tolist(),
+    #                 'actual_length': region_dict['actual_length'],
+    #                 'start': region_dict['start'],
+    #                 'end': region_dict['end']
+    #             }
+    #             for region_dict in train_data[dataset][chrom]
+    #         ]
+    # with open("Data/train_data_with_scalers.json", "w") as f:
+    #     json.dump(train_data_json, f, indent=4)
 
         
     

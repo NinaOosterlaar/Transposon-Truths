@@ -1,6 +1,6 @@
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from AE.preprocessing import preprocess_data
+from trash.preprocessing import preprocess_data
 import numpy as np
 import pandas as pd
 from itertools import combinations

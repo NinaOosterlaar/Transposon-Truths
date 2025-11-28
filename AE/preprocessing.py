@@ -1,12 +1,25 @@
-from copy import deepcopy
 import json
 import numpy as np
+import pandas as pd
 import os, sys
+import gc
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from bin import bin_data
+from bin import bin_data, sliding_window
 from Utils.reader import read_csv_file_with_distances
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+
+replicate_names = ["FD7", "FD9", "dnrp1-1", "dnrp1-2"]
+
+# Mapping of replicate names to their strain folders
+replicate_to_strain = {
+    "FD7": "strain_FD",
+    "FD9": "strain_FD",
+    "FD11": "strain_FD",
+    "FD12": "strain_FD",
+    "dnrp1-1": "strain_dnrp",
+    "dnrp1-2": "strain_dnrp",
+}
 
 chromosome_length = {
     "ChrI": 230218,
@@ -25,393 +38,264 @@ chromosome_length = {
     "ChrXIV": 784333,
     "ChrXV": 1091291,
     "ChrXVI": 948066,
-    "ChrM": 85779,          # mitochondrial genome (approx for S288C)
-    "2micron": 6318         # 2-micron plasmid
-}
-chromosome_translator = {
-    "Chromosome_I": "ChrI",
-    "Chromosome_II": "ChrII",
-    "Chromosome_III": "ChrIII",
-    "Chromosome_IV": "ChrIV",
-    "Chromosome_V": "ChrV",
-    "Chromosome_VI": "ChrVI",
-    "Chromosome_VII": "ChrVII",
-    "Chromosome_VIII": "ChrVIII",
-    "Chromosome_IX": "ChrIX",
-    "Chromosome_X": "ChrX",
-    "Chromosome_XI": "ChrXI",
-    "Chromosome_XII": "ChrXII",
-    "Chromosome_XIII": "ChrXIII",
-    "Chromosome_XIV": "ChrXIV",
-    "Chromosome_XV": "ChrXV",
-    "Chromosome_XVI": "ChrXVI",
 }
 
-def split_genes(genes_list, distance_around_genes):
-    """Split genes into data points and add distance around genes.
-    Removes genes that are completely encompassed by other genes.
+def get_strain_folder(dataset_name):
+    """Determine the strain folder for a dataset."""
+    # Check if it's a combined replicate
+    if dataset_name in replicate_to_strain:
+        return replicate_to_strain[dataset_name]
     
-    Args:
-        genes_list (list): List of genes with their positions.
-        distance_around_genes (int): Distance around genes to consider.
-        
-    Returns:
-        split_genes_list (Dictionary): Dictionary with chromosomes as keys and lists of gene regions as values.
-    """
-    split_genes_list = {}
+    # Check if it matches a replicate pattern (non-combined)
+    for replicate_name in replicate_names:
+        if replicate_name in dataset_name:
+            if replicate_name in replicate_to_strain:
+                return replicate_to_strain[replicate_name]
     
-    # First pass: collect all gene regions with distance around them
-    gene_regions = {}  # chromosome -> list of (start, end, gene_name)
-    
-    for gene in genes_list:
-        chrom = genes_list[gene]['location']['chromosome']
-        if chrom not in chromosome_translator:
-            continue  # skip if chromosome not recognized
-        chrom = chromosome_translator.get(chrom, chrom)
-        
-        if chrom not in gene_regions:
-            gene_regions[chrom] = []
-        
-        start = max(0, genes_list[gene]['location']['start'] - distance_around_genes)
-        end = min(chromosome_length[chrom], genes_list[gene]['location']['end'] + distance_around_genes)
-        gene_regions[chrom].append((start, end))
-    
-    # Second pass: remove encompassed genes (smaller regions completely inside larger ones)
-    for chrom in gene_regions:
-        regions = gene_regions[chrom]
-        filtered_regions = []
-        
-        for i, (start_i, end_i) in enumerate(regions):
-            is_encompassed = False
-            
-            # Check if this region is completely inside any other region
-            for j, (start_j, end_j) in enumerate(regions):
-                if i != j:
-                    # Check if region i is completely inside region j
-                    if start_j <= start_i and end_i <= end_j:
-                        # Region i is encompassed by region j
-                        is_encompassed = True
-                        break
-            
-            if not is_encompassed:
-                filtered_regions.append([start_i, end_i])
-        
-        split_genes_list[chrom] = filtered_regions
-    
-    return split_genes_list
+    # Try to infer from dataset name
+    if dataset_name.startswith("FD"):
+        return "strain_FD"
+    elif dataset_name.startswith("dnrp"):
+        return "strain_dnrp"
+    elif dataset_name.startswith("yEK19"):
+        return "strain_yEK19"
+    elif dataset_name.startswith("yEK23"):
+        return "strain_yEK23"
+    elif dataset_name.startswith("yTW001"):
+        return "strain_yTW001"
+    elif dataset_name.startswith("yWT03"):
+        return "strain_yWT03a"
+    elif dataset_name.startswith("yWT04"):
+        return "strain_yWT04a"
+    elif dataset_name.startswith("yLIC") or dataset_name.startswith("ylic"):
+        return "strain_ylic137"
+    else:
+        return "strain_unknown"
 
-def fill_gaps(regions_list, minimum_region_size):
-    """Fill gaps between regions while ensuring minimal region size.
-    If gaps are smaller than minimum_region_size, they are merged with adjacent regions.
-    If gaps are larger, they are kept as separate regions.
+def combine_replicates(data, method = "average", save = True, output_folder = "Data/combined_replicates/"):
+    """Combine replicate datasets by averaging or summing their data.
+    Assumes replicate datasets have names containing replicate identifiers.
+    Every dataset point in the dataset is combined using the specified method.
+    
+    Saves all datasets in the same folder structure as the original data:
+    - Combined replicates (e.g., FD7, FD9) go into their strain folders (strain_FD)
+    - Non-replicate datasets are copied as-is into their strain folders
     
     Args:
-        regions_list (list): List of regions with their positions.
-        minimum_region_size (int): Minimum size of regions to become its own data point.
-        
+        data (Dictionary): Dictionary containing chromosome DataFrames for each dataset.
+        method (str): Method to combine replicates, either "average" or "sum".
+        save (bool): Whether to save combined data to CSV files.
+        output_folder (str): Base output folder path.
     Returns:
-        filled_regions_list (list): List of regions with gaps filled.
+        new_data (Dictionary): Dictionary with combined replicate datasets.
     """
-    for chrom in regions_list:
-        regions = sorted(regions_list[chrom], key=lambda x: x[0])
-        filled_regions = []
+    new_data = {}
+    datasets_to_remove = []
+    
+    # Step 1: Combine replicates
+    for replicate_name in replicate_names:
+        # Find all datasets that match this replicate name
+        matching_datasets = [dataset for dataset in data if replicate_name in dataset]
         
-        if len(regions) == 0:
+        if not matching_datasets:
+            print(f"No datasets found for replicate: {replicate_name}")
             continue
         
-        # Handle gap before first region
-        first_region = regions[0]
-        if first_region[0] >= minimum_region_size:
-            # Gap is large enough, add it as a separate region
-            filled_regions.append([0, first_region[0]])
-            filled_regions.append([first_region[0], first_region[1]])
-        else:
-            # Gap is too small, extend first region to start at 0
-            filled_regions.append([0, first_region[1]])
+        print(f"Combining {len(matching_datasets)} datasets for replicate: {replicate_name}")
+        combined_regions = {}
         
-        # Process gaps between consecutive regions
-        for i in range(1, len(regions)):
-            prev_region = filled_regions[-1]  # Get the last added region (modifiable by reference)
-            current_region = regions[i]
+        for chrom in chromosome_length.keys():
+            # Initialize a dictionary to accumulate values by position
+            position_data = {}
             
-            gap_start = prev_region[1]
-            gap_end = current_region[0]
-            gap_size = gap_end - gap_start
-            
-            # Skip if regions are overlapping or touching (no gap or negative gap)
-            if gap_size <= 0:
-                # Just add the current region as-is (overlap will be handled by resolve_overlaps)
-                filled_regions.append([current_region[0], current_region[1]])
-                continue
-            
-            if gap_size >= minimum_region_size:
-                # Gap is large enough to be its own region
-                filled_regions.append([gap_start, gap_end])
-                filled_regions.append([current_region[0], current_region[1]])
-            else:
-                # Gap is too small, split it between adjacent regions
-                middle = (gap_start + gap_end) // 2
-                prev_region[1] = middle  # Extend previous region (modifies in place!)
-                filled_regions.append([middle, current_region[1]])
-        
-        # Handle gap after last region
-        last_region = filled_regions[-1]
-        gap_after = chromosome_length[chrom] - last_region[1]
-        if gap_after >= minimum_region_size:
-            filled_regions.append([last_region[1], chromosome_length[chrom]])
-        else:
-            # Extend last region to chromosome end (modifies in place!)
-            last_region[1] = chromosome_length[chrom]
-        
-        # Update regions_list with filled regions (convert to tuples for consistency)
-        regions_list[chrom] = [tuple(region) for region in filled_regions]
-    
-    return regions_list
-
-def resolve_overlaps(regions_list):
-    """Resolve overlapping regions by adjusting their boundaries.
-    
-    Args:
-        regions_list (list): List of regions with their positions.
-    
-    Returns:
-        resolved_regions_list (dict): List of regions with overlaps resolved.
-    """
-    resolved_regions = {}
-    for chrom in regions_list:
-        regions = regions_list[chrom]
-        resolved_regions[chrom] = []
-        
-        if len(regions) == 0:
-            continue
-        
-        for i in range(len(regions) - 1):
-            current_region = list(regions[i])  # Convert to list for mutability
-            next_region = list(regions[i + 1])
-            
-            if current_region[1] > next_region[0]:  # Overlap detected
-                overlap_start = next_region[0]
-                overlap_end = current_region[1]
-
-                mid_point = (overlap_start + overlap_end) // 2
-                current_region[1] = mid_point
-                next_region[0] = mid_point
+            # Accumulate data from all matching datasets
+            for dataset in matching_datasets:
+                if chrom not in data[dataset]:
+                    continue
                 
-                # Validate BOTH regions before updating the list
-                if next_region[0] >= next_region[1]:
-                    # Next region would be invalid, don't update it
-                    print(f"Warning: Overlap resolution would create invalid next region [{next_region[0]}, {next_region[1]}] on {chrom}. Keeping original next region.")
-                else:
-                    # Update the next_region in the regions list for subsequent iterations
-                    regions[i + 1] = next_region
+                df = data[dataset][chrom]
+                
+                for _, row in df.iterrows():
+                    pos = int(row['Position'])
+                    value = row['Value']
+                    nuc_dist = row['Nucleosome_Distance']
+                    cent_dist = row['Centromere_Distance']
                     
-            # Validate region before adding (skip if invalid)
-            if current_region[0] < current_region[1]:
-                resolved_regions[chrom].append(current_region)
-            else:
-                print(f"Warning: Skipping invalid region [{current_region[0]}, {current_region[1]}] on {chrom} after overlap resolution")
-        
-        # Add the last region with validation
-        last_region = list(regions[-1])
-        if last_region[0] < last_region[1]:
-            resolved_regions[chrom].append(tuple(last_region))
-        else:
-            print(f"Warning: Skipping invalid last region [{last_region[0]}, {last_region[1]}] on {chrom}")
-    
-    return resolved_regions
-
-def divide_long_sequences(regions_list, maximum_region_size):
-    """Divide long sequences into smaller regions based on maximum_region_size.
-    
-    Args:
-        regions_list (list): List of regions with their positions.
-        maximum_region_size (int): Maximum size of regions.
-        
-    Returns:
-        divided_regions_list (list): List of regions divided into smaller segments.
-    """
-    final_regions = {}
-    for chrom in regions_list:
-        regions = regions_list[chrom]
-        final_regions[chrom] = []
-        for region in regions:
-            start, end = region
-            region_size = end - start
-            if region_size > maximum_region_size:
-                num_subregions = (region_size + maximum_region_size - 1) // maximum_region_size
-                subregion_size = region_size // num_subregions
-                for i in range(num_subregions):
-                    sub_start = start + i * subregion_size
-                    if i == num_subregions - 1:
-                        sub_end = end
+                    if pos not in position_data:
+                        position_data[pos] = {
+                            'values': [],
+                            'nucleosome_distance': nuc_dist,
+                            'centromere_distance': cent_dist
+                        }
+                    position_data[pos]['values'].append(value)
+            
+            # Compute combined values for this chromosome
+            combined_data = []
+            for pos in sorted(position_data.keys()):
+                values = position_data[pos]['values']
+                
+                if method == "average":
+                    # Only consider non-zero values for averaging
+                    non_zero_values = [v for v in values if v != 0]
+                    
+                    if len(non_zero_values) == 0:
+                        # All values are zero
+                        combined_value = 0
+                    elif len(non_zero_values) == 1:
+                        # Only one non-zero value, use it directly
+                        combined_value = non_zero_values[0]
                     else:
-                        sub_end = sub_start + subregion_size
-                    final_regions[chrom].append((sub_start, sub_end))
+                        # Two or more non-zero values, take the average
+                        combined_value = np.mean(non_zero_values)
+                elif method == "sum":
+                    combined_value = np.sum(values)
+                else:
+                    raise ValueError(f"Unknown method: {method}")
+                
+                combined_data.append({
+                    'Position': pos,
+                    'Value': combined_value,
+                    'Nucleosome_Distance': position_data[pos]['nucleosome_distance'],
+                    'Centromere_Distance': position_data[pos]['centromere_distance']
+                })
+            
+            # Convert to DataFrame
+            if combined_data:
+                combined_regions[chrom] = pd.DataFrame(combined_data)
             else:
-                final_regions[chrom].append(region)
-    return final_regions
-
-def add_transposon_and_features(transposon_data, regions_list, features, maximum_region_size=3000):
-    """Add transposon insertion data and selected features to each region.
-
-    Args:
-        transposon_data (Dictionary): Dictionary of DataFrames containing transposon insertion data and additional information.
-        regions_list (list): List of regions with their positions.
-        features (list): List of features to include in the data, can include the position, chromosome, distance from nucleosome and distance from centromere.
-        maximum_region_size (int): Maximum size for padding arrays.
-
-    Returns:
-        enriched_regions_list (Dictionary): Dictionary with datasets as key and region dictionaries as values.
-            Each region is a dict: {'data': array, 'actual_length': int, 'start': int, 'end': int}
-    """
-    regions = {}
-    for dataset in transposon_data:
-        data = transposon_data[dataset]
-        regions[dataset] = {}
-        for chrom in regions_list:
-            # Skip if chromosome not in data
-            if chrom not in data:
-                print(f"Warning: Chromosome {chrom} not found in dataset {dataset}. Skipping.")
-                continue
-            
-            data_chrom = data[chrom]
-            regions[dataset][chrom] = []
-            for region in regions_list[chrom]:
-                data_sample = np.zeros((maximum_region_size, len(features) + 1))  # +1 for transposon insertion counts
-                start, end = region
-                
-                # Validate region
-                if start >= end:
-                    print(f"Warning: Invalid region {start}-{end} on {chrom} in dataset {dataset} (start >= end). Skipping.")
-                    continue
-                
-                region_data = data_chrom[(data_chrom['Position'] >= start) & (data_chrom['Position'] < end)]
-                actual_length = len(region_data)  # Track the actual data length
-                
-                # Skip regions with no data points (this shouldn't happen if your data includes all positions)
-                if actual_length == 0:
-                    print(f"Warning: Region {start}-{end} on {chrom} in dataset {dataset} has no data points. "
-                          f"This may indicate missing data in your dataset. Skipping.")
-                    continue
-                
-                # Fill the data array
-                data_sample[:actual_length, 0] = region_data['Value'].values  # Transposon insertion counts
-                for feature in features:
-                    if feature == 'Pos':
-                        data_sample[:actual_length, features.index('Pos') + 1] = region_data['Position'].values 
-                    elif feature == 'Nucl':
-                        nucl_index = region_data.columns.get_loc('Nucleosome_Distance')
-                        data_sample[:actual_length, features.index('Nucl') + 1] = region_data.iloc[:, nucl_index].values
-                    elif feature == 'Centr':
-                        centr_index = region_data.columns.get_loc('Centromere_Distance')
-                        data_sample[:actual_length, features.index('Centr') + 1] = region_data.iloc[:, centr_index].values
-                    elif feature == 'Chrom':
-                        chrom_value = list(chromosome_length.keys()).index(chrom) + 1  # +1 to avoid zero
-                        data_sample[:actual_length, features.index('Chrom') + 1] = chrom_value
-                
-                # Store as dictionary with metadata
-                region_dict = {
-                    'data': data_sample,
-                    'actual_length': actual_length,
-                    'start': start,
-                    'end': end
-                }
-                regions[dataset][chrom].append(region_dict)           
-    return regions
-            
+                combined_regions[chrom] = pd.DataFrame(columns=['Position', 'Value', 'Nucleosome_Distance', 'Centromere_Distance'])
         
+        new_data[replicate_name] = combined_regions
+        
+        # Mark original replicate datasets for removal
+        for dataset in matching_datasets:
+            if dataset != replicate_name:
+                datasets_to_remove.append(dataset)
+    
+    # Step 2: Remove original replicate datasets from data
+    for dataset in datasets_to_remove:
+        del data[dataset]
+    
+    # Step 3: Add combined data to the data dictionary
+    data.update(new_data)
+    
+    # Step 4: Save all datasets if requested
+    if save:
+        os.makedirs(output_folder, exist_ok=True)
+        
+        # Save all datasets
+        for dataset in data:
+            strain_folder = get_strain_folder(dataset)
+            dataset_folder = os.path.join(output_folder, strain_folder, dataset)
+            os.makedirs(dataset_folder, exist_ok=True)
+            
+            for chrom in data[dataset]:
+                output_path = os.path.join(dataset_folder, f"{chrom}_distances.csv")
+                df = data[dataset][chrom]
+                df.to_csv(output_path, index=False)
+            
+            print(f"Saved data for {dataset} to {dataset_folder}")
+    
+    return data
 
-def standardize_data(train_data, test_data, val_data, features):
-    """Standardize data to have mean 0 and standard deviation 1.
-    Only standardizes non-padded values (actual data).
+def standardize_data(train_data, val_data, test_data, features):
+    """Standardize features to have mean 0 and standard deviation 1.
+    Fits scalers on training data and applies to all splits.
+    Does NOT standardize 'Value' (counts - already log-normalized) or 'Chrom' (categorical).
     
     Args:
-        train_data, test_data, val_data: Dictionaries containing region dictionaries.
-        features: List of features to standardize.
+        train_data, val_data, test_data: Dictionaries containing {dataset: {chromosome: DataFrame}}.
+        features: List of features to use (e.g., ['Pos', 'Chrom', 'Nucl', 'Centr']).
         
     Returns:
-        standardized_data and scalers: Training, validation, and testing data with standardized features.
+        train_data, val_data, test_data: Data with standardized features (same objects, modified in-place).
+        scalers: Dictionary of StandardScaler objects for each feature.
     """
     scalers = {}
+    
+    # Features to standardize (exclude 'Value' and 'Chrom')
+    features_to_standardize = []
+    feature_to_column = {
+        'Pos': 'Position',
+        'Nucl': 'Nucleosome_Distance',
+        'Centr': 'Centromere_Distance'
+    }
+    
     for feature in features:
-        if feature == 'Chrom':
-            continue  # skip standardization for categorical feature
+        if feature in feature_to_column:
+            features_to_standardize.append(feature)
+    
+    # For each feature, fit scaler on training data
+    for feature in features_to_standardize:
+        column_name = feature_to_column[feature]
         scaler = StandardScaler()
-        # Collect all values for this feature across all datasets and chromosomes (ONLY non-padded values)
+        
+        # Collect all values for this feature from training data
         all_values = []
         for dataset in train_data:
             for chrom in train_data[dataset]:
-                for region_dict in train_data[dataset][chrom]:
-                    data_sample = region_dict['data']
-                    actual_length = region_dict['actual_length']
-                    feature_index = features.index(feature) + 1  # +1 because column 0 is counts
-                    # Only collect non-padded values
-                    all_values.extend(data_sample[:actual_length, feature_index])
-        all_values = np.array(all_values).reshape(-1, 1)
-        scaler.fit(all_values)
-        scalers[feature] = scaler
-        # Apply the scaler to training data (only non-padded values)
-        for dataset in train_data:
-            for chrom in train_data[dataset]:
-                for region_dict in train_data[dataset][chrom]:
-                    data_sample = region_dict['data']
-                    actual_length = region_dict['actual_length']
-                    feature_index = features.index(feature) + 1
-                    # Only transform non-padded values
-                    if actual_length > 0:
-                        data_sample[:actual_length, feature_index] = scaler.transform(
-                            data_sample[:actual_length, feature_index].reshape(-1, 1)
-                        ).flatten()
-        # Apply the scaler to validation data (only non-padded values)
-        for dataset in val_data:
-            for chrom in val_data[dataset]:
-                for region_dict in val_data[dataset][chrom]:
-                    data_sample = region_dict['data']
-                    actual_length = region_dict['actual_length']
-                    feature_index = features.index(feature) + 1
-                    if actual_length > 0:
-                        data_sample[:actual_length, feature_index] = scaler.transform(
-                            data_sample[:actual_length, feature_index].reshape(-1, 1)
-                        ).flatten()
-        # Apply the scaler to testing data (only non-padded values)
-        for dataset in test_data:
-            for chrom in test_data[dataset]:
-                for region_dict in test_data[dataset][chrom]:
-                    data_sample = region_dict['data']
-                    actual_length = region_dict['actual_length']
-                    feature_index = features.index(feature) + 1
-                    if actual_length > 0:
-                        data_sample[:actual_length, feature_index] = scaler.transform(
-                            data_sample[:actual_length, feature_index].reshape(-1, 1)
-                        ).flatten()
+                df = train_data[dataset][chrom]
+                if column_name in df.columns:
+                    all_values.extend(df[column_name].values)
+        
+        if len(all_values) > 0:
+            all_values = np.array(all_values, dtype=np.float32).reshape(-1, 1)
+            scaler.fit(all_values)
+            scalers[feature] = scaler
+            
+            # Clean up
+            del all_values
+            gc.collect()
+            
+            # Apply scaler to training data (in-place)
+            for dataset in train_data:
+                for chrom in train_data[dataset]:
+                    df = train_data[dataset][chrom]
+                    if column_name in df.columns:
+                        train_data[dataset][chrom][column_name] = scaler.transform(
+                            df[column_name].values.reshape(-1, 1)
+                        ).flatten().astype(np.float32)
+            
+            # Apply scaler to validation data (in-place)
+            for dataset in val_data:
+                for chrom in val_data[dataset]:
+                    df = val_data[dataset][chrom]
+                    if column_name in df.columns:
+                        val_data[dataset][chrom][column_name] = scaler.transform(
+                            df[column_name].values.reshape(-1, 1)
+                        ).flatten().astype(np.float32)
+            
+            # Apply scaler to test data (in-place)
+            for dataset in test_data:
+                for chrom in test_data[dataset]:
+                    df = test_data[dataset][chrom]
+                    if column_name in df.columns:
+                        test_data[dataset][chrom][column_name] = scaler.transform(
+                            df[column_name].values.reshape(-1, 1)
+                        ).flatten().astype(np.float32)
+    
     return train_data, val_data, test_data, scalers
 
 def preprocess_counts(data):
     """Preprocess transposon insertion counts.
-    1. Add pseudocounts
-    2. Log-transform counts
-    3. Per-dataset normalization
-    Only processes non-padded values.
+    1. CPM (Counts Per Million) normalization per dataset
+    2. Log-transform counts: log1p(CPM)
     
     Args:
-        data (Dictionary): Dictionary containing region dictionaries.
+        data (Dictionary): Dictionary containing {dataset: {chromosome: DataFrame}} structure.
         
     Returns:
-        preprocessed_data (Dictionary): Preprocessed counts data.
-        stats (Dictionary): Statistics about the preprocessing.
+        data (Dictionary): Preprocessed counts data (same object, modified in-place).
+        stats (Dictionary): Statistics about the preprocessing (total insertions and CPM scale factor per dataset).
     """
-    norm_data = deepcopy(data)  # so we don't mutate the original
     stats = {}
 
-    for dataset in norm_data:
-        # 1. compute total insertions in this dataset (ONLY from non-padded values)
+    for dataset in data:
+        # 1. Compute total insertions in this dataset across all chromosomes
         total_insertions = 0.0
-        for chrom in norm_data[dataset]:
-            for region_dict in norm_data[dataset][chrom]:
-                data_sample = region_dict['data']
-                actual_length = region_dict['actual_length']
-                # column 0 is raw counts, only sum non-padded values
-                total_insertions += np.nansum(data_sample[:actual_length, 0])
+        for chrom in data[dataset]:
+            df = data[dataset][chrom]
+            total_insertions += df['Value'].sum()
 
         if total_insertions == 0:
             total_insertions = 1.0  # avoid div-by-zero
@@ -423,229 +307,469 @@ def preprocess_counts(data):
             "cpm_scale_factor": float(cpm_scale_factor),
         }
 
-        # 2. apply CPM + log1p(CPM) to every region for this dataset (only non-padded values)
-        for chrom in norm_data[dataset]:
-            for region_dict in norm_data[dataset][chrom]:
-                data_sample = region_dict['data']
-                actual_length = region_dict['actual_length']
-                # Only process non-padded values
-                raw_counts = data_sample[:actual_length, 0].astype(float)
+        # 2. Apply CPM + log1p(CPM) to every chromosome in this dataset (in-place)
+        for chrom in data[dataset]:
+            df = data[dataset][chrom]
+            
+            # CPM normalization
+            cpm = df['Value'] * cpm_scale_factor  # counts per million
 
-                # CPM normalization
-                cpm = raw_counts * cpm_scale_factor  # counts per million
+            # log1p transform
+            log_cpm = np.log1p(cpm).astype(np.float32)  # Use float32 to save memory
 
-                # log1p transform
-                log_cpm = np.log1p(cpm)  # natural log(1 + CPM)
+            # Write back into the DataFrame (in-place)
+            data[dataset][chrom]['Value'] = log_cpm
+            
+            # Clean up temporary variables
+            del cpm, log_cpm
 
-                # write back into column 0 (only non-padded values)
-                data_sample[:actual_length, 0] = log_cpm
+    return data, stats
 
-    return norm_data, stats
+def _split_items(items, train_size, val_size, test_size):
+    """Helper function to split a list of items into train/val/test."""
+    if not items or (val_size == 0 and test_size == 0):
+        return items, [], []
+    if len(items) == 1 or train_size >= 1.0:
+        return items, [], []
+    if train_size <= 0.0:
+        return [], items, []
+    
+    # Split train from (val + test)
+    train_items, temp_items = train_test_split(items, train_size=train_size, random_state=42)
+    
+    # Split val from test
+    if not temp_items or test_size == 0:
+        return train_items, temp_items, []
+    if val_size == 0:
+        return train_items, [], temp_items
+    if len(temp_items) == 1:
+        return train_items, temp_items, []
+    
+    val_items, test_items = train_test_split(temp_items, test_size=test_size/(test_size + val_size), random_state=42)
+    return train_items, val_items, test_items
 
-def split_data(data, train_val_test_split, split_on):
+def split_data(data, train_val_test_split, split_on, chunk_size=50000):
     """Split data into training, validation, and testing sets.
     
     Args:
         data (DataFrame): DataFrame containing the data to be split.
         train_val_test_split (list): Proportions for training, validation, and testing sets.
-        split_on (str): Feature to split data on ('Chrom', 'Dataset').
+        split_on (str): Feature to split data on ('Chrom', 'Dataset', 'Random').
+        chunk_size (int): Size of chunks in base pairs for random splitting. Default: 50000.
         
     Returns:
         train_data (DataFrame): Training data.
         val_data (DataFrame): Validation data.
         test_data (DataFrame): Testing data.
     """
-    train_data = {}
-    val_data = {}
-    test_data = {}
-    if split_on == 'Chrom':
-        all_chroms = list(chromosome_length.keys())
-        train_size = train_val_test_split[0]
-        val_size = train_val_test_split[1]
-        test_size = train_val_test_split[2]
-        train_chroms, temp_chroms = train_test_split(all_chroms, train_size=train_size, random_state=42)
-        if test_size + val_size > 0:
-            val_chroms, test_chroms = train_test_split(temp_chroms, test_size=test_size/(test_size + val_size), random_state=42)
-        else:
-            val_chroms = []
-            test_chroms = []
+    train_size, val_size, test_size = train_val_test_split
+    
+    if split_on == 'Dataset':
+        train_datasets, val_datasets, test_datasets = _split_items(list(data.keys()), train_size, val_size, test_size)
+        
+        train_data = {d: data[d] for d in train_datasets}
+        val_data = {d: data[d] for d in val_datasets}
+        test_data = {d: data[d] for d in test_datasets}
+        
+        print(f"Train datasets: {train_datasets}")
+        print(f"Validation datasets: {val_datasets}")
+        print(f"Test datasets: {test_datasets}")
+    
+    elif split_on == 'Chrom':
+        # Get all unique chromosomes
+        all_chroms = list(set(chrom for dataset in data.values() for chrom in dataset.keys()))
+        train_chroms, val_chroms, test_chroms = _split_items(all_chroms, train_size, val_size, test_size)
+        
+        # Assign chromosomes to splits for each dataset
+        train_data = {d: {c: data[d][c] for c in data[d] if c in train_chroms} for d in data}
+        val_data = {d: {c: data[d][c] for c in data[d] if c in val_chroms} for d in data}
+        test_data = {d: {c: data[d][c] for c in data[d] if c in test_chroms} for d in data}
+        
+        # Remove empty dataset dictionaries
+        train_data = {d: v for d, v in train_data.items() if v}
+        val_data = {d: v for d, v in val_data.items() if v}
+        test_data = {d: v for d, v in test_data.items() if v}
+    
+    elif split_on == 'Random':
+        # Create chunks from all chromosomes across all datasets
+        all_chunks = []
+        
         for dataset in data:
-            train_data[dataset] = {}
-            val_data[dataset] = {}
-            test_data[dataset] = {}
             for chrom in data[dataset]:
-                if chrom in train_chroms:
-                    train_data[dataset][chrom] = data[dataset][chrom]
-                elif chrom in val_chroms:
-                    val_data[dataset][chrom] = data[dataset][chrom]
-                elif chrom in test_chroms:
-                    test_data[dataset][chrom] = data[dataset][chrom]
-    elif split_on == 'Dataset':
-        all_datasets = list(data.keys())
-        train_size = train_val_test_split[0]
-        val_size = train_val_test_split[1]
-        test_size = train_val_test_split[2]
-        train_datasets, temp_datasets = train_test_split(all_datasets, train_size=train_size, random_state=42)
-        if test_size + val_size > 0:
-            val_datasets, test_datasets = train_test_split(temp_datasets, test_size=test_size/(test_size + val_size), random_state=42)
-        else:
-            val_datasets = []
-            test_datasets = []
-        for dataset in data:
-            if dataset in train_datasets:
-                train_data[dataset] = data[dataset]
-            elif dataset in val_datasets:
-                val_data[dataset] = data[dataset]
-            elif dataset in test_datasets:
-                test_data[dataset] = data[dataset]
+                df = data[dataset][chrom]
+                if df.empty:
+                    continue
+                
+                # Get min and max positions for this chromosome
+                min_pos = df['Position'].min()
+                max_pos = df['Position'].max()
+                
+                # Create chunks
+                current_pos = min_pos
+                while current_pos <= max_pos:
+                    chunk_end = min(current_pos + chunk_size, max_pos + 1)
+                    all_chunks.append({
+                        'dataset': dataset,
+                        'chrom': chrom,
+                        'start': current_pos,
+                        'end': chunk_end
+                    })
+                    current_pos = chunk_end
+        
+        # Split chunks into train/val/test
+        train_chunks, val_chunks, test_chunks = _split_items(all_chunks, train_size, val_size, test_size)
+        
+        # Initialize data structures
+        train_data = {d: {} for d in data.keys()}
+        val_data = {d: {} for d in data.keys()}
+        test_data = {d: {} for d in data.keys()}
+        
+        # Assign data points to splits based on chunk assignments
+        def assign_chunks_to_split(chunks, split_data):
+            for chunk in chunks:
+                dataset = chunk['dataset']
+                chrom = chunk['chrom']
+                start = chunk['start']
+                end = chunk['end']
+                
+                # Filter DataFrame for this chunk
+                df = data[dataset][chrom]
+                mask = (df['Position'] >= start) & (df['Position'] < end)
+                chunk_df = df[mask].copy()
+                
+                if not chunk_df.empty:
+                    # Add to existing chromosome data or create new
+                    if chrom in split_data[dataset]:
+                        split_data[dataset][chrom] = pd.concat([split_data[dataset][chrom], chunk_df], ignore_index=True)
+                    else:
+                        split_data[dataset][chrom] = chunk_df
+        
+        assign_chunks_to_split(train_chunks, train_data)
+        assign_chunks_to_split(val_chunks, val_data)
+        assign_chunks_to_split(test_chunks, test_data)
+        
+        # Remove empty datasets/chromosomes and sort by position
+        for split_data in [train_data, val_data, test_data]:
+            datasets_to_remove = []
+            for dataset in split_data:
+                chroms_to_remove = []
+                for chrom in split_data[dataset]:
+                    if split_data[dataset][chrom].empty:
+                        chroms_to_remove.append(chrom)
+                    else:
+                        # Sort by position
+                        split_data[dataset][chrom] = split_data[dataset][chrom].sort_values('Position').reset_index(drop=True)
+                
+                for chrom in chroms_to_remove:
+                    del split_data[dataset][chrom]
+                
+                if not split_data[dataset]:
+                    datasets_to_remove.append(dataset)
+            
+            for dataset in datasets_to_remove:
+                del split_data[dataset]
+    
+    else:
+        train_data, val_data, test_data = {}, {}, {}
+    
     return train_data, val_data, test_data
 
-def get_mask_from_data(region_dict):
-    """Create a boolean mask indicating which positions contain real data vs padding.
+def _find_consecutive_segments(df, gap_tolerance=1):
+    """Find consecutive segments in a DataFrame based on Position column.
     
     Args:
-        region_dict (dict): Region dictionary with 'data' and 'actual_length'.
+        df (DataFrame): DataFrame with a 'Position' column.
+        gap_tolerance (int): Maximum gap between consecutive positions. Default is 1.
         
     Returns:
-        mask (np.array): Boolean array where True = real data, False = padding.
+        List of DataFrames, each containing a consecutive segment.
     """
-    data_sample = region_dict['data']
-    actual_length = region_dict['actual_length']
-    mask = np.zeros(len(data_sample), dtype=bool)
-    mask[:actual_length] = True
-    return mask
+    if df.empty:
+        return []
+    
+    # Sort by position
+    df = df.sort_values('Position').reset_index(drop=True)
+    
+    segments = []
+    current_segment = [0]  # Start with first row
+    
+    for i in range(1, len(df)):
+        prev_pos = df.iloc[i-1]['Position']
+        curr_pos = df.iloc[i]['Position']
+        
+        # Check if positions are consecutive (within tolerance)
+        if curr_pos - prev_pos <= gap_tolerance:
+            current_segment.append(i)
+        else:
+            # Gap detected, save current segment and start new one
+            segments.append(df.iloc[current_segment].copy())
+            current_segment = [i]
+    
+    # Add the last segment
+    if current_segment:
+        segments.append(df.iloc[current_segment].copy())
+    
+    return segments
 
-def extract_arrays_and_masks(data):
-    """Extract data arrays and masks from the dictionary format.
-    Useful for preparing data for neural network training.
+def _add_chromosome_encoding(df, chrom):
+    """Add chromosome encoding to DataFrame.
     
     Args:
-        data (Dict): Data dictionary with structure {dataset: {chrom: [region_dicts, ...]}}.
+        df (DataFrame): DataFrame to add chromosome column to.
+        chrom (str): Chromosome name (e.g., 'ChrI', 'ChrII', ..., 'ChrXVI').
         
     Returns:
-        arrays (list): List of all data arrays.
-        masks (list): List of corresponding boolean masks.
-        metadata (list): List of metadata dicts with 'dataset', 'chrom', 'start', 'end', 'actual_length'.
+        DataFrame with chromosome encoding added as categorical integers (1-16).
     """
-    arrays = []
-    masks = []
-    metadata = []
-    for dataset in data:
-        for chrom in data[dataset]:
-            for region_dict in data[dataset][chrom]:
-                arrays.append(region_dict['data'])
-                masks.append(get_mask_from_data(region_dict))
-                metadata.append({
-                    'dataset': dataset,
-                    'chrom': chrom,
-                    'start': region_dict['start'],
-                    'end': region_dict['end'],
-                    'actual_length': region_dict['actual_length']
-                })
-    return arrays, masks, metadata
+    # Map chromosome names to integers (1-16)
+    chrom_to_int = {
+        'ChrI': 1, 'ChrII': 2, 'ChrIII': 3, 'ChrIV': 4,
+        'ChrV': 5, 'ChrVI': 6, 'ChrVII': 7, 'ChrVIII': 8,
+        'ChrIX': 9, 'ChrX': 10, 'ChrXI': 11, 'ChrXII': 12,
+        'ChrXIII': 13, 'ChrXIV': 14, 'ChrXV': 15, 'ChrXVI': 16
+    }
+    
+    chrom_int = chrom_to_int.get(chrom, 0)
+    df['Chromosome'] = chrom_int
+    
+    return df
 
-def preprocess_data(input_folder, 
-                    gene_file,
-                    features = ['Pos', 'Chrom', 'Nucl', 'Centr'], 
-                    train_val_test_split = [0.7, 0.15, 0.15], 
-                    split_on = 'Chrom',
-                    bin = 5, bin_method = 'average', 
-                    distance_around_genes = 160, 
-                    minimum_region_size = 200,
-                    maximum_region_size = 3000,
-                    scaling = True):
-    """Preprocess data for autoencoder training and testing.
+def process_data(transposon_data, features, bin_size, moving_average, step_size, data_point_length, split_on='Dataset'):
+    """Process data: bin/window and convert to 3D array for autoencoder input.
     
-    Data is returned as dictionaries where each region is a dict with:
-        - 'data': padded numpy array
-        - 'actual_length': number of real data points
-        - 'start': genomic start position
-        - 'end': genomic end position
-    
-    Regions with zero data points are automatically filtered out.
-    
-    Args:
-        input_folder (str): Path to the folder containing input data files.
-        gene_file (str): Path to the gene annotation file.
-        features (list): List of features to include in the data.
-        train_val_test_split (list): Proportions for training, validation, and testing sets.
-        split_on (str): Feature to split data on ('Chrom', 'Dataset').
-        bin (int): Size of bins for data aggregation.
-        bin_method (str): Method for binning ('average', 'sum', 'max', 'min', 'median').
-        distance_around_genes (int): Distance around genes to consider.
-        minimum_region_size (int): Minimum size of regions to become its own data point.
-        maximum_region_size (int): Maximum size of regions.
-        scaling (bool): Whether to standardize features.
-        
     Returns:
-        train_data (Dict): Training data with structure {dataset: {chrom: [region_dicts, ...]}}.
-        val_data (Dict): Validation data with same structure.
-        test_data (Dict): Testing data with same structure.
-        scalers (Dict): Dictionary of StandardScaler objects used for each feature.
+        np.ndarray: 3D array of shape (num_samples, window_length, num_features)
     """
-    # Read genes json file
-    with open(gene_file, 'r') as f:
-        genes_data = json.load(f)
-    # Read transposon insertion data
-    transposon_data = read_csv_file_with_distances(input_folder)
-    # Split genes into regions
-    regions_list = split_genes(genes_data, distance_around_genes)
-    # Fill gaps between regions
-    regions_list = fill_gaps(regions_list, minimum_region_size)
-    # Resolve overlapping regions
-    regions_list = resolve_overlaps(regions_list)
-    # Divide long sequences into smaller regions
-    regions_list = divide_long_sequences(regions_list, maximum_region_size)
-    # Add transposon insertion data and features
-    regions_list = add_transposon_and_features(transposon_data, regions_list, features, maximum_region_size)
-    # Bin data if bin size > 1
-    if bin > 1:
-        regions_list = bin_data(regions_list, bin, bin_method, maximum_region_size)
-    # Preprocess counts
-    regions_list, stats = preprocess_counts(regions_list)
-    # Split data into training, validation, and testing sets
-    train_data, val_data, test_data = split_data(regions_list, train_val_test_split, split_on)
-    # Standardize features of the training set and apply the same transformation to validation and testing sets
-    if scaling:
-        train_data, val_data, test_data, scalers = standardize_data(train_data, val_data, test_data, features)
+    # Check if chromosome encoding is needed
+    use_chrom = 'Chrom' in features
+    
+    # Only check for non-consecutive segments when using Random split
+    if split_on == 'Random':
+        # Split each chromosome into consecutive segments to handle gaps from random splitting
+        segmented_data = {}
+        for dataset in transposon_data:
+            segmented_data[dataset] = {}
+            for chrom in transposon_data[dataset]:
+                df = transposon_data[dataset][chrom].copy()
+                segments = _find_consecutive_segments(df, gap_tolerance=1)
+                segmented_data[dataset][chrom] = segments
+        
+        # Apply binning/windowing to each consecutive segment
+        processed_segments = {}
+        for dataset in segmented_data:
+            processed_segments[dataset] = {}
+            for chrom in segmented_data[dataset]:
+                processed_segments[dataset][chrom] = []
+                for segment_df in segmented_data[dataset][chrom]:
+                    if segment_df.empty:
+                        continue
+                    
+                    # Apply binning or moving average
+                    if moving_average:
+                        binned_values = sliding_window(segment_df.values, bin_size, step_size=1, moving_average=True)
+                    else:
+                        binned_values = bin_data(segment_df.values, bin_size)
+                    
+                    # Convert back to DataFrame
+                    if len(binned_values) > 0:
+                        binned_df = pd.DataFrame(binned_values, columns=['Position', 'Value', 'Nucleosome_Distance', 'Centromere_Distance'])
+                        
+                        # Add chromosome encoding if needed
+                        if use_chrom:
+                            binned_df = _add_chromosome_encoding(binned_df, chrom)
+                        
+                        processed_segments[dataset][chrom].append(binned_df)
+        
+        # Select and order columns based on features
+        cols_to_keep = ['Value']
+        if 'Pos' in features:
+            cols_to_keep.append('Position')
+        if 'Nucl' in features:
+            cols_to_keep.append('Nucleosome_Distance')
+        if 'Centr' in features:
+            cols_to_keep.append('Centromere_Distance')
+        if use_chrom:
+            # Add chromosome column (categorical encoding)
+            cols_to_keep.append('Chromosome')
+        
+        # Filter columns for each segment
+        for dataset in processed_segments:
+            for chrom in processed_segments[dataset]:
+                for i, segment_df in enumerate(processed_segments[dataset][chrom]):
+                    existing_cols = [col for col in cols_to_keep if col in segment_df.columns]
+                    processed_segments[dataset][chrom][i] = segment_df[existing_cols]
+        
+        # Apply sliding window to create data points from consecutive segments only
+        data_points = []
+        for dataset in processed_segments:
+            for chrom in processed_segments[dataset]:
+                for segment_df in processed_segments[dataset][chrom]:
+                    if segment_df.empty or len(segment_df) < data_point_length:
+                        continue
+                    
+                    data_array = segment_df.values.astype(np.float32)
+                    windows = sliding_window(data_array, data_point_length, step_size)
+                    data_points.extend(windows)
+                    
+                    # Clean up
+                    del segment_df, data_array, windows
+                
+                # Clean up processed segments as we go
+                processed_segments[dataset][chrom] = None
+            
+            # Clean up dataset
+            processed_segments[dataset] = None
+        
+        # Clean up
+        del processed_segments
+        gc.collect()
+    
     else:
-        scalers = {}
-    # Standardize the count data in the training set and apply the same transformation to validation and testing sets
-    return train_data, val_data, test_data, scalers
+        # For Dataset and Chrom splits, data is already consecutive - use simpler processing
+        for dataset in transposon_data:
+            for chrom in transposon_data[dataset]:
+                df = transposon_data[dataset][chrom].copy()
+                if moving_average:
+                    binned_values = sliding_window(df.values, bin_size, step_size=1, moving_average=True)
+                else:
+                    binned_values = bin_data(df.values, bin_size)
+                
+                binned_df = pd.DataFrame(binned_values, columns=['Position', 'Value', 'Nucleosome_Distance', 'Centromere_Distance'])
+                
+                # Add chromosome encoding if needed
+                if use_chrom:
+                    binned_df = _add_chromosome_encoding(binned_df, chrom)
+                
+                transposon_data[dataset][chrom] = binned_df
+                
+                # Clean up
+                del df, binned_values
+        
+        # Select and order columns based on features
+        cols_to_keep = ['Value']
+        if 'Pos' in features:
+            cols_to_keep.append('Position')
+        if 'Nucl' in features:
+            cols_to_keep.append('Nucleosome_Distance')
+        if 'Centr' in features:
+            cols_to_keep.append('Centromere_Distance')
+        if use_chrom:
+            # Add chromosome column (categorical encoding)
+            cols_to_keep.append('Chromosome')
+        
+        # Filter columns
+        for dataset in transposon_data:
+            for chrom in transposon_data[dataset]:
+                df = transposon_data[dataset][chrom]
+                existing_cols = [col for col in cols_to_keep if col in df.columns]
+                transposon_data[dataset][chrom] = df[existing_cols]
+        
+        # Apply sliding window to create data points
+        data_points = []
+        for dataset in transposon_data:
+            for chrom in transposon_data[dataset]:
+                df = transposon_data[dataset][chrom]
+                if df.empty or len(df) < data_point_length:
+                    continue
+                data_array = df.values.astype(np.float32)
+                windows = sliding_window(data_array, data_point_length, step_size, moving_average=False)
+                data_points.extend(windows)
+                
+                # Clean up
+                del df, data_array, windows
+            
+            # Clean up dataset data as we process
+            transposon_data[dataset] = None
+        
+        # Clean up
+        del transposon_data
+        gc.collect()
+    
+    # Convert list of arrays to 3D numpy array: (num_samples, window_length, num_features)
+    if len(data_points) > 0:
+        data_points = np.array(data_points, dtype=np.float32)
+    else:
+        data_points = np.array([], dtype=np.float32).reshape(0, data_point_length, len(cols_to_keep))
+    
+    return data_points
+            
+def preprocess(input_folder, 
+               features = ['Pos', 'Chrom', 'Nucl', 'Centr'], 
+               train_val_test_split = [0.7, 0.15, 0.15], 
+               split_on = 'Dataset',
+               chunk_size = 50000,
+               normalize_counts = True,
+               bin_size = 10, 
+               moving_average = True,
+               data_point_length = 2000,
+               step_size = 500
+               ):
+    """Preprocessing the data before using at as an input for the Autoencoder
 
+    Args:
+        input_folder (Str): The folder with the raw csv files
+        features (list, optional): The features to be used. Defaults to ['Pos', 'Chrom', 'Nucl', 'Centr'].
+            - 'Value': Transposon insertion counts (always included)
+            - 'Pos': Position along chromosome
+            - 'Chrom': Chromosome (categorical encoding: ChrI=1, ChrII=2, ..., ChrXVI=16)
+            - 'Nucl': Distance to nearest nucleosome
+            - 'Centr': Distance to centromere
+        train_val_test_split (list, optional): The proportions for training, validation, and testing sets. Defaults to [0.7, 0.15, 0.15].
+        split_on (str, optional): The feature to split data on ('Chrom', 'Dataset', 'Random'). Defaults to 'Dataset'.
+        chunk_size (int, optional): Size of chunks in base pairs for random splitting. Defaults to 50000.
+        normalize_counts (bool, optional): Whether to apply CPM normalization and log transform to counts. Defaults to True.
+        bin_size (int, optional): The bin size for binning the data of moving average to overcome sparsity. Defaults to 10.
+        moving_average (bool, optional): Whether to apply a moving average to the data or use separate bins. Defaults to True.
+        data_point_length (int, optional): The length of each data point. Defaults to 2000.
+        step_size (int, optional): The step size for sliding window for the data points. Defaults to 200.
+    
+    Returns:
+        train (np.ndarray): Training data, shape (n_train_samples, window_length, n_features)
+        val (np.ndarray): Validation data, shape (n_val_samples, window_length, n_features)
+        test (np.ndarray): Test data, shape (n_test_samples, window_length, n_features)
+        scalers (dict): Dictionary of StandardScaler objects for each feature.
+        count_stats (dict, optional): Statistics from count normalization if normalize_counts=True.
+    """
+    transposon_data = read_csv_file_with_distances(input_folder)
+    
+    # Optionally normalize counts before splitting
+    count_stats = None
+    if normalize_counts:
+        transposon_data, count_stats = preprocess_counts(transposon_data)
+    
+    # Split data
+    train, val, test = split_data(transposon_data, train_val_test_split, split_on, chunk_size)
+    
+    # Standardize features (fit on train, transform on val/test)
+    train, val, test, scalers = standardize_data(train, val, test, features)
+    
+    # Bin/window and convert to 3D arrays
+    train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    gc.collect()  # Clean up memory after processing train
+    
+    val = process_data(val, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    gc.collect()  # Clean up memory after processing val
+    
+    test = process_data(test, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    gc.collect()  # Clean up memory after processing test
 
+    return train, val, test, scalers, count_stats
+
+            
 
 if __name__ == "__main__":
-    input_folder = "Data/test"
-    gene_file = "SGD_API/architecture_info/yeast_genes_with_info.json"
-    train_data, val_data, test_data, scalers = preprocess_data(input_folder, gene_file, train_val_test_split=[1, 0, 0], scaling=True)
-    # This gives 9153 regions in total
+    input_folder = "Data/test/"
+    train, val, test, scalers, count_stats = preprocess(input_folder, split_on='Chrom', train_val_test_split=[0.7, 0, 0.3])
+    # print some info
+    print(f"Train data shape: {train.shape}")
+    print(f"Test data shape: {test.shape}")
+    print(f"Validation data shape: {val.shape}")
+    # Create output directory if it doesn't exist
+    output_dir = "Data/processed_data/"
+    os.makedirs(output_dir, exist_ok=True)
     
-    # print the shapes of the datasets
-    # for dataset in train_data:
-    #     for chrom in train_data[dataset]:
-    #         for region_dict in train_data[dataset][chrom]:
-    #             print(f"Dataset: {dataset}, Chromosome: {chrom}, "
-    #                   f"Region: {region_dict['start']}-{region_dict['end']}, "
-    #                   f"Shape: {region_dict['data'].shape}, "
-    #                   f"Actual length: {region_dict['actual_length']}")
-    
-    # Save the training data as a json file after converting numpy arrays to lists
-    # train_data_json = {}
-    # for dataset in train_data:
-    #     train_data_json[dataset] = {}
-    #     for chrom in train_data[dataset]:
-    #         train_data_json[dataset][chrom] = [
-    #             {
-    #                 'data': region_dict['data'].tolist(),
-    #                 'actual_length': region_dict['actual_length'],
-    #                 'start': region_dict['start'],
-    #                 'end': region_dict['end']
-    #             }
-    #             for region_dict in train_data[dataset][chrom]
-    #         ]
-    # with open("Data/train_data_with_scalers.json", "w") as f:
-    #     json.dump(train_data_json, f, indent=4)
-
-        
-    
+    # Save the train and test data as .npy files
+    output_file = os.path.join(output_dir, "train_data.npy")
+    np.save(output_file, train)
+    output_file = os.path.join(output_dir, "test_data.npy")
+    np.save(output_file, test)

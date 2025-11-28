@@ -181,4 +181,4 @@ cython_debug/
 .cursorindexingignore
 .DS_Store
 /Data_exploration/results/sequences_data/sequences
-/Data
+/Data/processed_data

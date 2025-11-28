@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/AE/preprocessing_new.py", line 9, in <module>
-    from sklearn.model_selection import train_test_split
-ModuleNotFoundError: No module named 'sklearn'
-srun: error: influ4: task 0: Exited with exit code 1
-srun: launch/slurm: _step_signal: Terminating StepId=12083538.0

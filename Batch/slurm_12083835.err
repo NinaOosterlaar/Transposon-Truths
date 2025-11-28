@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/AE/preprocessing_new.py", line 761, in <module>
-    np.save(output_file, train)
-  File "/home/nfs/nimoosterlaar/.local/lib/python3.9/site-packages/numpy/lib/_npyio_impl.py", line 570, in save
-    file_ctx = open(file, "wb")
-FileNotFoundError: [Errno 2] No such file or directory: 'Data/processed_data/train_data.npy'
-srun: error: influ5: task 0: Exited with exit code 1
-srun: launch/slurm: _step_signal: Terminating StepId=12083835.0
