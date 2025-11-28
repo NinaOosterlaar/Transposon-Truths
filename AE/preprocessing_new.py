@@ -370,6 +370,10 @@ def split_data(data, train_val_test_split, split_on, chunk_size=50000):
         train_data = {d: data[d] for d in train_datasets}
         val_data = {d: data[d] for d in val_datasets}
         test_data = {d: data[d] for d in test_datasets}
+        
+        print(f"Train datasets: {train_datasets}")
+        print(f"Validation datasets: {val_datasets}")
+        print(f"Test datasets: {test_datasets}")
     
     elif split_on == 'Chrom':
         # Get all unique chromosomes
