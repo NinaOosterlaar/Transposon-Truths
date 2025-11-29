@@ -182,3 +182,4 @@ cython_debug/
 .DS_Store
 /Data_exploration/results/sequences_data/sequences
 /Data/processed_data
+/Apptainer
