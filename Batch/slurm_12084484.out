@@ -1,0 +1,28 @@
+Device: cuda
+============================================================
+TRAINING AUTOENCODER (AE)
+============================================================
+Epoch [1/10], Loss: 0.0043
+Epoch [2/10], Loss: 0.0043
+Epoch [3/10], Loss: 0.0043
+Epoch [4/10], Loss: 0.0043
+Epoch [5/10], Loss: 0.0043
+Epoch [6/10], Loss: 0.0043
+Epoch [7/10], Loss: 0.0043
+Epoch [8/10], Loss: 0.0043
+Epoch [9/10], Loss: 0.0043
+Epoch [10/10], Loss: 0.0043
+Training loss plot saved to AE/results/training/AE_20251128_205450_training_loss.png
+Training losses saved to AE/results/training/AE_20251128_205450_training_losses.json
+Training loss plot saved to AE/results/training/training_loss.png
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (MSE): 0.002282
+Mean Absolute Error (MAE): 0.026613
+R² Score: -0.009315
+==================================================
+
+Metrics saved to AE/results/testing/AE_20251128_205522_test_metrics.json
+Plots saved to AE/results/testing/
