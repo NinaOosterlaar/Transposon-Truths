@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=AE
+#SBATCH --job-name=AE_binary
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --qos=long
@@ -30,4 +30,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python AE/Autoencoder_binary.py --model AE_binary
+    python AE/Autoencoder_binary.py --model AE
