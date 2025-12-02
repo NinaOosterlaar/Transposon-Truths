@@ -10,7 +10,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 class AE(nn.Module):
-    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2):
+    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2, kernel_size=3, padding=1, stride=1):
         """
         seq_length: number of positions in the window (e.g. 2000)
         feature_dim: number of features per position (e.g. 12 incl. chr embedding)
@@ -29,7 +29,7 @@ class AE(nn.Module):
         # ----- Optional Conv1D Layer -----
         if use_conv:
             self.conv1d = nn.Conv1d(in_channels=feature_dim, out_channels=conv_channels, 
-                                   kernel_size=3, stride=1, padding=1)
+                                   kernel_size=kernel_size, stride=stride, padding=padding)
             self.conv_relu = nn.ReLU()
             self.pool = nn.MaxPool1d(kernel_size=pool_size)
             pooled_seq_length = seq_length // pool_size
@@ -84,7 +84,7 @@ class AE(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2):
+    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2, kernel_size=3, padding=1, stride=1):
         """
         Variational Autoencoder
         seq_length: number of positions in the window (e.g. 2000)
@@ -104,7 +104,7 @@ class VAE(nn.Module):
         # ----- Optional Conv1D Layer -----
         if use_conv:
             self.conv1d = nn.Conv1d(in_channels=feature_dim, out_channels=conv_channels, 
-                                   kernel_size=3, stride=1, padding=1)
+                                   kernel_size=kernel_size, stride=stride, padding=padding)
             self.conv_relu = nn.ReLU()
             self.pool = nn.MaxPool1d(kernel_size=pool_size)
             pooled_seq_length = seq_length // pool_size
@@ -462,10 +462,10 @@ if __name__ == "__main__":
         print("="*60)
         ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
         trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True)
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, use_conv=args.use_conv)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
                                                           chrom=True, chrom_embedding=chrom_embedding, 
-                                                          plot=True, n_examples=5)
+                                                          plot=True, n_examples=5, use_conv=args.use_conv)
     
     if args.model in ['VAE', 'both']:
         if args.model == 'both':
