@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os, sys
 import gc
+import argparse
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from bin import bin_data, sliding_window
 from Utils.reader import read_csv_file_with_distances
@@ -755,21 +756,92 @@ def preprocess(input_folder,
 
     return train, val, test, scalers, count_stats
 
+def parse_args():
+    """Parse command line arguments for preprocessing."""
+    parser = argparse.ArgumentParser(description='Preprocess transposon insertion data for autoencoder training')
+    
+    # Input/Output
+    parser.add_argument('--input_folder', type=str, default='Data/combined_replicates/',
+                        help='Folder containing the raw CSV files (default: Data/combined_replicates/)')
+    parser.add_argument('--output_dir', type=str, default='Data/processed_data/',
+                        help='Directory to save processed data (default: Data/processed_data/)')
+    
+    # Features
+    parser.add_argument('--features', type=str, nargs='+', 
+                        default=['Pos', 'Chrom', 'Nucl', 'Centr'],
+                        choices=['Pos', 'Chrom', 'Nucl', 'Centr'],
+                        help='Features to use (default: Pos Chrom Nucl Centr)')
+    
+    # Data splitting
+    parser.add_argument('--train_val_test_split', type=float, nargs=3, 
+                        default=[0.7, 0.15, 0.15],
+                        help='Train, validation, and test split proportions (default: 0.7 0.15 0.15)')
+    parser.add_argument('--split_on', type=str, default='Dataset',
+                        choices=['Chrom', 'Dataset', 'Random'],
+                        help='Feature to split data on (default: Dataset)')
+    parser.add_argument('--chunk_size', type=int, default=50000,
+                        help='Size of chunks in base pairs for random splitting (default: 50000)')
+    
+    # Normalization
+    parser.add_argument('--normalize_counts', action='store_true', default=True,
+                        help='Apply CPM normalization and log transform to counts (default: True)')
+    parser.add_argument('--no_normalize_counts', action='store_false', dest='normalize_counts',
+                        help='Disable count normalization')
+    
+    # Binning/Windowing
+    parser.add_argument('--bin_size', type=int, default=10,
+                        help='Bin size for binning the data (default: 10)')
+    parser.add_argument('--moving_average', action='store_true', default=True,
+                        help='Apply moving average to the data (default: True)')
+    parser.add_argument('--no_moving_average', action='store_false', dest='moving_average',
+                        help='Use separate bins instead of moving average')
+    parser.add_argument('--data_point_length', type=int, default=2000,
+                        help='Length of each data point (default: 2000)')
+    parser.add_argument('--step_size', type=int, default=500,
+                        help='Step size for sliding window (default: 500)')
+    
+    return parser.parse_args()
+
             
 
 if __name__ == "__main__":
-    input_folder = "Data/test/"
-    train, val, test, scalers, count_stats = preprocess(input_folder, split_on='Chrom', train_val_test_split=[0.7, 0, 0.3])
-    # print some info
-    print(f"Train data shape: {train.shape}")
-    print(f"Test data shape: {test.shape}")
-    print(f"Validation data shape: {val.shape}")
-    # Create output directory if it doesn't exist
-    output_dir = "Data/processed_data/"
-    os.makedirs(output_dir, exist_ok=True)
+    args = parse_args()
     
-    # Save the train and test data as .npy files
-    output_file = os.path.join(output_dir, "train_data.npy")
-    np.save(output_file, train)
-    output_file = os.path.join(output_dir, "test_data.npy")
-    np.save(output_file, test)
+    # Run preprocessing with parsed arguments
+    train, val, test, scalers, count_stats = preprocess(
+        input_folder=args.input_folder,
+        features=args.features,
+        train_val_test_split=args.train_val_test_split,
+        split_on=args.split_on,
+        chunk_size=args.chunk_size,
+        normalize_counts=args.normalize_counts,
+        bin_size=args.bin_size,
+        moving_average=args.moving_average,
+        data_point_length=args.data_point_length,
+        step_size=args.step_size
+    )
+    
+    # Print some info
+    print(f"\nProcessing complete!")
+    print(f"Train data shape: {train.shape}")
+    print(f"Validation data shape: {val.shape}")
+    print(f"Test data shape: {test.shape}")
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(args.output_dir, exist_ok=True)
+    
+    output_name = args.output_dir + f"Features{args.features}_SplitOn{args.split_on}_BinSize{args.bin_size}_DataPointLen{args.data_point_length}_StepSize{args.step_size}"
+    
+    # Save the train, validation, and test data as .npy files
+    train_file = os.path.join(output_name, f"train_data.npy")
+    val_file = os.path.join(output_name, f"val_data.npy")
+    test_file = os.path.join(output_name, f"test_data.npy")
+    
+    np.save(train_file, train)
+    np.save(val_file, val)
+    np.save(test_file, test)
+    
+    print(f"\nData saved to:")
+    print(f"  Train: {train_file}")
+    print(f"  Validation: {val_file}")
+    print(f"  Test: {test_file}")

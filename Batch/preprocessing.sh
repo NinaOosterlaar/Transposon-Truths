@@ -9,17 +9,24 @@
 #SBATCH --mem-per-cpu=128G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
-#SBATCH --output=slurm_%j.out
-#SBATCH --error=slurm_%j.err
+#SBATCH --output=slurm_%A_%a.out
+#SBATCH --error=slurm_%A_%a.err
+#SBATCH --array=0-3   
 
 set -euo pipefail
 
-module use /opt/insy/modulefiles  # If not already
-module load miniconda
+export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif"
+export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
-source ~/.bashrc
-conda activate env
+cd "$PROJECT_DIR"
 
-cd /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis
+BINS=(5 10 50 100)
+BIN=${BINS[$SLURM_ARRAY_TASK_ID]}
 
-srun python AE/preprocessing_new.py
+echo "Running preprocessing with --bin $BIN"
+
+srun apptainer exec \
+    --bind "$PROJECT_DIR":/workspace \
+    --pwd /workspace \
+    "$APPTAINER_IMAGE" \
+    python AE/preprocessing.py --bin "$BIN"
