@@ -278,7 +278,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     
     if plot:
         model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
-        plot_training_loss(epoch_losses, model_type=model_type_str)
+        use_conv = model.use_conv if hasattr(model, 'use_conv') else False
+        plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv)
     
     return model
 
@@ -392,8 +393,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     
     if plot:
         model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
+        use_conv = model.use_conv if hasattr(model, 'use_conv') else False
         plot_test_results(all_originals, all_reconstructions, model_type=model_type_str, 
-                         n_examples=n_examples, metrics=metrics)
+                         n_examples=n_examples, metrics=metrics, use_conv=use_conv)
     
     return all_reconstructions, all_latents, metrics
 

@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
 def plot_test_results(all_originals, all_reconstructions, model_type='AE', 
-                      save_dir='AE/results/testing', n_examples=5, metrics=None):
+                      save_dir='AE/results/testing', n_examples=5, metrics=None, use_conv=False):
     """
     Create comprehensive visualizations of test results.
     
@@ -26,6 +26,8 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
         Number of example reconstructions to plot
     metrics : dict
         Dictionary of metrics to save
+    use_conv : bool
+        Whether Conv1D was used in the model
     """
     # Create visualization directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -36,7 +38,8 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
     
     # Generate timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    prefix = f"{model_type}_{timestamp}"
+    conv_suffix = "conv" if use_conv else "no_conv"
+    prefix = f"{model_type}_{timestamp}_{conv_suffix}"
     
     # 1. Plot actual vs predicted scatter plot and residuals
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -92,6 +95,7 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
         metrics_to_save = {
             'model_type': model_type,
             'timestamp': timestamp,
+            'use_conv': use_conv,
             'metrics': metrics,
             'summary_statistics': {
                 'mean_original': float(np.mean(all_originals)),
@@ -112,7 +116,7 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
 
 
 def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/training_loss.png', 
-                       save_losses=True):
+                       save_losses=True, use_conv=False):
     """
     Plot training loss over epochs.
     
@@ -126,6 +130,8 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
         Path to save the plot
     save_losses : bool
         Whether to save loss values to a file
+    use_conv : bool
+        Whether Conv1D was used in the model
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     save_path = f'AE/results/training/training_loss_{model_type}_{timestamp}.png'
@@ -136,7 +142,8 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
     
     # Update save path with model type and timestamp
     base_dir = os.path.dirname(save_path)
-    prefix = f"{model_type}_{timestamp}"
+    conv_suffix = "conv" if use_conv else "no_conv"
+    prefix = f"{model_type}_{timestamp}_{conv_suffix}"
     plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
     
     plt.figure(figsize=(10, 6))
@@ -156,6 +163,7 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
         loss_data = {
             'model_type': model_type,
             'timestamp': timestamp,
+            'use_conv': use_conv,
             'num_epochs': len(losses),
             'final_loss': float(losses[-1]),
             'min_loss': float(min(losses)),
@@ -180,7 +188,7 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
 
 def plot_binary_test_results(all_originals, all_reconstructions, all_probabilities, 
                              model_type='AE_binary', save_dir='AE/results/testing', 
-                             n_examples=5, metrics=None):
+                             n_examples=5, metrics=None, use_conv=False):
     """
     Create comprehensive visualizations of binary classification test results.
     
@@ -200,6 +208,8 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
         Number of example reconstructions to plot
     metrics : dict
         Dictionary of metrics to save
+    use_conv : bool
+        Whether Conv1D was used in the model
     """
     from sklearn.metrics import confusion_matrix, roc_curve, auc
     
@@ -208,7 +218,8 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
     
     # Generate timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    prefix = f"{model_type}_{timestamp}"
+    conv_suffix = "conv" if use_conv else "no_conv"
+    prefix = f"{model_type}_{timestamp}_{conv_suffix}"
     
     # Flatten for metric calculations
     y_true = all_originals.flatten()
@@ -376,6 +387,7 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
         metrics_to_save = {
             'model_type': model_type,
             'timestamp': timestamp,
+            'use_conv': use_conv,
             'metrics': metrics,
             'class_distribution': {
                 'n_absent': int(n_absent),
@@ -402,7 +414,7 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
 
 def plot_binary_training_loss(losses, model_type='AE_binary', 
                               save_path='AE/results/training/training_loss.png', 
-                              save_losses=True):
+                              save_losses=True, use_conv=False):
     """
     Plot training loss over epochs for binary models.
     
@@ -416,6 +428,8 @@ def plot_binary_training_loss(losses, model_type='AE_binary',
         Path to save the plot
     save_losses : bool
         Whether to save loss values to a file
+    use_conv : bool
+        Whether Conv1D was used in the model
     """
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     
@@ -424,7 +438,8 @@ def plot_binary_training_loss(losses, model_type='AE_binary',
     
     # Update save path with model type and timestamp
     base_dir = os.path.dirname(save_path)
-    prefix = f"{model_type}_{timestamp}"
+    conv_suffix = "conv" if use_conv else "no_conv"
+    prefix = f"{model_type}_{timestamp}_{conv_suffix}"
     plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
     
     plt.figure(figsize=(10, 6))
@@ -444,6 +459,7 @@ def plot_binary_training_loss(losses, model_type='AE_binary',
         loss_data = {
             'model_type': model_type,
             'timestamp': timestamp,
+            'use_conv': use_conv,
             'num_epochs': len(losses),
             'final_loss': float(losses[-1]),
             'min_loss': float(min(losses)),

@@ -10,20 +10,33 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 class AE(nn.Module):
-    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128)):
+    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2):
         """
         Binary Autoencoder for presence/absence prediction
         seq_length: number of positions in the window (e.g. 2000)
         feature_dim: number of features per position (e.g. 12 incl. chr embedding)
         layers: sizes of encoder layers; last one is the latent dim
+        use_conv: whether to use Conv1D as the first layer
+        conv_channels: number of output channels for the Conv1D layer (default: 64)
+        pool_size: pooling kernel size to reduce sequence length (default: 2)
         """
         super(AE, self).__init__()
         
         self.seq_length = seq_length
         self.feature_dim = feature_dim
         self.model_type = 'AE_binary'
+        self.use_conv = use_conv
         
-        input_dim = seq_length * feature_dim  # e.g. 2000 * 12
+        # ----- Optional Conv1D Layer -----
+        if use_conv:
+            self.conv1d = nn.Conv1d(in_channels=feature_dim, out_channels=conv_channels, 
+                                   kernel_size=3, stride=1, padding=1)
+            self.conv_relu = nn.ReLU()
+            self.pool = nn.MaxPool1d(kernel_size=pool_size)
+            pooled_seq_length = seq_length // pool_size
+            input_dim = pooled_seq_length * conv_channels  # Flattened after conv + pool
+        else:
+            input_dim = seq_length * feature_dim  # e.g. 2000 * 12
         
         # ----- Encoder -----
         encoder_layers = []
@@ -53,6 +66,16 @@ class AE(nn.Module):
         
     def forward(self, x):
         batch_size = x.size(0)
+        
+        if self.use_conv:
+            # x shape: (batch, seq_length, feature_dim)
+            # Conv1D expects: (batch, feature_dim, seq_length)
+            x = x.permute(0, 2, 1)  # Rearrange to (batch, feature_dim, seq_length)
+            x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
+            x = self.conv_relu(x)    # Apply ReLU
+            x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
+            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+        
         x = x.view(batch_size, -1)  # Flatten input
         
         # Encode
@@ -64,20 +87,33 @@ class AE(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128)):
+    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2):
         """
         Binary Variational Autoencoder for presence/absence prediction
         seq_length: number of positions in the window (e.g. 2000)
         feature_dim: number of features per position (e.g. 12 incl. chr embedding)
         layers: sizes of encoder layers; last one is the latent dim
+        use_conv: whether to use Conv1D as the first layer
+        conv_channels: number of output channels for the Conv1D layer (default: 64)
+        pool_size: pooling kernel size to reduce sequence length (default: 2)
         """
         super(VAE, self).__init__()
         
         self.seq_length = seq_length
         self.feature_dim = feature_dim
         self.model_type = 'VAE_binary'
+        self.use_conv = use_conv
         
-        input_dim = seq_length * feature_dim
+        # ----- Optional Conv1D Layer -----
+        if use_conv:
+            self.conv1d = nn.Conv1d(in_channels=feature_dim, out_channels=conv_channels, 
+                                   kernel_size=3, stride=1, padding=1)
+            self.conv_relu = nn.ReLU()
+            self.pool = nn.MaxPool1d(kernel_size=pool_size)
+            pooled_seq_length = seq_length // pool_size
+            input_dim = pooled_seq_length * conv_channels  # Flattened after conv + pool
+        else:
+            input_dim = seq_length * feature_dim
         
         # ----- Encoder -----
         encoder_layers = []
@@ -124,6 +160,16 @@ class VAE(nn.Module):
     
     def forward(self, x):
         batch_size = x.size(0)
+        
+        if self.use_conv:
+            # x shape: (batch, seq_length, feature_dim)
+            # Conv1D expects: (batch, feature_dim, seq_length)
+            x = x.permute(0, 2, 1)  # Rearrange to (batch, feature_dim, seq_length)
+            x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
+            x = self.conv_relu(x)    # Apply ReLU
+            x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
+            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+        
         x = x.view(batch_size, -1)  # Flatten input
         
         # Encode
@@ -239,7 +285,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     
     if plot:
         model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
-        plot_binary_training_loss(epoch_losses, model_type=model_type_str)
+        use_conv = model.use_conv if hasattr(model, 'use_conv') else False
+        plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv)
     
     return model
 
@@ -382,8 +429,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     
     if plot:
         model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
+        use_conv = model.use_conv if hasattr(model, 'use_conv') else False
         plot_binary_test_results(all_originals, all_reconstructions, all_probabilities,
-                                model_type=model_type_str, n_examples=n_examples, metrics=metrics)
+                                model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv)
     
     return all_reconstructions, all_latents, metrics
 
