@@ -460,12 +460,12 @@ if __name__ == "__main__":
         print("="*60)
         print("TRAINING AUTOENCODER (AE)")
         print("="*60)
-        ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
+        ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv)
         trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, use_conv=args.use_conv)
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
                                                           chrom=True, chrom_embedding=chrom_embedding, 
-                                                          plot=True, n_examples=5, use_conv=args.use_conv)
+                                                          plot=True, n_examples=5)
     
     if args.model in ['VAE', 'both']:
         if args.model == 'both':
