@@ -183,3 +183,4 @@ cython_debug/
 /Data_exploration/results/sequences_data/sequences
 /Data/processed_data
 /Apptainer
+my-container.sif
