@@ -1,0 +1,20 @@
+Epoch 1/10:   0%|          | 0/6206 [00:00<?, ?it/s]Epoch 1/10:   0%|          | 0/6206 [00:01<?, ?it/s]
+Traceback (most recent call last):
+  File "/workspace/AE/Autoencoder.py", line 464, in <module>
+    trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/Autoencoder.py", line 253, in train
+    recon_batch, z = model(batch_input)
+                     ^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/Autoencoder.py", line 76, in forward
+    x = x.view(batch_size, -1)  # Flatten input
+        ^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: view size is not compatible with input tensor's size and stride (at least one dimension spans across two contiguous subspaces). Use .reshape(...) instead.
+srun: error: insy16: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12090378.0

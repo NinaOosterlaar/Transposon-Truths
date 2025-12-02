@@ -1,0 +1,6 @@
+  File "/workspace/AE/Autoencoder.py", line 463
+    ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv)
+                                                                                  ^
+SyntaxError: positional argument follows keyword argument
+srun: error: insy15: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12090368.0
