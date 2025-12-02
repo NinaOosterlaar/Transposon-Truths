@@ -10,19 +10,32 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 class AE(nn.Module):
-    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128)):
+    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2):
         """
         seq_length: number of positions in the window (e.g. 2000)
         feature_dim: number of features per position (e.g. 12 incl. chr embedding)
         layers: sizes of encoder layers; last one is the latent dim
+        use_conv: whether to use Conv1D as the first layer
+        conv_channels: number of output channels for the Conv1D layer (default: 64)
+        pool_size: pooling kernel size to reduce sequence length (default: 2)
         """
         super(AE, self).__init__()
         
         self.seq_length = seq_length
         self.feature_dim = feature_dim
         self.model_type = 'AE'
+        self.use_conv = use_conv
         
-        input_dim = seq_length * feature_dim  # e.g. 2000 * 12
+        # ----- Optional Conv1D Layer -----
+        if use_conv:
+            self.conv1d = nn.Conv1d(in_channels=feature_dim, out_channels=conv_channels, 
+                                   kernel_size=3, stride=1, padding=1)
+            self.conv_relu = nn.ReLU()
+            self.pool = nn.MaxPool1d(kernel_size=pool_size)
+            pooled_seq_length = seq_length // pool_size
+            input_dim = pooled_seq_length * conv_channels  # Flattened after conv + pool
+        else:
+            input_dim = seq_length * feature_dim  # e.g. 2000 * 12
         
         # ----- Encoder -----
         encoder_layers = []
@@ -50,6 +63,16 @@ class AE(nn.Module):
         
     def forward(self, x):
         batch_size = x.size(0)
+        
+        if self.use_conv:
+            # x shape: (batch, seq_length, feature_dim)
+            # Conv1D expects: (batch, feature_dim, seq_length)
+            x = x.permute(0, 2, 1)  # Rearrange to (batch, feature_dim, seq_length)
+            x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
+            x = self.conv_relu(x)    # Apply ReLU
+            x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
+            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+        
         x = x.view(batch_size, -1)  # Flatten input
         
         # Encode
@@ -61,20 +84,33 @@ class AE(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128)):
+    def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2):
         """
         Variational Autoencoder
         seq_length: number of positions in the window (e.g. 2000)
         feature_dim: number of features per position (e.g. 12 incl. chr embedding)
         layers: sizes of encoder layers; last one is the latent dim
+        use_conv: whether to use Conv1D as the first layer
+        conv_channels: number of output channels for the Conv1D layer (default: 64)
+        pool_size: pooling kernel size to reduce sequence length (default: 2)
         """
         super(VAE, self).__init__()
         
         self.seq_length = seq_length
         self.feature_dim = feature_dim
         self.model_type = 'VAE'
+        self.use_conv = use_conv
         
-        input_dim = seq_length * feature_dim
+        # ----- Optional Conv1D Layer -----
+        if use_conv:
+            self.conv1d = nn.Conv1d(in_channels=feature_dim, out_channels=conv_channels, 
+                                   kernel_size=3, stride=1, padding=1)
+            self.conv_relu = nn.ReLU()
+            self.pool = nn.MaxPool1d(kernel_size=pool_size)
+            pooled_seq_length = seq_length // pool_size
+            input_dim = pooled_seq_length * conv_channels  # Flattened after conv + pool
+        else:
+            input_dim = seq_length * feature_dim
         
         # ----- Encoder -----
         encoder_layers = []
@@ -119,6 +155,16 @@ class VAE(nn.Module):
     
     def forward(self, x):
         batch_size = x.size(0)
+        
+        if self.use_conv:
+            # x shape: (batch, seq_length, feature_dim)
+            # Conv1D expects: (batch, feature_dim, seq_length)
+            x = x.permute(0, 2, 1)  # Rearrange to (batch, feature_dim, seq_length)
+            x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
+            x = self.conv_relu(x)    # Apply ReLU
+            x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
+            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+        
         x = x.view(batch_size, -1)  # Flatten input
         
         # Encode
@@ -387,6 +433,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train and test Autoencoder (AE) or Variational Autoencoder (VAE)')
     parser.add_argument('--model', type=str, choices=['AE', 'VAE', 'both'], default='both',
                         help='Model type to train: AE, VAE, or both (default: both)')
+    parser.add_argument('--use_conv', action='store_true',
+                        help='Whether to use Conv1D layer in the model')
     
     args = parser.parse_args()
     
@@ -398,7 +446,12 @@ if __name__ == "__main__":
     test_dataloader = dataloader_from_array(test_input_path, chrom=True, batch_size=64, shuffle=False)
     
     # Create chromosome embedding once to use consistently
-    chrom_embedding = ChromosomeEmbedding()
+    chrom = True 
+    if chrom:
+        chrom_embedding = ChromosomeEmbedding()
+    else:
+        chrom_embedding = None
+        
     
     # Train and test based on model choice
     if args.model in ['AE', 'both']:
@@ -407,7 +460,7 @@ if __name__ == "__main__":
         print("="*60)
         ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
         trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                          chrom=True, chrom_embedding=chrom_embedding, plot=True)
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
                                                           chrom=True, chrom_embedding=chrom_embedding, 
                                                           plot=True, n_examples=5)
@@ -421,7 +474,7 @@ if __name__ == "__main__":
         print("="*60)
         vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
         trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                           chrom=True, chrom_embedding=chrom_embedding, plot=True, beta=1.0)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0)
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=True, chrom_embedding=chrom_embedding, 
                                                              plot=True, n_examples=5, beta=1.0)
