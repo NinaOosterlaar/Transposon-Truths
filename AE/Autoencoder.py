@@ -71,7 +71,7 @@ class AE(nn.Module):
             x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
             x = self.conv_relu(x)    # Apply ReLU
             x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
-            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+            x = x.permute(0, 2, 1).contiguous()   # Back to (batch, pooled_seq_length, conv_channels)
         
         x = x.view(batch_size, -1)  # Flatten input
         
@@ -163,7 +163,7 @@ class VAE(nn.Module):
             x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
             x = self.conv_relu(x)    # Apply ReLU
             x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
-            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+            x = x.permute(0, 2, 1).contiguous()   # Back to (batch, pooled_seq_length, conv_channels)
         
         x = x.view(batch_size, -1)  # Flatten input
         
@@ -474,7 +474,7 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING VARIATIONAL AUTOENCODER (VAE)")
         print("="*60)
-        vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
+        vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
                            chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0)
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 

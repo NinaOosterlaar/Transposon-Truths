@@ -74,7 +74,7 @@ class AE(nn.Module):
             x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
             x = self.conv_relu(x)    # Apply ReLU
             x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
-            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+            x = x.permute(0, 2, 1).contiguous()   # Back to (batch, pooled_seq_length, conv_channels)
         
         x = x.view(batch_size, -1)  # Flatten input
         
@@ -168,7 +168,7 @@ class VAE(nn.Module):
             x = self.conv1d(x)       # Apply Conv1D -> (batch, conv_channels, seq_length)
             x = self.conv_relu(x)    # Apply ReLU
             x = self.pool(x)         # Apply MaxPool -> (batch, conv_channels, pooled_seq_length)
-            x = x.permute(0, 2, 1)   # Back to (batch, pooled_seq_length, conv_channels)
+            x = x.permute(0, 2, 1).contiguous()   # Back to (batch, pooled_seq_length, conv_channels)
         
         x = x.view(batch_size, -1)  # Flatten input
         
