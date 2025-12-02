@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=AE
+#SBATCH --job-name=VAE
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --qos=long
@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=128G
+#SBATCH --mem-per-cpu=64G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%j.out

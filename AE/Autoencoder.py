@@ -131,7 +131,7 @@ class VAE(nn.Module):
         return x_recon, z, mu, logvar
     
     
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, plot=True, beta=1.0):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0):
     """
     Train AE or VAE model
     
@@ -147,6 +147,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, plot
         Learning rate for optimizer
     chrom : bool
         Whether to use chromosome embedding
+    chrom_embedding : ChromosomeEmbedding or None
+        Chromosome embedding module (created externally to ensure consistency)
     plot : bool
         Whether to plot training loss
     beta : float
@@ -155,10 +157,12 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, plot
     model.to(device)
     parameters = list(model.parameters())
     if chrom:
-        chrom_embedding = ChromosomeEmbedding().to(device)
+        if chrom_embedding is None:
+            raise ValueError("chrom_embedding must be provided when chrom=True")
+        chrom_embedding.to(device)
         parameters += list(chrom_embedding.parameters())
 
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss(reduction='sum')  # Use sum reduction for proper scaling with KL loss
     optimizer = optim.Adam(parameters, lr=learning_rate)
     
     is_vae = hasattr(model, 'model_type') and model.model_type == 'VAE'
@@ -192,7 +196,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, plot
             if is_vae:
                 recon_batch, z, mu, logvar = model(batch_input)
                 # VAE loss = Reconstruction loss + KL divergence
-                recon_loss = criterion(recon_batch, y)
+                recon_loss = criterion(recon_batch, y) / y.size(0)  # Divide by batch size
                 # KL divergence: -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
                 kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / y.size(0)
                 loss = recon_loss + beta * kl_loss
@@ -201,7 +205,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, plot
                 epoch_kl_loss += kl_loss.item() * y.size(0)
             else:
                 recon_batch, z = model(batch_input)
-                loss = criterion(recon_batch, y)
+                loss = criterion(recon_batch, y) / y.size(0)  # Divide by batch size for consistency
             
             loss.backward()
             optimizer.step()
@@ -232,7 +236,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, plot
     
     return model
 
-def test(model, dataloader, chrom=True, plot=True, n_examples=5, beta=1.0):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0):
     """
     Test AE or VAE model
     
@@ -244,6 +248,8 @@ def test(model, dataloader, chrom=True, plot=True, n_examples=5, beta=1.0):
         Test data
     chrom : bool
         Whether to use chromosome embedding
+    chrom_embedding : ChromosomeEmbedding or None
+        Chromosome embedding module (must be the same one used during training)
     plot : bool
         Whether to create visualization plots
     n_examples : int
@@ -254,13 +260,19 @@ def test(model, dataloader, chrom=True, plot=True, n_examples=5, beta=1.0):
     model.to(device)
     model.eval()
     
+    if chrom:
+        if chrom_embedding is None:
+            raise ValueError("chrom_embedding must be provided when chrom=True")
+        chrom_embedding.to(device)
+        chrom_embedding.eval()
+    
     all_reconstructions = []
     all_latents = []
     all_originals = []
     total_loss = 0.0
     total_recon_loss = 0.0
     total_kl_loss = 0.0
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss(reduction='sum')  # Use sum reduction for proper scaling
     
     is_vae = hasattr(model, 'model_type') and model.model_type == 'VAE'
     
@@ -276,7 +288,6 @@ def test(model, dataloader, chrom=True, plot=True, n_examples=5, beta=1.0):
             y = y.to(device)         # (B, seq)
             y_in = y.unsqueeze(-1)  # Add feature dimension
             if chrom:
-                chrom_embedding = ChromosomeEmbedding().to(device)
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)
             else:
@@ -286,7 +297,7 @@ def test(model, dataloader, chrom=True, plot=True, n_examples=5, beta=1.0):
             if is_vae:
                 recon_batch, z, mu, logvar = model(batch_input)
                 # Calculate losses
-                recon_loss = criterion(recon_batch, y)
+                recon_loss = criterion(recon_batch, y) / y.size(0)  # Divide by batch size
                 kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / y.size(0)
                 loss = recon_loss + beta * kl_loss
                 
@@ -294,7 +305,7 @@ def test(model, dataloader, chrom=True, plot=True, n_examples=5, beta=1.0):
                 total_kl_loss += kl_loss.item() * y.size(0)
             else:
                 recon_batch, z = model(batch_input)
-                loss = criterion(recon_batch, y)
+                loss = criterion(recon_batch, y) / y.size(0)  # Divide by batch size
             
             total_loss += loss.item() * y.size(0)
             
@@ -386,14 +397,20 @@ if __name__ == "__main__":
     test_input_path = "Data/processed_data/test_data.npy"
     test_dataloader = dataloader_from_array(test_input_path, chrom=True, batch_size=64, shuffle=False)
     
+    # Create chromosome embedding once to use consistently
+    chrom_embedding = ChromosomeEmbedding()
+    
     # Train and test based on model choice
     if args.model in ['AE', 'both']:
         print("="*60)
         print("TRAINING AUTOENCODER (AE)")
         print("="*60)
         ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
-        trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, chrom=True, plot=True)
-        ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, chrom=True, plot=True, n_examples=5)
+        trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
+                          chrom=True, chrom_embedding=chrom_embedding, plot=True)
+        ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
+                                                          chrom=True, chrom_embedding=chrom_embedding, 
+                                                          plot=True, n_examples=5)
     
     if args.model in ['VAE', 'both']:
         if args.model == 'both':
@@ -403,7 +420,10 @@ if __name__ == "__main__":
         print("TRAINING VARIATIONAL AUTOENCODER (VAE)")
         print("="*60)
         vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128])
-        trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, chrom=True, plot=True, beta=1.0)
-        vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, chrom=True, plot=True, n_examples=5, beta=1.0)
+        trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
+                           chrom=True, chrom_embedding=chrom_embedding, plot=True, beta=1.0)
+        vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
+                                                             chrom=True, chrom_embedding=chrom_embedding, 
+                                                             plot=True, n_examples=5, beta=1.0)
     
     

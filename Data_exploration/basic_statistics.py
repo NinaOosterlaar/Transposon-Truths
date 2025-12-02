@@ -1,9 +1,11 @@
+import sys
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns  
-from Utils.reader import read_wig, label_from_filename
 from tqdm import tqdm
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+from Utils.reader import read_wig, label_from_filename
 
 
 yeast_chrom_lengths = {
@@ -186,26 +188,44 @@ def save_basic_info(folder_name, output_file, plot = False, output_folder_figure
 
             total_sum = 0
             occupied_sites = 0
+            non_zero_sum = 0
+            non_zero_count = 0
+            all_values = []
 
             for chrom, df in wig_dict.items():
+                # Filter out positions with values > 1 million
+                high_values = df[df['Value'] > 1000000]
+                if not high_values.empty:
+                    for _, row in high_values.iterrows():
+                        print(f"Filtered out high value in {wig_file}, {chrom}, Position {row['Position']}: {row['Value']}")
+                    df = df[df['Value'] <= 1000000]
+                
                 total_sum += df['Value'].sum()
                 if not df.empty:
                     occupied_sites += (df['Value'] > 0).sum()
+                    # Calculate sum and count of non-zero values
+                    non_zero_values = df[df['Value'] > 0]['Value']
+                    non_zero_sum += non_zero_values.sum()
+                    non_zero_count += len(non_zero_values)
+                    # Collect all values for standard deviation calculation
+                    all_values.extend(df['Value'].tolist())
 
             mean_count = total_sum / genome_size
+            mean_non_zero = non_zero_sum / non_zero_count if non_zero_count > 0 else 0
+            std_dev = np.std(all_values) if len(all_values) > 0 else 0
             unoccupied_sites = genome_size - occupied_sites
             label = label_from_filename(wig_file)
             density = occupied_sites / (occupied_sites + unoccupied_sites) 
 
-            stats.append((label, total_sum, mean_count, occupied_sites, unoccupied_sites, density))
+            stats.append((label, total_sum, mean_count, occupied_sites, unoccupied_sites, density, mean_non_zero, std_dev))
 
     with open(output_file, 'w') as f:
-        f.write("Sample\tTotal_Sum\tMean_Coverage_per_bp\tOccupied_Sites\tUnoccupied_Sites\tDensity\n")
+        f.write("Sample\tTotal_Sum\tMean_Coverage_per_bp\tOccupied_Sites\tUnoccupied_Sites\tDensity\tMean_Non_Zero_Count\tStd_Dev\n")
         for s in stats:
-            f.write(f"{s[0]}\t{s[1]}\t{s[2]:.6f}\t{s[3]}\t{s[4]}\t{s[5]:.6f}\n")
+            f.write(f"{s[0]}\t{s[1]}\t{s[2]:.6f}\t{s[3]}\t{s[4]}\t{s[5]:.6f}\t{s[6]:.6f}\t{s[7]:.6f}\n")
             
     if plot:
         plot_basic_statistics(stats, output_folder_figures)
             
-# save_basic_info("Data/wiggle_format", "Data_exploration/results/basic_statistics.txt", plot=False, output_folder_figures="Data_exploration/figures")
+save_basic_info("Data/old/wiggle_format", "Data_exploration/results/basic_statistics.txt", plot=False, output_folder_figures="Data_exploration/figures")
     
