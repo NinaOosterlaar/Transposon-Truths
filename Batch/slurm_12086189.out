@@ -1,0 +1,30 @@
+Device: cuda
+============================================================
+TRAINING VARIATIONAL AUTOENCODER (VAE)
+============================================================
+Epoch [1/10], Total Loss: 8.5640, Recon: 8.5290, KL: 0.0351
+Epoch [2/10], Total Loss: 8.5144, Recon: 8.5143, KL: 0.0000
+Epoch [3/10], Total Loss: 8.5142, Recon: 8.5142, KL: 0.0000
+Epoch [4/10], Total Loss: 8.5139, Recon: 8.5139, KL: 0.0000
+Epoch [5/10], Total Loss: 8.5144, Recon: 8.5144, KL: 0.0000
+Epoch [6/10], Total Loss: 8.5138, Recon: 8.5138, KL: 0.0000
+Epoch [7/10], Total Loss: 8.5137, Recon: 8.5137, KL: 0.0000
+Epoch [8/10], Total Loss: 8.5140, Recon: 8.5140, KL: 0.0000
+Epoch [9/10], Total Loss: 8.5137, Recon: 8.5137, KL: 0.0000
+Epoch [10/10], Total Loss: 8.5137, Recon: 8.5137, KL: 0.0000
+Training loss plot saved to AE/results/training/VAE_20251202_125419_training_loss.png
+Training losses saved to AE/results/training/VAE_20251202_125419_training_losses.json
+Training loss plot saved to AE/results/training/training_loss_VAE_20251202_125419.png
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (MSE): 4.542823
+Mean Absolute Error (MAE): 0.025784
+R² Score: -0.004668
+Reconstruction Loss: 4.542822
+KL Divergence: 0.000000
+==================================================
+
+Metrics saved to AE/results/testing/VAE_20251202_125452_test_metrics.json
+Plots saved to AE/results/testing/

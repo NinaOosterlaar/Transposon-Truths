@@ -1,0 +1,36 @@
+{
+    "model_type": "VAE_binary",
+    "timestamp": "20251202_130824",
+    "metrics": {
+        "bce_loss": 1349.0591532031224,
+        "accuracy": 0.5971050634345265,
+        "precision": 0.2978723404255319,
+        "recall": 7.569559425526454e-08,
+        "f1_score": 1.513911500388702e-07,
+        "auc_roc": 0.500019406313668,
+        "recon_loss": 1349.0591483357966,
+        "kl_loss": 5.205111653220346e-06
+    },
+    "class_distribution": {
+        "n_absent": 274104681,
+        "n_present": 184951319,
+        "percent_absent": 59.71051048238123,
+        "percent_present": 40.28948951761876
+    },
+    "probability_statistics": {
+        "mean_prob_when_absent": 0.41592711210250854,
+        "std_prob_when_absent": 0.002795423148199916,
+        "mean_prob_when_present": 0.41588109731674194,
+        "std_prob_when_present": 0.0027957800775766373
+    },
+    "confusion_matrix": [
+        [
+            274104648,
+            33
+        ],
+        [
+            184951305,
+            14
+        ]
+    ]
+}
