@@ -1,9 +1,0 @@
-Running preprocessing with --bin 5
-Train datasets: ['yWT04a_23', 'dnrp1_2', 'FD7', 'yEK23a_23', 'yEK23b_1', 'FD9', 'dnrp1_1', 'yWT03a_21', 'yEK23c_10', 'yWT04a_14', 'yTW001_4', 'yLIC137_8', 'yWT03a_16', 'yEK19a_7', 'yEK19c_7', 'yEK23a_32', 'yTW001_6', 'yEK19a_6']
-Validation datasets: ['FD11', 'yEK19c_9', 'yLIC137_7', 'yEK23a_27']
-Test datasets: ['yEK23b_2', 'yEK19b_12', 'yEK19a_8', 'FD12']
-
-Processing complete!
-Train data shape: (433836, 2000, 5)
-Validation data shape: (96408, 2000, 5)
-Test data shape: (96408, 2000, 5)
