@@ -1,5 +1,0 @@
-usage: Autoencoder_binary.py [-h] [--model {AE,VAE,both}]
-                             [--threshold THRESHOLD]
-Autoencoder_binary.py: error: argument --model: invalid choice: 'AE_binary' (choose from 'AE', 'VAE', 'both')
-srun: error: insy15: task 0: Exited with exit code 2
-srun: launch/slurm: _step_signal: Terminating StepId=12086188.0

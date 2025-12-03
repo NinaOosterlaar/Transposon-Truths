@@ -1,7 +1,0 @@
-Traceback (most recent call last):
-  File "/workspace/AE/Autoencoder.py", line 464, in <module>
-    trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: train() got an unexpected keyword argument 'use_conv'
-srun: error: influ2: task 0: Exited with exit code 1
-srun: launch/slurm: _step_signal: Terminating StepId=12089626.0

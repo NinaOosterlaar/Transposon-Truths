@@ -1,3 +1,0 @@
-FATAL:   While checking container encryption: could not open image /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif: failed to retrieve path for /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif: lstat /tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif: no such file or directory
-srun: error: insy16: task 0: Exited with exit code 255
-srun: launch/slurm: _step_signal: Terminating StepId=12090361.0
