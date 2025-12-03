@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif"
+export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container2.sif"
 export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
@@ -28,4 +28,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python AE/preprocessing.py --bin "$BIN" --normalize_counts False
+    python AE/preprocessing.py --bin "$BIN" --no_normalize_counts

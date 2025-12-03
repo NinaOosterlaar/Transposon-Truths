@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/workspace/AE/preprocessing.py", line 840, in <module>
+    np.save(train_file, train)
+  File "/opt/conda/lib/python3.11/site-packages/numpy/lib/_npyio_impl.py", line 580, in save
+    file_ctx = open(file, "wb")
+               ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: "Data/processed_data/Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize50_DataPointLen2000_StepSize500/train_data.npy"
+srun: error: gpu02: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12090890.0

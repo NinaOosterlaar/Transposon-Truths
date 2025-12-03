@@ -1,1 +1,29 @@
 Running model: AE (SLURM_ARRAY_TASK_ID=0)
+Device: cuda
+============================================================
+TRAINING AUTOENCODER (AE)
+============================================================
+Epoch [1/10], Loss: 8.5354
+Epoch [2/10], Loss: 8.5139
+Epoch [3/10], Loss: 8.5140
+Epoch [4/10], Loss: 8.5143
+Epoch [5/10], Loss: 8.5141
+Epoch [6/10], Loss: 8.5144
+Epoch [7/10], Loss: 8.5143
+Epoch [8/10], Loss: 8.5139
+Epoch [9/10], Loss: 8.5141
+Epoch [10/10], Loss: 8.5137
+Training loss plot saved to AE/results/training/AE_20251202_205150_conv_training_loss.png
+Training losses saved to AE/results/training/AE_20251202_205150_conv_training_losses.json
+Training loss plot saved to AE/results/training/training_loss_AE_20251202_205150.png
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (MSE): 4.532711
+Mean Absolute Error (MAE): 0.025104
+R² Score: -0.002439
+==================================================
+
+Metrics saved to AE/results/testing/AE_20251202_205226_conv_test_metrics.json
+Plots saved to AE/results/testing/
