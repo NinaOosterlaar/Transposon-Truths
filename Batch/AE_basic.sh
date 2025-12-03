@@ -2,7 +2,7 @@
 #SBATCH --job-name=AE_VAE
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu
 #SBATCH --cpus-per-task=1

@@ -833,9 +833,9 @@ if __name__ == "__main__":
     output_name = args.output_dir + f"Features{args.features}_SplitOn{args.split_on}_BinSize{args.bin_size}_DataPointLen{args.data_point_length}_StepSize{args.step_size}"
     
     # Save the train, validation, and test data as .npy files
-    train_file = os.path.join(output_name, f"train_data.npy")
-    val_file = os.path.join(output_name, f"val_data.npy")
-    test_file = os.path.join(output_name, f"test_data.npy")
+    train_file = output_name + f"train_data.npy"
+    val_file = output_name + f"val_data.npy"
+    test_file = output_name + f"test_data.npy"
     
     np.save(train_file, train)
     np.save(val_file, val)
