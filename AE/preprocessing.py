@@ -830,7 +830,7 @@ if __name__ == "__main__":
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
     
-    output_name = args.output_dir + f"Features{args.features}_SplitOn{args.split_on}_BinSize{args.bin_size}_DataPointLen{args.data_point_length}_StepSize{args.step_size}"
+    output_name = args.output_dir + f"Features{args.features}_SplitOn{args.split_on}_BinSize{args.bin_size}_DataPointLen{args.data_point_length}_StepSize{args.step_size}_Normalize{args.normalize_counts}_MovingAvg{args.moving_average}_"
     
     # Save the train, validation, and test data as .npy files
     train_file = output_name + f"train_data.npy"
