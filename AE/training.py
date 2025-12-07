@@ -12,7 +12,7 @@ from Autoencoder_binary import AE_binary, VAE_binary
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name=""):
     """
     Train AE or VAE model
     
@@ -129,15 +129,15 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         if binary:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv)
+            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv)
+            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
     
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name=""):
     """
     Test AE or VAE model
     
@@ -263,12 +263,12 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_binary_test_results(all_originals, all_reconstructions, all_reconstructions,
-                                    model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv)
+                                    model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name )
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_test_results(all_originals, all_reconstructions, model_type=model_type_str, 
-                            n_examples=n_examples, metrics=metrics, use_conv=use_conv)
+                            n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name)
         
     return all_reconstructions, all_latents, metrics
 
