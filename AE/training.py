@@ -54,7 +54,7 @@ def add_noise(y, denoise_percent):
     
     return y_noisy
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.0):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3):
     """
     Train AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -535,10 +535,10 @@ if __name__ == "__main__":
         else:   
             vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary, name=filename)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary, name=filename, denoise_percent=0.3)
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=True, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary, name=filename)
+                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary, name=filename, denoise_percent=0.3)
     
     if args.model in ['ZINBAE', 'all']:
         if args.model == 'all':
@@ -549,10 +549,10 @@ if __name__ == "__main__":
         print("="*60)
         zinbae_model = ZINBAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=filename)
+                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=filename, denoise_percent=0.3)
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=True, chrom_embedding=chrom_embedding, 
-                                                                      plot=True, n_examples=5, name=filename)
+                                                                      plot=True, n_examples=5, name=filename, denoise_percent=0.3)
     
     if args.model in ['ZINBVAE', 'all']:
         if args.model == 'all':
@@ -563,7 +563,7 @@ if __name__ == "__main__":
         print("="*60)
         zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename)
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename, denoise_percent=0.3)
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=True, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=1.0, name=filename)
+                                                                         plot=True, n_examples=5, beta=1.0, name=filename, denoise_percent=0.3)
