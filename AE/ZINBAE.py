@@ -67,6 +67,15 @@ class ZINBAE(nn.Module):
         self.mu_layer    = nn.Linear(decoder_out_dim, seq_length)
         self.theta_layer = nn.Linear(decoder_out_dim, seq_length)
         self.pi_layer    = nn.Linear(decoder_out_dim, seq_length)
+        
+        # Initialize ZINB output layers with smaller weights to prevent initial explosion
+        nn.init.xavier_uniform_(self.mu_layer.weight, gain=0.1)
+        nn.init.xavier_uniform_(self.theta_layer.weight, gain=0.1)
+        nn.init.xavier_uniform_(self.pi_layer.weight, gain=0.1)
+        # Initialize biases to reasonable starting values
+        nn.init.constant_(self.mu_layer.bias, 0.0)  # Will result in mu_hat ~= 1 after exp
+        nn.init.constant_(self.theta_layer.bias, 0.0)  # Will result in theta ~= 1 after exp
+        nn.init.constant_(self.pi_layer.bias, -2.0)  # Will result in pi ~= 0.12 after sigmoid
     
     def forward(self, x_in, size_factors):
         """
@@ -95,10 +104,17 @@ class ZINBAE(nn.Module):
         # Decode shared representation
         D = self.decoder_shared(z)  # shape (batch, decoder_out_dim)
         
-        # ZINB parameters
-        mu_hat = torch.exp(self.mu_layer(D))       # (batch, seq_length), positive
-        theta  = torch.exp(self.theta_layer(D))    # (batch, seq_length), positive
-        pi     = torch.sigmoid(self.pi_layer(D))   # (batch, seq_length), in (0,1)
+        # ZINB parameters with clamping to prevent overflow
+        # Use softplus or clamped exp to prevent exploding values
+        mu_hat_logits = self.mu_layer(D)
+        mu_hat = torch.clamp(mu_hat_logits, min=-20, max=20)  # Clamp before exp
+        mu_hat = torch.exp(mu_hat)       # (batch, seq_length), positive
+        
+        theta_logits = self.theta_layer(D)
+        theta = torch.clamp(theta_logits, min=-20, max=10)  # Clamp before exp
+        theta = torch.exp(theta)    # (batch, seq_length), positive
+        
+        pi = torch.sigmoid(self.pi_layer(D))   # (batch, seq_length), in (0,1)
         
         # apply size factors to μ
         if size_factors.dim() == 1:
@@ -177,6 +193,15 @@ class ZINBVAE(nn.Module):
         self.mu_layer    = nn.Linear(decoder_out_dim, seq_length)
         self.theta_layer = nn.Linear(decoder_out_dim, seq_length)
         self.pi_layer    = nn.Linear(decoder_out_dim, seq_length)
+        
+        # Initialize ZINB output layers with smaller weights to prevent initial explosion
+        nn.init.xavier_uniform_(self.mu_layer.weight, gain=0.1)
+        nn.init.xavier_uniform_(self.theta_layer.weight, gain=0.1)
+        nn.init.xavier_uniform_(self.pi_layer.weight, gain=0.1)
+        # Initialize biases to reasonable starting values
+        nn.init.constant_(self.mu_layer.bias, 0.0)  # Will result in mu_hat ~= 1 after exp
+        nn.init.constant_(self.theta_layer.bias, 0.0)  # Will result in theta ~= 1 after exp
+        nn.init.constant_(self.pi_layer.bias, -2.0)  # Will result in pi ~= 0.12 after sigmoid
     
     def encode(self, x):
         h = self.encoder(x)
@@ -210,10 +235,17 @@ class ZINBVAE(nn.Module):
         
         D = self.decoder_shared(z)  # shape (batch, decoder_out_dim)
         
-        # ZINB parameters
-        mu_hat = torch.exp(self.mu_layer(D))       # (batch, seq_length), positive
-        theta  = torch.exp(self.theta_layer(D))    # (batch, seq_length), positive
-        pi     = torch.sigmoid(self.pi_layer(D))   # (batch, seq_length), in (0,1)
+        # ZINB parameters with clamping to prevent overflow
+        # Use softplus or clamped exp to prevent exploding values
+        mu_hat_logits = self.mu_layer(D)
+        mu_hat = torch.clamp(mu_hat_logits, min=-20, max=20)  # Clamp before exp
+        mu_hat = torch.exp(mu_hat)       # (batch, seq_length), positive
+        
+        theta_logits = self.theta_layer(D)
+        theta = torch.clamp(theta_logits, min=-20, max=10)  # Clamp before exp
+        theta = torch.exp(theta)    # (batch, seq_length), positive
+        
+        pi = torch.sigmoid(self.pi_layer(D))   # (batch, seq_length), in (0,1)
         
         # apply size factors to μ
         if size_factors.dim() == 1:

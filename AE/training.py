@@ -156,7 +156,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                     mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
                     # ZINB reconstruction loss (sum over batch and seq, then average over batch)
                     recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='sum') / y.size(0)
-                    # KL divergence for latent space
+                    # KL divergence for latent space - clamp logvar to prevent numerical issues
+                    logvar_z = torch.clamp(logvar_z, min=-20, max=10)
                     kl_loss = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp()) / y.size(0)
                     loss = recon_loss + beta * kl_loss
                     
@@ -172,6 +173,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 # VAE loss = Reconstruction loss + KL divergence
                 recon_loss = criterion(recon_batch, y_binary if binary else y) / y.size(0)  # Divide by batch size
                 # KL divergence: -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+                # Clamp logvar to prevent numerical issues
+                logvar = torch.clamp(logvar, min=-20, max=10)
                 kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / y.size(0)
                 loss = recon_loss + beta * kl_loss
                 
@@ -183,7 +186,26 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 loss = criterion(recon_batch, y_binary if binary else y) / y.size(0)  # Divide by batch size for consistency
             
             loss.backward()
+            
+            # Gradient clipping to prevent exploding gradients (especially important for VAE/ZINBVAE)
+            torch.nn.utils.clip_grad_norm_(parameters, max_norm=5.0)
+            
             optimizer.step()
+            
+            # Check for NaN in loss
+            if torch.isnan(loss) or torch.isinf(loss):
+                print(f"\nWARNING: NaN or Inf detected in loss at epoch {epoch+1}!")
+                print(f"Batch info: batch size={y.size(0)}")
+                if is_zinb:
+                    print(f"  mu: min={mu.min():.4f}, max={mu.max():.4f}, mean={mu.mean():.4f}")
+                    print(f"  theta: min={theta.min():.4f}, max={theta.max():.4f}, mean={theta.mean():.4f}")
+                    print(f"  pi: min={pi.min():.4f}, max={pi.max():.4f}, mean={pi.mean():.4f}")
+                    if model.model_type == 'ZINBVAE':
+                        print(f"  mu_z: min={mu_z.min():.4f}, max={mu_z.max():.4f}, mean={mu_z.mean():.4f}")
+                        print(f"  logvar_z: min={logvar_z.min():.4f}, max={logvar_z.max():.4f}, mean={logvar_z.mean():.4f}")
+                # Skip this batch or break
+                continue
+            
             epoch_loss += loss.item() * y.size(0)
             
             # Update progress bar with current loss

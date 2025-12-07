@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=AE_basic
+#SBATCH --job-name=ZINB
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=02:00:00
