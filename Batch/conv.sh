@@ -34,4 +34,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python AE/Autoencoder.py --model "$MODEL" --use_conv
+    python AE/training.py --model "$MODEL" --use_conv

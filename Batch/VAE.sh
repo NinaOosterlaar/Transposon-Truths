@@ -30,4 +30,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python AE/Autoencoder.py --model VAE
+    python AE/training.py --model VAE

@@ -9,18 +9,15 @@ def sample_zinb(mu, theta, pi, size):
 
     Args:
         mu (float): Mean of the NB component (>0).
-        theta (float): Dispersion/size parameter (>0). Var = mu + mu^2 / theta.
-        pi (float): Extra zero probability in [0, 1).
+        theta (float): Dispersion (>0). Var = mu + mu^2 / theta.
+        pi (float): Zero probability in [0, 1).
         size (int): Number of samples.
 
     Returns:
         counts (np.ndarray): ZINB-sampled integer counts.
     """
-    if mu <= 0:
-        # If the mean is zero (e.g. "zero region"), everything is zero.
-        return np.zeros(size, dtype=int)
-
-    # For numpy's negative_binomial: n=theta, p=theta/(theta+mu)
+    min_mu = 0.05
+    mu = max(mu, min_mu)
     p = theta / (theta + mu)
     nb_counts = np.random.negative_binomial(theta, p, size=size)
 
@@ -33,10 +30,10 @@ def sample_zinb(mu, theta, pi, size):
 
 def make_random_zinb_counts(
     n_regions,
-    mean_range=(0.1, 25.0),
+    mean_range=(0.1, 40.0),
     length_mean_range=(40, 1000),
-    theta_range=(0.5, 10.0),
-    zero_prob_range=(0.0, 0.8),
+    theta_range=(5.0, 60.0),
+    zero_prob_range=(0.1, 0.8),
     min_region_length=20,
     probability_zero_region=0.1,
 ):
@@ -52,18 +49,12 @@ def make_random_zinb_counts(
         theta_range (tuple): Min and max values for the NB dispersion (theta).
         zero_prob_range (tuple): Min and max zero-inflation probabilities (pi).
         min_region_length (int): Minimum length for each region.
-        probability_zero_region (float): Probability that a region has mean=0,
-            i.e. is a "zero region" with all counts 0.
+        probability_zero_region (float): Probability that a region has mean=0.
 
     Returns:
         counts (np.ndarray): Array of generated counts across all regions.
         region_boundaries (list): End positions (indices) for each region.
-        region_params (dict): Parameters used for each region:
-            - region_means (mu)
-            - region_thetas (theta)
-            - region_zero_probs (pi)
-            - region_lengths
-            - zero_region_mask (bool)
+        region_params (dict): Parameters used for each region.
     """
 
     # Sample per-region means (mu)
@@ -113,7 +104,7 @@ def make_random_zinb_counts(
 
 
 if __name__ == "__main__":
-    plot = False
+    plot = True
     generate = True
 
     if generate:
@@ -122,10 +113,10 @@ if __name__ == "__main__":
 
         counts, boundaries, params = make_random_zinb_counts(
             n_regions=number_of_regions,
-            mean_range=(0.1, 15),
+            mean_range=(0.1, 40.0),
             length_mean_range=(40, 1000),
-            theta_range=(0.5, 8.0),
-            zero_prob_range=(0.1, 0.9),
+            theta_range=(5.0, 60.0),
+            zero_prob_range=(0.7, 0.95),
             min_region_length=20,
             probability_zero_region=0.1,
         )
@@ -137,10 +128,10 @@ if __name__ == "__main__":
     if plot:
         counts, boundaries, params = make_random_zinb_counts(
             n_regions=5,
-            mean_range=(0.1, 15),
-            length_mean_range=(40, 200),
-            theta_range=(0.5, 8.0),
-            zero_prob_range=(0.1, 0.9),
+            mean_range=(0.1, 40.0),
+            length_mean_range=(40, 1000),
+            theta_range=(5.0, 60.0),
+            zero_prob_range=(0.7, 0.95),
             min_region_length=20,
             probability_zero_region=0.1,
         )
