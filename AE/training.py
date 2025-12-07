@@ -14,7 +14,47 @@ from loss_functions import zinb_nll
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name=""):
+def add_noise(y, denoise_percent):
+    """
+    Randomly set a percentage of non-zero values to zero for denoising autoencoder.
+    
+    Parameters:
+    -----------
+    y : torch.Tensor
+        Input tensor (B, seq)
+    denoise_percent : float
+        Percentage of non-zero values to set to zero (0.0 to 1.0)
+    
+    Returns:
+    --------
+    y_noisy : torch.Tensor
+        Noisy version of input with some non-zero values set to zero
+    """
+    if denoise_percent <= 0.0:
+        return y
+    
+    y_noisy = y.clone()
+    # Find non-zero positions
+    non_zero_mask = y_noisy != 0
+    non_zero_indices = torch.nonzero(non_zero_mask, as_tuple=True)
+    
+    if len(non_zero_indices[0]) > 0:
+        # Calculate how many non-zero values to zero out
+        num_non_zero = len(non_zero_indices[0])
+        num_to_zero = int(num_non_zero * denoise_percent)
+        
+        if num_to_zero > 0:
+            # Randomly select indices to zero out
+            perm = torch.randperm(num_non_zero)[:num_to_zero]
+            batch_idx = non_zero_indices[0][perm]
+            seq_idx = non_zero_indices[1][perm]
+            
+            # Set selected non-zero values to zero
+            y_noisy[batch_idx, seq_idx] = 0
+    
+    return y_noisy
+
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.0):
     """
     Train AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -38,6 +78,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         Weight for KL divergence loss (only used for VAE/ZINBVAE). Default=1.0
     binary : bool
         Whether to use binary AE/VAE models. Default=False
+    denoise_percent : float
+        Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
     """
     model.to(device)
     parameters = list(model.parameters())
@@ -97,7 +139,10 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 y_binary = y_binary.to(device)  # (B, seq)
             
             optimizer.zero_grad()
-            y_in = y.unsqueeze(-1)  # Add feature dimension
+            
+            # Apply denoising: randomly set some non-zero values to zero in the input
+            y_noisy = add_noise(y, denoise_percent)
+            y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)
@@ -172,7 +217,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name=""):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0):
     """
     Test AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -194,6 +239,8 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         Weight for KL divergence loss (only used for VAE/ZINBVAE). Default=1.0
     binary : bool
         Whether to use binary AE/VAE models. Default=False
+    denoise_percent : float
+        Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
     """
     model.to(device)
     model.eval()
@@ -251,7 +298,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             if binary:
                 y_binary = y_binary.to(device)  # (B, seq)
             
-            y_in = y.unsqueeze(-1)  # Add feature dimension
+            # Apply denoising: randomly set some non-zero values to zero in the input
+            y_noisy = add_noise(y, denoise_percent)
+            y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)

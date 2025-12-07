@@ -588,7 +588,8 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
                     
                     # Convert back to DataFrame
                     if len(binned_values) > 0:
-                        binned_df = pd.DataFrame(binned_values, columns=['Position', 'Value', 'Nucleosome_Distance', 'Centromere_Distance'])
+                        # Use the original dataframe's columns to handle both normal and ZINB modes
+                        binned_df = pd.DataFrame(binned_values, columns=segment_df.columns.tolist())
                         
                         # Add chromosome encoding if needed
                         if use_chrom:
@@ -650,7 +651,8 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
                 else:
                     binned_values = bin_data(df.values, bin_size)
                 
-                binned_df = pd.DataFrame(binned_values, columns=['Position', 'Value', 'Nucleosome_Distance', 'Centromere_Distance'])
+                # Use the original dataframe's columns to handle both normal and ZINB modes
+                binned_df = pd.DataFrame(binned_values, columns=df.columns.tolist())
                 
                 # Add chromosome encoding if needed
                 if use_chrom:
