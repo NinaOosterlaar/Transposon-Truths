@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=test
+#SBATCH --job-name=AE_basic
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=00:10:00
+#SBATCH --time=02:00:00
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=10G
+#SBATCH --mem-per-cpu=64G
 #SBATCH --array=0-7
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl

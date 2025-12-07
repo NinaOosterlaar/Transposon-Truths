@@ -73,7 +73,7 @@ if __name__ == "__main__":
     
     if generate:
         number_of_regions = 2000
-        output_path = f"Signal_processing/random_gaussian_counts_{number_of_regions}_regions.csv"
+        output_path = f"Signal_processing/pretty_data.csv"
         counts, boundaries, params = make_random_gaussian_counts(
             n_regions=number_of_regions,
             mean_range=(1, 15),
@@ -84,6 +84,10 @@ if __name__ == "__main__":
         positions = np.arange(len(counts))
         df = pd.DataFrame({"Position": positions, "Count": counts})
         df.to_csv(output_path, index=False)
+        # Save params
+        params_output_path = f"Signal_processing/pretty_data_params.csv"
+        params_df = pd.DataFrame(params)
+        params_df.to_csv(params_output_path, index=False)
     
     if plot:
         counts, boundaries, params = make_random_gaussian_counts(
