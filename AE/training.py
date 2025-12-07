@@ -362,10 +362,10 @@ if __name__ == "__main__":
         else:
             ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary)
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name = filename)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
                                                           chrom=True, chrom_embedding=chrom_embedding, 
-                                                          plot=True, n_examples=5, binary=args.binary)
+                                                          plot=True, n_examples=5, binary=args.binary, name = filename)
     
     if args.model in ['VAE', 'both']:
         if args.model == 'both':
@@ -379,7 +379,7 @@ if __name__ == "__main__":
         else:   
             vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary, name=filename)
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=True, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary)
+                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary, name=filename)
