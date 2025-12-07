@@ -28,4 +28,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python AE/preprocessing.py --bin "$BIN" --train_val_test_split 0.7 0.0 0.3 
+    python AE/preprocessing.py --bin "$BIN" --train_val_test_split 0.7 0.0 0.3 --ZINB_mode True

@@ -277,13 +277,15 @@ def standardize_data(train_data, val_data, test_data, features):
     
     return train_data, val_data, test_data, scalers
 
-def preprocess_counts(data):
+def preprocess_counts(data, zinb_mode=False):
     """Preprocess transposon insertion counts.
     1. CPM (Counts Per Million) normalization per dataset
     2. Log-transform counts: log1p(CPM)
+    3. For ZINB mode: save raw counts in 'Value_Raw' and add size factor column
     
     Args:
         data (Dictionary): Dictionary containing {dataset: {chromosome: DataFrame}} structure.
+        zinb_mode (bool): If True, save raw counts and add size factor column. Default=False.
         
     Returns:
         data (Dictionary): Preprocessed counts data (same object, modified in-place).
@@ -303,14 +305,24 @@ def preprocess_counts(data):
 
         # CPM scale factor = counts * (1e6 / total_insertions)
         cpm_scale_factor = 1e6 / total_insertions
+        # Size factor for ZINB = total_insertions / 1e6 (library size normalization)
+        size_factor = total_insertions / 1e6
+        
         stats[dataset] = {
             "total_insertions": float(total_insertions),
             "cpm_scale_factor": float(cpm_scale_factor),
+            "size_factor": float(size_factor),
         }
 
         # 2. Apply CPM + log1p(CPM) to every chromosome in this dataset (in-place)
         for chrom in data[dataset]:
             df = data[dataset][chrom]
+            
+            if zinb_mode:
+                # Save raw counts before normalization
+                data[dataset][chrom]['Value_Raw'] = df['Value'].copy()
+                # Add size factor as constant column (same value for all rows in this dataset)
+                data[dataset][chrom]['Size_Factor'] = size_factor
             
             # CPM normalization
             cpm = df['Value'] * cpm_scale_factor  # counts per million
@@ -535,8 +547,11 @@ def _add_chromosome_encoding(df, chrom):
     
     return df
 
-def process_data(transposon_data, features, bin_size, moving_average, step_size, data_point_length, split_on='Dataset'):
+def process_data(transposon_data, features, bin_size, moving_average, step_size, data_point_length, split_on='Dataset', zinb_mode=False):
     """Process data: bin/window and convert to 3D array for autoencoder input.
+    
+    Args:
+        zinb_mode (bool): If True, include Value_Raw and Size_Factor columns in output. Default=False.
     
     Returns:
         np.ndarray: 3D array of shape (num_samples, window_length, num_features)
@@ -658,6 +673,11 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
             # Add chromosome column (categorical encoding)
             cols_to_keep.append('Chromosome')
         
+        # For ZINB mode, add raw counts and size factor columns at the end
+        if zinb_mode:
+            cols_to_keep.append('Value_Raw')
+            cols_to_keep.append('Size_Factor')
+        
         # Filter columns
         for dataset in transposon_data:
             for chrom in transposon_data[dataset]:
@@ -700,6 +720,7 @@ def preprocess(input_folder,
                split_on = 'Dataset',
                chunk_size = 50000,
                normalize_counts = True,
+               zinb_mode = False,
                bin_size = 10, 
                moving_average = True,
                data_point_length = 2000,
@@ -719,6 +740,7 @@ def preprocess(input_folder,
         split_on (str, optional): The feature to split data on ('Chrom', 'Dataset', 'Random'). Defaults to 'Dataset'.
         chunk_size (int, optional): Size of chunks in base pairs for random splitting. Defaults to 50000.
         normalize_counts (bool, optional): Whether to apply CPM normalization and log transform to counts. Defaults to True.
+        zinb_mode (bool, optional): If True, save raw counts in 'Value_Raw' column for ZINB models. Defaults to False.
         bin_size (int, optional): The bin size for binning the data of moving average to overcome sparsity. Defaults to 10.
         moving_average (bool, optional): Whether to apply a moving average to the data or use separate bins. Defaults to True.
         data_point_length (int, optional): The length of each data point. Defaults to 2000.
@@ -736,7 +758,7 @@ def preprocess(input_folder,
     # Optionally normalize counts before splitting
     count_stats = None
     if normalize_counts:
-        transposon_data, count_stats = preprocess_counts(transposon_data)
+        transposon_data, count_stats = preprocess_counts(transposon_data, zinb_mode=zinb_mode)
     
     # Split data
     train, val, test = split_data(transposon_data, train_val_test_split, split_on, chunk_size)
@@ -745,13 +767,13 @@ def preprocess(input_folder,
     train, val, test, scalers = standardize_data(train, val, test, features)
     
     # Bin/window and convert to 3D arrays
-    train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
     gc.collect()  # Clean up memory after processing train
     
-    val = process_data(val, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    val = process_data(val, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
     gc.collect()  # Clean up memory after processing val
     
-    test = process_data(test, features, bin_size, moving_average, step_size, data_point_length, split_on)
+    test = process_data(test, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
     gc.collect()  # Clean up memory after processing test
 
     return train, val, test, scalers, count_stats
@@ -787,6 +809,8 @@ def parse_args():
                         help='Apply CPM normalization and log transform to counts (default: True)')
     parser.add_argument('--no_normalize_counts', action='store_false', dest='normalize_counts',
                         help='Disable count normalization')
+    parser.add_argument('--zinb_mode', action='store_true', default=False,
+                        help='ZINB mode: save raw counts in Value_Raw column for ZINB models (default: False)')
     
     # Binning/Windowing
     parser.add_argument('--bin_size', type=int, default=10,
@@ -815,6 +839,7 @@ if __name__ == "__main__":
         split_on=args.split_on,
         chunk_size=args.chunk_size,
         normalize_counts=args.normalize_counts,
+        zinb_mode=args.zinb_mode,
         bin_size=args.bin_size,
         moving_average=args.moving_average,
         data_point_length=args.data_point_length,
@@ -830,7 +855,8 @@ if __name__ == "__main__":
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
     
-    output_name = args.output_dir + f"Features{args.features}_SplitOn{args.split_on}_BinSize{args.bin_size}_DataPointLen{args.data_point_length}_StepSize{args.step_size}_Normalize{args.normalize_counts}_MovingAvg{args.moving_average}_"
+    zinb_suffix = "_ZINB" if args.zinb_mode else ""
+    output_name = args.output_dir + f"Features{args.features}_SplitOn{args.split_on}_BinSize{args.bin_size}_DataPointLen{args.data_point_length}_StepSize{args.step_size}_Normalize{args.normalize_counts}_MovingAvg{args.moving_average}{zinb_suffix}_"
     
     # Save the train, validation, and test data as .npy files
     train_file = output_name + f"train_data.npy"

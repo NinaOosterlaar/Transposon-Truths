@@ -6,9 +6,13 @@ import json
 from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 
+# Get the directory where this script is located (AE folder)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Get the project root (parent of AE folder)
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 def plot_test_results(all_originals, all_reconstructions, model_type='AE', 
-                      save_dir='AE/results/testing', n_examples=5, metrics=None, use_conv=False, name=""):
+                      save_dir=None, n_examples=5, metrics=None, use_conv=False, name=""):
     """
     Create comprehensive visualizations of test results.
     
@@ -19,16 +23,22 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
     all_reconstructions : np.ndarray
         Reconstructed sequences (shape: [n_samples, seq_length])
     model_type : str
-        Type of model ('AE' or 'VAE')
-    save_dir : str
-        Directory to save plots
+        Type of model ('AE', 'VAE', 'ZINBAE', or 'ZINBVAE')
+    save_dir : str or None
+        Directory to save plots. If None, uses default 'AE/results/testing'
     n_examples : int
         Number of example reconstructions to plot
     metrics : dict
         Dictionary of metrics to save
     use_conv : bool
         Whether Conv1D was used in the model
+    name : str
+        Name prefix for saving plots/results
     """
+    # Use default save directory if not provided
+    if save_dir is None:
+        save_dir = os.path.join(SCRIPT_DIR, 'results', 'testing')
+    
     # Create visualization directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
     
@@ -36,10 +46,13 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
     mae = mean_absolute_error(all_originals.flatten(), all_reconstructions.flatten())
     r2 = r2_score(all_originals.flatten(), all_reconstructions.flatten())
     
+    # Determine if ZINB model
+    is_zinb = 'ZINB' in model_type
+    
     # Generate timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     conv_suffix = "conv" if use_conv else "no_conv"
-    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}"
+    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}" if name else f"{model_type}_{timestamp}_{conv_suffix}"
     
     # 1. Plot actual vs predicted scatter plot and residuals
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -52,8 +65,14 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
     axes[0].plot([all_originals.min(), all_originals.max()], 
                 [all_originals.min(), all_originals.max()], 
                 'r--', lw=2, label='Perfect prediction')
-    axes[0].set_xlabel('Actual Log Counts')
-    axes[0].set_ylabel('Predicted Log Counts')
+    
+    if is_zinb:
+        axes[0].set_xlabel('Actual Log Counts (Normalized)')
+        axes[0].set_ylabel('Predicted Mean (μ)')
+    else:
+        axes[0].set_xlabel('Actual Log Counts')
+        axes[0].set_ylabel('Predicted Log Counts')
+    
     axes[0].set_title(f'{model_type}: Actual vs Predicted (R²={r2:.4f})')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
@@ -76,12 +95,14 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
     if n_examples == 1:
         axes = [axes]
     
+    y_label = 'Normalized Log Count' if is_zinb else 'Log Count'
+    
     for i in range(min(n_examples, len(all_originals))):
         axes[i].plot(all_originals[i], label='Original', linewidth=2, alpha=0.7)
-        axes[i].plot(all_reconstructions[i], label='Reconstructed', 
+        axes[i].plot(all_reconstructions[i], label='Reconstructed (μ)' if is_zinb else 'Reconstructed', 
                     linewidth=2, alpha=0.7, linestyle='--')
         axes[i].set_xlabel('Position')
-        axes[i].set_ylabel('Log Count')
+        axes[i].set_ylabel(y_label)
         axes[i].set_title(f'{model_type}: Example {i+1} Reconstruction')
         axes[i].legend()
         axes[i].grid(True, alpha=0.3)
@@ -115,7 +136,7 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
     print(f"Plots saved to {save_dir}/")
 
 
-def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/training_loss.png', 
+def plot_training_loss(losses, model_type='AE', save_path=None, 
                        save_losses=True, use_conv=False, name=""):
     """
     Plot training loss over epochs.
@@ -125,31 +146,39 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
     losses : list
         List of loss values per epoch
     model_type : str
-        Type of model ('AE' or 'VAE')
-    save_path : str
-        Path to save the plot
+        Type of model ('AE', 'VAE', 'ZINBAE', or 'ZINBVAE')
+    save_path : str or None
+        Path to save the plot. If None, uses default directory
     save_losses : bool
         Whether to save loss values to a file
     use_conv : bool
         Whether Conv1D was used in the model
+    name : str
+        Name prefix for saving plots/results
     """
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    save_path = f'AE/results/training/training_loss_{name}_{model_type}_{timestamp}.png'
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
     # Generate timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Update save path with model type and timestamp
-    base_dir = os.path.dirname(save_path)
     conv_suffix = "conv" if use_conv else "no_conv"
-    prefix = f"{model_type}_{timestamp}_{conv_suffix}"
+    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}" if name else f"{model_type}_{timestamp}_{conv_suffix}"
+    
+    # Determine loss type based on model
+    is_zinb = 'ZINB' in model_type
+    loss_label = 'Loss (ZINB NLL)' if is_zinb else 'Loss (MSE)'
+    
+    # Use default directory if save_path not provided
+    if save_path is None:
+        base_dir = os.path.join(SCRIPT_DIR, 'results', 'training')
+    else:
+        base_dir = os.path.dirname(save_path)
+    
+    os.makedirs(base_dir, exist_ok=True)
+    
     plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
     
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2)
     plt.xlabel('Epoch')
-    plt.ylabel('Loss (MSE)')
+    plt.ylabel(loss_label)
     plt.title(f'{model_type}: Training Loss over Epochs')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -164,6 +193,7 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
             'model_type': model_type,
             'timestamp': timestamp,
             'use_conv': use_conv,
+            'loss_type': 'ZINB_NLL' if is_zinb else 'MSE',
             'num_epochs': len(losses),
             'final_loss': float(losses[-1]),
             'min_loss': float(min(losses)),
@@ -175,19 +205,10 @@ def plot_training_loss(losses, model_type='AE', save_path='AE/results/training/t
         with open(loss_file, 'w') as f:
             json.dump(loss_data, f, indent=4)
         print(f"Training losses saved to {loss_file}")
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss (MSE)')
-    plt.title('Training Loss over Epochs')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    print(f"Training loss plot saved to {save_path}")
 
 
 def plot_binary_test_results(all_originals, all_reconstructions, all_probabilities, 
-                             model_type='AE_binary', save_dir='AE/results/testing', 
+                             model_type='AE_binary', save_dir=None, 
                              n_examples=5, metrics=None, use_conv=False, name=""):
     """
     Create comprehensive visualizations of binary classification test results.
@@ -202,16 +223,22 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
         Predicted probabilities (shape: [n_samples, seq_length])
     model_type : str
         Type of model ('AE_binary' or 'VAE_binary')
-    save_dir : str
-        Directory to save plots
+    save_dir : str or None
+        Directory to save plots. If None, uses default
     n_examples : int
         Number of example reconstructions to plot
     metrics : dict
         Dictionary of metrics to save
     use_conv : bool
         Whether Conv1D was used in the model
+    name : str
+        Name prefix for saving plots/results
     """
     from sklearn.metrics import confusion_matrix, roc_curve, auc
+    
+    # Use default save directory if not provided
+    if save_dir is None:
+        save_dir = os.path.join(SCRIPT_DIR, 'results', 'testing')
     
     # Create visualization directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -219,7 +246,7 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
     # Generate timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     conv_suffix = "conv" if use_conv else "no_conv"
-    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}"
+    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}" if name else f"{model_type}_{timestamp}_{conv_suffix}"
     
     # Flatten for metric calculations
     y_true = all_originals.flatten()
@@ -413,7 +440,7 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
 
 
 def plot_binary_training_loss(losses, model_type='AE_binary', 
-                              save_path='AE/results/training/training_loss.png', 
+                              save_path=None, 
                               save_losses=True, use_conv=False, name=""):
     """
     Plot training loss over epochs for binary models.
@@ -424,22 +451,28 @@ def plot_binary_training_loss(losses, model_type='AE_binary',
         List of loss values per epoch
     model_type : str
         Type of model ('AE_binary' or 'VAE_binary')
-    save_path : str
-        Path to save the plot
+    save_path : str or None
+        Path to save the plot. If None, uses default directory
     save_losses : bool
         Whether to save loss values to a file
     use_conv : bool
         Whether Conv1D was used in the model
+    name : str
+        Name prefix for saving plots/results
     """
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
     # Generate timestamp for unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Update save path with model type and timestamp
-    base_dir = os.path.dirname(save_path)
     conv_suffix = "conv" if use_conv else "no_conv"
-    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}"
+    prefix = f"{name}_{model_type}_{timestamp}_{conv_suffix}" if name else f"{model_type}_{timestamp}_{conv_suffix}"
+    
+    # Use default directory if save_path not provided
+    if save_path is None:
+        base_dir = os.path.join(SCRIPT_DIR, 'results', 'training')
+    else:
+        base_dir = os.path.dirname(save_path)
+    
+    os.makedirs(base_dir, exist_ok=True)
+    
     plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
     
     plt.figure(figsize=(10, 6))

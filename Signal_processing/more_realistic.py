@@ -76,7 +76,6 @@ def make_random_zinb_counts(
         "region_thetas": region_thetas,
         "region_zero_probs": region_zero_probs,
         "region_lengths": region_lengths,
-        "zero_region_mask": zero_region_mask,
     }
 
     counts = []
