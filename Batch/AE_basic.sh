@@ -27,14 +27,14 @@ cd "$PROJECT_DIR"
 # Jobs 0-3: AE with BinSize 5, 10, 50, 100
 # Jobs 4-7: VAE with BinSize 5, 10, 50, 100
 MODELS=("AE" "AE" "AE" "AE" "VAE" "VAE" "VAE" "VAE")
-FILENAMES=("Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize5_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize10_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize50_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize100_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize5_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize10_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize50_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_"
-           "Features['Pos', 'Chrom', 'Nucl', 'Centr']_SplitOnDataset_BinSize100_DataPointLen2000_StepSize500_NormalizeTrue_MovingAvgTrue_")
+FILENAMES=("BinSize5_NormalizeTrue_"
+           "BinSize10_NormalizeTrue_"
+           "BinSize50_NormalizeTrue_"
+           "BinSize100_NormalizeTrue_"
+           "BinSize5_NormalizeTrue_"
+           "BinSize10_NormalizeTrue_"
+           "BinSize50_NormalizeTrue_"
+           "BinSize100_NormalizeTrue_")
 
 MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}
 FILENAME=${FILENAMES[$SLURM_ARRAY_TASK_ID]}
