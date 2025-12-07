@@ -1,15 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import numpy as np
-from tqdm import tqdm
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from results import plot_binary_test_results, plot_binary_training_loss
-import argparse
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Device: {device}")
 
-class AE(nn.Module):
+class AE_binary(nn.Module):
     def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2, kernel_size=3, padding=1, stride=1):
         """
         Binary Autoencoder for presence/absence prediction
@@ -20,7 +12,7 @@ class AE(nn.Module):
         conv_channels: number of output channels for the Conv1D layer (default: 64)
         pool_size: pooling kernel size to reduce sequence length (default: 2)
         """
-        super(AE, self).__init__()
+        super(AE_binary, self).__init__()
         
         self.seq_length = seq_length
         self.feature_dim = feature_dim
@@ -86,7 +78,7 @@ class AE(nn.Module):
         return x_recon, z
 
 
-class VAE(nn.Module):
+class VAE_binary(nn.Module):
     def __init__(self, seq_length=2000, feature_dim=8, layers=(512, 256, 128), use_conv=False, conv_channels=64, pool_size=2, kernel_size=3, padding=1, stride=1):
         """
         Binary Variational Autoencoder for presence/absence prediction
@@ -97,7 +89,7 @@ class VAE(nn.Module):
         conv_channels: number of output channels for the Conv1D layer (default: 64)
         pool_size: pooling kernel size to reduce sequence length (default: 2)
         """
-        super(VAE, self).__init__()
+        super(VAE_binary, self).__init__()
         
         self.seq_length = seq_length
         self.feature_dim = feature_dim
