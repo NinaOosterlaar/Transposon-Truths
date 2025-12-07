@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0-3   
+#SBATCH --array=0  
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
 
-BINS=(5 10 50 100)
+BINS=(10)
 BIN=${BINS[$SLURM_ARRAY_TASK_ID]}
 
 echo "Running preprocessing with --bin $BIN"
@@ -28,4 +28,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python AE/preprocessing.py --bin "$BIN" --train_val_test_split 0.7 0.0 0.3 --ZINB_mode True
+    python AE/preprocessing.py --bin "$BIN" --train_val_test_split 0.7 0.0 0.3 --ZINB_mode
