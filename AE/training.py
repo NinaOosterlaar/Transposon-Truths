@@ -322,8 +322,8 @@ def parser_args():
                         help='Whether to use Conv1D layer in the model')
     parser.add_argument('--binary', action='store_true',
                         help='Whether to use binary AE/VAE models')
-    parser.add_argument('--filename', type=str, default='results',
-                        help='Base filename for saving results and plots (default: results)')
+    parser.add_argument('--filename', type=str, default='',
+                        help='Base filename for loading data (default: empty string)')
     return parser.parse_args()
 
     
@@ -335,9 +335,9 @@ if __name__ == "__main__":
     filename = args.filename
     
     # Load data
-    input_path = input_path + filename + "train_data.npy"
-    print("Loading training data from:", input_path)
-    train_dataloader = dataloader_from_array(input_path, chrom=True, batch_size=64, shuffle=True)
+    train_input_path = input_path + filename + "train_data.npy"
+    print("Loading training data from:", train_input_path)
+    train_dataloader = dataloader_from_array(train_input_path, chrom=True, batch_size=64, shuffle=True)
     
     test_input_path = input_path + filename + "test_data.npy"
     print("Loading test data from:", test_input_path)
