@@ -4,7 +4,7 @@ import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import mean_absolute_error, r2_score
-from results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results
+from results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results, plot_zinb_training_loss, plot_zinb_test_results
 import argparse
 from Autoencoder import AE, VAE
 from Autoencoder_binary import AE_binary, VAE_binary
@@ -103,6 +103,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     optimizer = optim.Adam(parameters, lr=learning_rate)
     
     epoch_losses = []
+    epoch_recon_losses = []  # For ZINBVAE/VAE
+    epoch_kl_losses = []      # For ZINBVAE/VAE
     model.train()
     for epoch in range(num_epochs):
         epoch_loss = 0.0
@@ -222,6 +224,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
             epoch_recon_loss /= len(dataloader.dataset)
             epoch_kl_loss /= len(dataloader.dataset)
+            epoch_recon_losses.append(epoch_recon_loss)
+            epoch_kl_losses.append(epoch_kl_loss)
             print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
                   f"Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}")
         else:
@@ -232,6 +236,14 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+        elif is_zinb:
+            model_type_str = model.model_type
+            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
+            if model.model_type == 'ZINBVAE':
+                plot_zinb_training_loss(epoch_losses, epoch_recon_losses, epoch_kl_losses, 
+                                       model_type=model_type_str, use_conv=use_conv, name=name)
+            else:
+                plot_zinb_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
@@ -276,6 +288,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     all_reconstructions = []
     all_latents = []
     all_originals = []
+    all_theta = []  # For ZINB models
+    all_pi = []     # For ZINB models
+    all_raw_counts = []  # For ZINB models
     total_loss = 0.0
     total_recon_loss = 0.0
     total_kl_loss = 0.0
@@ -345,6 +360,10 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                     
                     # For ZINB, reconstruction is mu (mean of ZINB distribution)
                     recon_batch = mu
+                    # Store theta and pi for plotting
+                    all_theta.append(theta.cpu().numpy())
+                    all_pi.append(pi.cpu().numpy())
+                    all_raw_counts.append(y_raw.cpu().numpy())
                 else:  # ZINBAE
                     mu, theta, pi, z = model(batch_input, size_factors)
                     # ZINB reconstruction loss (sum over batch and seq, then average over batch)
@@ -352,6 +371,10 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                     
                     # For ZINB, reconstruction is mu (mean of ZINB distribution)
                     recon_batch = mu
+                    # Store theta and pi for plotting
+                    all_theta.append(theta.cpu().numpy())
+                    all_pi.append(pi.cpu().numpy())
+                    all_raw_counts.append(y_raw.cpu().numpy())
             elif is_vae:
                 # Regular VAE models
                 recon_batch, z, mu, logvar = model(batch_input)
@@ -376,6 +399,16 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
     all_originals = np.concatenate(all_originals, axis=0)
+    
+    # Concatenate ZINB parameters if collected
+    if is_zinb and len(all_theta) > 0:
+        all_theta = np.concatenate(all_theta, axis=0)
+        all_pi = np.concatenate(all_pi, axis=0)
+        all_raw_counts = np.concatenate(all_raw_counts, axis=0)
+    else:
+        all_theta = None
+        all_pi = None
+        all_raw_counts = None
     
     # Calculate metrics
     test_loss = total_loss / len(all_originals)
@@ -417,6 +450,14 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_binary_test_results(all_originals, all_reconstructions, all_reconstructions,
                                     model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name )
+        elif is_zinb:
+            # Use special ZINB plotting function
+            model_type_str = model.model_type
+            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
+            plot_zinb_test_results(all_originals, all_reconstructions, 
+                                  all_theta=all_theta, all_pi=all_pi, all_raw_counts=all_raw_counts,
+                                  model_type=model_type_str, n_examples=n_examples, 
+                                  metrics=metrics, use_conv=use_conv, name=name)
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
@@ -557,10 +598,10 @@ if __name__ == "__main__":
         else:   
             vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary, name=filename, denoise_percent=0.3)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary, name=filename, denoise_percent=0)
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=True, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary, name=filename, denoise_percent=0.3)
+                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary, name=filename, denoise_percent=0)
     
     if args.model in ['ZINBAE', 'all']:
         if args.model == 'all':
@@ -574,7 +615,7 @@ if __name__ == "__main__":
                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=filename, denoise_percent=0.3)
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=True, chrom_embedding=chrom_embedding, 
-                                                                      plot=True, n_examples=5, name=filename, denoise_percent=0.3)
+                                                                      plot=True, n_examples=5, name=filename, denoise_percent=0)
     
     if args.model in ['ZINBVAE', 'all']:
         if args.model == 'all':
@@ -585,7 +626,7 @@ if __name__ == "__main__":
         print("="*60)
         zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename, denoise_percent=0.3)
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename, denoise_percent=0)
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=True, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=1.0, name=filename, denoise_percent=0.3)
+                                                                         plot=True, n_examples=5, beta=1.0, name=filename, denoise_percent=0)
