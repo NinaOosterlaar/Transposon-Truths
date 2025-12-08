@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=50G
+#SBATCH --mem-per-cpu=48G
 #SBATCH --array=0-1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
