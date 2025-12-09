@@ -1,0 +1,18 @@
+{
+    "model_type": "AE",
+    "timestamp": "20251207_131927",
+    "use_conv": false,
+    "metrics": {
+        "mse": 7.012996035545716,
+        "mae": 0.02651696652173996,
+        "r2": -0.001349329948425293
+    },
+    "summary_statistics": {
+        "mean_original": 0.01957527920603752,
+        "std_original": 0.05917578190565109,
+        "mean_reconstruction": 0.018011029809713364,
+        "std_reconstruction": 0.0015377335948869586,
+        "mean_residual": 0.0015642481157556176,
+        "std_residual": 0.05919502675533295
+    }
+}

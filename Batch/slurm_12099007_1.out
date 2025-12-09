@@ -1,0 +1,32 @@
+Running model: ZINBVAE with file: ZINB_ (SLURM_ARRAY_TASK_ID=1)
+Device: cuda
+Loading training data from: Data/processed_data/ZINB_train_data.npy
+Loading test data from: Data/processed_data/ZINB_test_data.npy
+============================================================
+TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)
+============================================================
+Epoch [1/10], Total Loss: 2194.3072, Recon: 2188.2473, KL: 6.0599
+Epoch [2/10], Total Loss: 2152.9296, Recon: 2148.9925, KL: 3.9371
+Epoch [3/10], Total Loss: 2149.6657, Recon: 2145.8350, KL: 3.8307
+Epoch [4/10], Total Loss: 2147.7191, Recon: 2143.9585, KL: 3.7606
+Epoch [5/10], Total Loss: 2146.4087, Recon: 2142.7832, KL: 3.6255
+Epoch [6/10], Total Loss: 2145.6196, Recon: 2142.0694, KL: 3.5502
+Epoch [7/10], Total Loss: 2145.5066, Recon: 2141.9503, KL: 3.5562
+Epoch [8/10], Total Loss: 2145.3866, Recon: 2141.8372, KL: 3.5494
+Epoch [9/10], Total Loss: 2145.1143, Recon: 2141.6788, KL: 3.4355
+Epoch [10/10], Total Loss: 2145.8554, Recon: 2142.3780, KL: 3.4774
+Training loss plot saved to /workspace/AE/results/training/ZINB__ZINBVAE_20251207_192052_no_conv_training_loss.png
+Training losses saved to /workspace/AE/results/training/ZINB__ZINBVAE_20251207_192052_no_conv_training_losses.json
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (ZINB NLL): 2538.812150
+Mean Absolute Error (MAE): 619867.500000
+R² Score: -3861631621551620096.000000
+Reconstruction Loss: 2533.890558
+KL Divergence: 4.921590
+==================================================
+
+Metrics saved to /workspace/AE/results/testing/ZINB__ZINBVAE_20251207_192128_no_conv_test_metrics.json
+Plots saved to /workspace/AE/results/testing/

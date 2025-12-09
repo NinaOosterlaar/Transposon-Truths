@@ -1,0 +1,20 @@
+{
+    "model_type": "ZINBVAE",
+    "timestamp": "20251207_192128",
+    "use_conv": false,
+    "metrics": {
+        "zinb_nll": 2538.812149621433,
+        "mae": 619867.5,
+        "r2": -3.86163162155162e+18,
+        "recon_loss": 2533.89055814546,
+        "kl_loss": 4.921589937262313
+    },
+    "summary_statistics": {
+        "mean_original": 0.01957527920603752,
+        "std_original": 0.05917578190565109,
+        "mean_reconstruction": 619867.5,
+        "std_reconstruction": 116284872.0,
+        "mean_residual": -619867.5,
+        "std_residual": 116284872.0
+    }
+}

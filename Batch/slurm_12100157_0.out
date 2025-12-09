@@ -1,0 +1,19 @@
+Running model: ZINBAE with file: ZINB_ (SLURM_ARRAY_TASK_ID=0)
+Device: cuda
+Loading training data from: Data/processed_data/ZINB_train_data.npy
+Loading test data from: Data/processed_data/ZINB_test_data.npy
+============================================================
+TRAINING ZINB AUTOENCODER (ZINBAE)
+============================================================
+Epoch [1/10], Loss: 2094.6741
+Epoch [2/10], Loss: 1988.3457
+Epoch [3/10], Loss: 1968.0405
+Epoch [4/10], Loss: 1951.6956
+Epoch [5/10], Loss: 1946.0464
+Epoch [6/10], Loss: 1938.4173
+Epoch [7/10], Loss: 1930.2959
+Epoch [8/10], Loss: 1926.5932
+Epoch [9/10], Loss: 1924.5730
+Epoch [10/10], Loss: 1922.1644
+Training loss plot saved to /workspace/AE/results/training/ZINB__ZINBAE_20251208_095438_no_conv_training_loss.png
+Training losses saved to /workspace/AE/results/training/ZINB__ZINBAE_20251208_095438_no_conv_training_losses.json

@@ -1,0 +1,20 @@
+{
+    "model_type": "VAE",
+    "timestamp": "20251207_132405",
+    "use_conv": false,
+    "metrics": {
+        "mse": 7.018853589000865,
+        "mae": 0.0261272843927145,
+        "r2": -0.0021857023239135742,
+        "recon_loss": 7.018853611297582,
+        "kl_loss": -8.940696716308594e-08
+    },
+    "summary_statistics": {
+        "mean_original": 0.01957527920603752,
+        "std_original": 0.05917578190565109,
+        "mean_reconstruction": 0.01730206236243248,
+        "std_reconstruction": 0.0015902501763775945,
+        "mean_residual": 0.002273216377943754,
+        "std_residual": 0.05919678509235382
+    }
+}
