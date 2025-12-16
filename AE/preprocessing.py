@@ -632,9 +632,9 @@ def parse_args():
     parser.add_argument('--train_val_test_split', type=float, nargs=3, 
                         default=[0.7, 0.15, 0.15],
                         help='Train, validation, and test split proportions (default: 0.7 0.15 0.15)')
-    parser.add_argument('--split_on', type=str, default='Dataset',
+    parser.add_argument('--split_on', type=str, default='Chrom',
                         choices=['Chrom', 'Dataset', 'Random'],
-                        help='Feature to split data on (default: Dataset)')
+                        help='Feature to split data on (default: Chrom)')
     parser.add_argument('--chunk_size', type=int, default=50000,
                         help='Size of chunks in base pairs for random splitting (default: 50000)')
     

@@ -28,4 +28,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python Signal_processing/autocorrelation.py --folder_name "Data/combined_strains" --max_lag 2000 $ZERO_FLAG --output_folder "Signal_processing/results/autocorrelation/uncombined" --plot
+    python Signal_processing/autocorrelation.py "Data/combined_strains" --max_lag 2000 $ZERO_FLAG --output_folder "Signal_processing/results/autocorrelation/uncombined" --plot
