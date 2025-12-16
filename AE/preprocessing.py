@@ -617,8 +617,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Preprocess transposon insertion data for autoencoder training')
     
     # Input/Output
-    parser.add_argument('--input_folder', type=str, default='Data/combined_replicates/',
-                        help='Folder containing the raw CSV files (default: Data/combined_replicates/)')
+    parser.add_argument('--input_folder', type=str, default='Data/combined_strains/',
+                        help='Folder containing the raw CSV files (default: Data/combined_strains/)')
     parser.add_argument('--output_dir', type=str, default='Data/processed_data/',
                         help='Directory to save processed data (default: Data/processed_data/)')
     
