@@ -20,7 +20,7 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 cd "$PROJECT_DIR"
 
 ZERO_FLAGS=("--zeros" "")
-ZERO_FLAG= ${ZERO_FLAGS[$SLURM_ARRAY_TASK_ID]}
+ZERO_FLAG=${ZERO_FLAGS[$SLURM_ARRAY_TASK_ID]}
 
 echo "Running preprocessing with zeros flag: ${ZERO_FLAGS[$SLURM_ARRAY_TASK_ID]}"
 

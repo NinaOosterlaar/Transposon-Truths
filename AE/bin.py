@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 
-def bin_data(data, bin_size, method):
+def bin_data(data, bin_size, method = 'average'):
     """Bin data into specified bin size using the given method.
     The transposon count should be binned together and then the mean of the features should be taken. 
     Only bins non-padded values and updates the actual_length accordingly.
