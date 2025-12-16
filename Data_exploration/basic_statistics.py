@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns  
 from tqdm import tqdm
+import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
 from Utils.reader import read_wig, label_from_filename
 
@@ -226,6 +227,108 @@ def save_basic_info(folder_name, output_file, plot = False, output_folder_figure
             
     if plot:
         plot_basic_statistics(stats, output_folder_figures)
-            
-save_basic_info("Data/old/wiggle_format", "Data_exploration/results/basic_statistics.txt", plot=False, output_folder_figures="Data_exploration/figures")
+
+
+def read_csv_combined_replicates(folder_path):
+    """
+    Reads CSV files from combined_replicates format and returns a dict of DataFrames, one per chromosome.
+    Combined replicates have columns: Position, Value, Nucleosome_Distance, Centromere_Distance
+    """
+    chrom_data = {}
     
+    for file in os.listdir(folder_path):
+        if file.endswith('.csv') and file.startswith('Chr'):
+            file_path = os.path.join(folder_path, file)
+            df = pd.read_csv(file_path)
+            
+            # Extract chromosome name from filename (e.g., ChrI_distances.csv -> ChrI)
+            chrom = file.split('_')[0]
+            
+            # Keep only Position and Value columns to match the wig format
+            if 'Position' in df.columns and 'Value' in df.columns:
+                chrom_data[chrom] = df[['Position', 'Value']]
+    
+    return chrom_data
+
+
+def save_basic_info_csv(folder_name, output_file, plot=False, output_folder_figures=None):
+    """
+    Saves basic statistics to a text file for CSV format (combined_replicates).
+    This handles CSV files with zeros included, unlike wiggle files which omit zeros.
+    """
+    stats = []  # (label, total_sum, mean_count, occupied_sites, unoccupied_sites)
+
+    genome_size = sum(yeast_chrom_lengths.values())
+    
+    for root, dirs, files in os.walk(folder_name):
+        # Check if this folder contains CSV files (not subdirectories)
+        csv_files = [f for f in files if f.endswith('.csv') and f.startswith('Chr')]
+        if not csv_files:
+            continue
+            
+        print(f"Processing: {root}")
+        
+        # Read all CSV files for this sample
+        sample_dict = read_csv_combined_replicates(root)
+        
+        if len(sample_dict) == 0:
+            continue
+            
+        # Get label from the folder name
+        label = label_from_filename(os.path.basename(root))
+
+        total_sum = 0
+        occupied_sites = 0
+        non_zero_sum = 0
+        non_zero_count = 0
+        all_values = []
+
+        for chrom, df in sample_dict.items():
+            # Skip mitochondrial chromosome if desired
+            if chrom == 'ChrM':
+                continue
+                
+            # Filter out positions with values > 1 million
+            high_values = df[df['Value'] > 1000000]
+            if not high_values.empty:
+                for _, row in high_values.iterrows():
+                    print(f"Filtered out high value in {label}, {chrom}, Position {row['Position']}: {row['Value']}")
+                df = df[df['Value'] <= 1000000]
+            
+            total_sum += df['Value'].sum()
+            occupied_sites += (df['Value'] > 0).sum()
+            
+            # Calculate sum and count of non-zero values
+            non_zero_values = df[df['Value'] > 0]['Value']
+            non_zero_sum += non_zero_values.sum()
+            non_zero_count += len(non_zero_values)
+            
+            # Collect all values for standard deviation calculation
+            all_values.extend(df['Value'].tolist())
+
+        mean_count = total_sum / genome_size
+        mean_non_zero = non_zero_sum / non_zero_count if non_zero_count > 0 else 0
+        std_dev = np.std(all_values) if len(all_values) > 0 else 0
+        unoccupied_sites = genome_size - occupied_sites
+        density = occupied_sites / genome_size if genome_size > 0 else 0
+
+        stats.append((label, total_sum, mean_count, occupied_sites, unoccupied_sites, density, mean_non_zero, std_dev))
+
+    # Sort stats by label for consistent output
+    stats.sort(key=lambda x: x[0])
+
+    with open(output_file, 'w') as f:
+        f.write("Sample\tTotal_Sum\tMean_Coverage_per_bp\tOccupied_Sites\tUnoccupied_Sites\tDensity\tMean_Non_Zero_Count\tStd_Dev\n")
+        for s in stats:
+            f.write(f"{s[0]}\t{s[1]}\t{s[2]:.6f}\t{s[3]}\t{s[4]}\t{s[5]:.6f}\t{s[6]:.6f}\t{s[7]:.6f}\n")
+            
+    if plot:
+        plot_basic_statistics(stats, output_folder_figures)
+            
+
+# Example usage:
+# For wiggle format files (without zeros):
+# save_basic_info("Data/old/wiggle_format", "Data_exploration/results/basic_statistics_wiggle.txt", plot=False, output_folder_figures="Data_exploration/figures")
+
+# For combined_replicates CSV files (with zeros):
+save_basic_info_csv("Data/combined_strains", "Data_exploration/results/basic_statistics_combined_strains.txt", plot=False, output_folder_figures="Data_exploration/figures")

@@ -1,10 +1,16 @@
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from trash.preprocessing import preprocess_data
+# from trash.preprocessing import preprocess_data
 import numpy as np
 import pandas as pd
 from itertools import combinations
 from scipy.stats import spearmanr, pearsonr
+
+def aggregate_bins(signal, k=10):
+    """Average every k bins."""
+    L = len(signal)
+    m = (L // k) * k
+    return signal[:m].reshape(-1, k).mean(axis=1)
 
 def build_dataset_vector(train_data, ds):
     """
@@ -25,6 +31,7 @@ def build_dataset_vector(train_data, ds):
             if L == 0:
                 continue
             signal = data_sample[:L, 0].astype(float)  # column 0 = logCPM signal
+            signal = aggregate_bins(signal, k=100)
             pieces.append(signal)
 
     if len(pieces) == 0:

@@ -3,7 +3,6 @@ import sys, os
 import matplotlib.pyplot as plt
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from Utils.reader import read_csv_file_with_distances
 
 def bin_data(data, bin_size, method):
     """Bin data into specified bin size using the given method.

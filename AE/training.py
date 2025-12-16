@@ -4,12 +4,14 @@ import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import mean_absolute_error, r2_score
-from results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results, plot_zinb_training_loss, plot_zinb_test_results
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+from AE.results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results, plot_zinb_training_loss, plot_zinb_test_results
 import argparse
-from Autoencoder import AE, VAE
-from Autoencoder_binary import AE_binary, VAE_binary
-from ZINBAE import ZINBAE, ZINBVAE
-from loss_functions import zinb_nll
+from AE.Autoencoder import AE, VAE
+from AE.Autoencoder_binary import AE_binary, VAE_binary
+from AE.ZINBAE import ZINBAE, ZINBVAE
+from AE.loss_functions import zinb_nll
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
@@ -31,28 +33,45 @@ def add_noise(y, denoise_percent):
         Noisy version of input with some non-zero values set to zero
     """
     if denoise_percent <= 0.0:
-        return y
-    
+        return y, torch.zeros_like(y, dtype=torch.bool)
+
     y_noisy = y.clone()
-    # Find non-zero positions
-    non_zero_mask = y_noisy != 0
-    non_zero_indices = torch.nonzero(non_zero_mask, as_tuple=True)
-    
-    if len(non_zero_indices[0]) > 0:
-        # Calculate how many non-zero values to zero out
-        num_non_zero = len(non_zero_indices[0])
+    mask = torch.zeros_like(y, dtype=torch.bool)
+
+    B = y_noisy.size(0)
+
+    for b in range(B):
+        nz = torch.nonzero(y_noisy[b] != 0, as_tuple=True)[0]
+        num_non_zero = nz.numel()
+        if num_non_zero == 0:
+            continue
+
         num_to_zero = int(num_non_zero * denoise_percent)
+        if num_to_zero <= 0:
+            continue
+
+        perm = torch.randperm(num_non_zero, device=y_noisy.device)[:num_to_zero]
+        seq_idx = nz[perm]
+
+        y_noisy[b, seq_idx] = 0
+        mask[b, seq_idx] = True
+
+    return y_noisy, mask
+
+
+# Embed the chromosome feature if needed
+class ChromosomeEmbedding(nn.Module):
+    def __init__(self, num_chromosomes=17, embedding_dim=4):
+        super(ChromosomeEmbedding, self).__init__()
+        self.embedding = nn.Embedding(num_chromosomes, embedding_dim)
         
-        if num_to_zero > 0:
-            # Randomly select indices to zero out
-            perm = torch.randperm(num_non_zero)[:num_to_zero]
-            batch_idx = non_zero_indices[0][perm]
-            seq_idx = non_zero_indices[1][perm]
-            
-            # Set selected non-zero values to zero
-            y_noisy[batch_idx, seq_idx] = 0
-    
-    return y_noisy
+    def forward(self, x):
+        return self.embedding(x)
+
+def gaussian_kl(mu, logvar):
+    logvar = torch.clamp(logvar, min=-20, max=10)
+    return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+
 
 def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3):
     """
@@ -90,15 +109,18 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         parameters += list(chrom_embedding.parameters())
 
     # Determine model type
-    is_zinb = hasattr(model, 'model_type') and (model.model_type == 'ZINBAE' or model.model_type == 'ZINBVAE')
-    is_vae = hasattr(model, 'model_type') and (model.model_type == 'VAE' or model.model_type == 'VAE_binary' or model.model_type == 'ZINBVAE')
+    is_zinb = getattr(model, "model_type", None) in {"ZINBAE", "ZINBVAE"}
+    is_vae  = getattr(model, "model_type", None) in {"VAE", "VAE_binary", "ZINBVAE"}
+    
+    if is_zinb and binary:
+        raise ValueError("binary=True is not supported for ZINB models in this setup.")
     
     # Set criterion (not used for ZINB models)
     if not is_zinb:
         if binary:
-            criterion = nn.BCELoss(reduction='sum')  # Use sum reduction for proper scaling with KL loss
+            criterion = nn.BCELoss(reduction='mean')  # Mean reduction per batch
         else:
-            criterion = nn.MSELoss(reduction='sum')  # Use sum reduction for proper scaling with KL loss
+            criterion = nn.MSELoss(reduction='mean')  # Mean reduction per batch
     
     optimizer = optim.Adam(parameters, lr=learning_rate)
     
@@ -143,49 +165,45 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             optimizer.zero_grad()
             
             # Apply denoising: randomly set some non-zero values to zero in the input
-            y_noisy = add_noise(y, denoise_percent)
+            y_noisy, mask = add_noise(y, denoise_percent)
             y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)
             else:
                 batch_input = torch.cat((y_in, x), dim=2)
-            
+
+            # reset per batch
+            recon_loss = None
+            kl_loss = None
+
             # Forward pass
             if is_zinb:
-                # ZINB models
                 if model.model_type == 'ZINBVAE':
                     mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
-                    # ZINB reconstruction loss (sum over batch and seq, then average over batch)
-                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='sum') / y.size(0)
-                    # KL divergence for latent space - clamp logvar to prevent numerical issues
-                    logvar_z = torch.clamp(logvar_z, min=-20, max=10)
-                    kl_loss = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp()) / y.size(0)
+                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
+                    kl_loss = gaussian_kl(mu_z, logvar_z)
                     loss = recon_loss + beta * kl_loss
-                    
-                    epoch_recon_loss += recon_loss.item() * y.size(0)
-                    epoch_kl_loss += kl_loss.item() * y.size(0)
                 else:  # ZINBAE
                     mu, theta, pi, z = model(batch_input, size_factors)
-                    # ZINB reconstruction loss (sum over batch and seq, then average over batch)
-                    loss = zinb_nll(y_raw, mu, theta, pi, reduction='sum') / y.size(0)
+                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
+                    loss = recon_loss
+
             elif is_vae:
-                # Regular VAE models
                 recon_batch, z, mu, logvar = model(batch_input)
-                # VAE loss = Reconstruction loss + KL divergence
-                recon_loss = criterion(recon_batch, y_binary if binary else y) / y.size(0)  # Divide by batch size
-                # KL divergence: -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-                # Clamp logvar to prevent numerical issues
-                logvar = torch.clamp(logvar, min=-20, max=10)
-                kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / y.size(0)
+                recon_loss = criterion(recon_batch, y_binary if binary else y)
+                kl_loss = gaussian_kl(mu, logvar)
                 loss = recon_loss + beta * kl_loss
-                
-                epoch_recon_loss += recon_loss.item() * y.size(0)
-                epoch_kl_loss += kl_loss.item() * y.size(0)
-            else:
-                # Regular AE models
+
+            else:  # AE
                 recon_batch, z = model(batch_input)
-                loss = criterion(recon_batch, y_binary if binary else y) / y.size(0)  # Divide by batch size for consistency
+                recon_loss = criterion(recon_batch, y_binary if binary else y)
+                loss = recon_loss
+
+            # bookkeeping
+            epoch_recon_loss += recon_loss.item() * y.size(0)
+            if kl_loss is not None:
+                epoch_kl_loss += kl_loss.item() * y.size(0)
             
             loss.backward()
             
@@ -221,7 +239,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         epoch_loss /= len(dataloader.dataset)
         epoch_losses.append(epoch_loss)
         
-        if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
+        if is_vae:
             epoch_recon_loss /= len(dataloader.dataset)
             epoch_kl_loss /= len(dataloader.dataset)
             epoch_recon_losses.append(epoch_recon_loss)
@@ -296,15 +314,15 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     total_kl_loss = 0.0
     
     # Determine model type
-    is_zinb = hasattr(model, 'model_type') and (model.model_type == 'ZINBAE' or model.model_type == 'ZINBVAE')
-    is_vae = hasattr(model, 'model_type') and (model.model_type == 'VAE' or model.model_type == 'VAE_binary' or model.model_type == 'ZINBVAE')
+    is_zinb = getattr(model, "model_type", None) in {"ZINBAE", "ZINBVAE"}
+    is_vae = getattr(model, "model_type", None) in {"VAE", "VAE_binary", "ZINBVAE"}
     
     # Set criterion (not used for ZINB models)
     if not is_zinb:
         if binary:
-            criterion = nn.BCELoss(reduction='sum')  # Use sum reduction for proper scaling
+            criterion = nn.BCELoss(reduction='mean')  # Mean reduction per batch
         else:
-            criterion = nn.MSELoss(reduction='sum')  # Use sum reduction for proper scaling
+            criterion = nn.MSELoss(reduction='mean')  # Mean reduction per batch
     
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Testing"):
@@ -336,66 +354,70 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 y_binary = y_binary.to(device)  # (B, seq)
             
             # Apply denoising: randomly set some non-zero values to zero in the input
-            y_noisy = add_noise(y, denoise_percent)
+            y_noisy, mask = add_noise(y, denoise_percent)
             y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)
             else:
                 batch_input = torch.cat((y_in, x), dim=2)
-            
-            # Forward pass
+
+
+            target = y_binary if binary else y
+            batch_size = y.size(0)
+
+            recon_loss = None
+            kl_loss = None
+            theta = pi = None  # only used for ZINB
+
+            # -------- forward + losses --------
             if is_zinb:
-                # ZINB models
-                if model.model_type == 'ZINBVAE':
-                    mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
-                    # ZINB reconstruction loss (sum over batch and seq, then average over batch)
-                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='sum') / y.size(0)
-                    # KL divergence for latent space
-                    kl_loss = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp()) / y.size(0)
+                out = model(batch_input, size_factors)
+
+                if model.model_type == "ZINBVAE":
+                    mu, theta, pi, z, mu_z, logvar_z = out
+                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
+                    kl_loss = gaussian_kl(mu_z, logvar_z)
                     loss = recon_loss + beta * kl_loss
-                    
-                    total_recon_loss += recon_loss.item() * y.size(0)
-                    total_kl_loss += kl_loss.item() * y.size(0)
-                    
-                    # For ZINB, reconstruction is mu (mean of ZINB distribution)
-                    recon_batch = mu
-                    # Store theta and pi for plotting
-                    all_theta.append(theta.cpu().numpy())
-                    all_pi.append(pi.cpu().numpy())
-                    all_raw_counts.append(y_raw.cpu().numpy())
                 else:  # ZINBAE
-                    mu, theta, pi, z = model(batch_input, size_factors)
-                    # ZINB reconstruction loss (sum over batch and seq, then average over batch)
-                    loss = zinb_nll(y_raw, mu, theta, pi, reduction='sum') / y.size(0)
-                    
-                    # For ZINB, reconstruction is mu (mean of ZINB distribution)
-                    recon_batch = mu
-                    # Store theta and pi for plotting
-                    all_theta.append(theta.cpu().numpy())
-                    all_pi.append(pi.cpu().numpy())
-                    all_raw_counts.append(y_raw.cpu().numpy())
+                    mu, theta, pi, z = out
+                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
+                    loss = recon_loss
+
+                # For ZINB, "reconstruction" to store/plot is the mean parameter mu
+                recon_batch = mu
+
             elif is_vae:
-                # Regular VAE models
                 recon_batch, z, mu, logvar = model(batch_input)
-                # Calculate losses
-                recon_loss = criterion(recon_batch, y_binary if binary else y) / y.size(0)  # Divide by batch size
-                kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / y.size(0)
+                recon_loss = criterion(recon_batch, target)
+                kl_loss = gaussian_kl(mu, logvar)
                 loss = recon_loss + beta * kl_loss
-                
-                total_recon_loss += recon_loss.item() * y.size(0)
-                total_kl_loss += kl_loss.item() * y.size(0)
-            else:
-                # Regular AE models
+
+            else:  # AE
                 recon_batch, z = model(batch_input)
-                loss = criterion(recon_batch, y_binary if binary else y) / y.size(0)  # Divide by batch size
-            
-            total_loss += loss.item() * y.size(0)
-            
-            all_reconstructions.append(recon_batch.cpu().numpy())
-            all_latents.append(z.cpu().numpy())
-            all_originals.append(y.cpu().numpy())
-    
+                recon_loss = criterion(recon_batch, target)
+                loss = recon_loss
+
+            # -------- bookkeeping (single place) --------
+            total_loss += loss.item() * batch_size
+
+            if recon_loss is not None:
+                total_recon_loss += recon_loss.item() * batch_size
+            if kl_loss is not None:
+                total_kl_loss += kl_loss.item() * batch_size
+
+            # Store common outputs
+            all_reconstructions.append(recon_batch.detach().cpu().numpy())
+            all_latents.append(z.detach().cpu().numpy())
+            all_originals.append(y.detach().cpu().numpy())
+
+            # Store ZINB-specific outputs
+            if is_zinb:
+                all_theta.append(theta.detach().cpu().numpy())
+                all_pi.append(pi.detach().cpu().numpy())
+                all_raw_counts.append(y_raw.detach().cpu().numpy())
+
+    # ... after loop
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
     all_originals = np.concatenate(all_originals, axis=0)
@@ -465,15 +487,6 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                             n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name)
         
     return all_reconstructions, all_latents, metrics
-
-# Embed the chromosome feature if needed
-class ChromosomeEmbedding(nn.Module):
-    def __init__(self, num_chromosomes=17, embedding_dim=4):
-        super(ChromosomeEmbedding, self).__init__()
-        self.embedding = nn.Embedding(num_chromosomes, embedding_dim)
-        
-    def forward(self, x):
-        return self.embedding(x)
 
 def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary=False, zinb=False):
     data_array = np.load(input)
