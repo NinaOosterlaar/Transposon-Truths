@@ -5,7 +5,7 @@ import os, sys
 import gc
 import argparse
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from bin import bin_data, sliding_window
+from bin import bin_data, sliding_window, bin_data_single_array
 from Utils.reader import read_csv_file_with_distances
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -481,7 +481,7 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
                 if moving_average:
                     binned_values = sliding_window(df.values, bin_size, step_size=1, moving_average=True)
                 else:
-                    binned_values = bin_data(df.values, bin_size)
+                    binned_values, _ = bin_data_single_array(df.values, len(df), bin_size, 'average')
                 
                 # Use the original dataframe's columns to handle both normal and ZINB modes
                 binned_df = pd.DataFrame(binned_values, columns=df.columns.tolist())
