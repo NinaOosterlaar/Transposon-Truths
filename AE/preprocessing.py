@@ -664,6 +664,8 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    print("Starting preprocessing with the following parameters:")
+    print(args)
     
     # Run preprocessing with parsed arguments
     train, val, test, scalers, count_stats = preprocess(
@@ -679,7 +681,7 @@ if __name__ == "__main__":
         data_point_length=args.data_point_length,
         step_size=args.step_size
     )
-    
+
     # Print some info
     print(f"\nProcessing complete!")
     print(f"Train data shape: {train.shape}")

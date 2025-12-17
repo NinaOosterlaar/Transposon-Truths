@@ -1,0 +1,21 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Handy tools
+    apt-get update
+    apt-get install -y tree time vim ncdu speedtest-cli build-essential
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+
+    # Install your Python deps (torch is already installed!)
+    pip install --no-cache-dir \
+        numpy \
+        matplotlib \
+        pandas \
+        scikit-learn \
+        seaborn \
+        sgd-rest --upgrade \
+        statsmodels
