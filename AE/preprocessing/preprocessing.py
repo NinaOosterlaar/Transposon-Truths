@@ -4,8 +4,8 @@ import pandas as pd
 import os, sys
 import gc
 import argparse
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from bin import bin_data, sliding_window, bin_data_single_array
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
+from AE.preprocessing.bin import bin_data, sliding_window, bin_data_single_array
 from Utils.reader import read_csv_file_with_distances
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler

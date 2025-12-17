@@ -2,7 +2,7 @@ import numpy as np
 import sys, os
 import matplotlib.pyplot as plt
 import json
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
 
 def bin_data(data, bin_size, method = 'average'):
     """Bin data into specified bin size using the given method.

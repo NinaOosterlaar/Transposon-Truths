@@ -5,14 +5,14 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import mean_absolute_error, r2_score
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from AE.results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results, plot_zinb_training_loss, plot_zinb_test_results
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
+from AE.training.results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results, plot_zinb_training_loss, plot_zinb_test_results
 import argparse
-from AE.Autoencoder import AE, VAE
-from AE.Autoencoder_binary import AE_binary, VAE_binary
-from AE.ZINBAE import ZINBAE, ZINBVAE
-from AE.loss_functions import zinb_nll
-from AE.training_utils import ChromosomeEmbedding, add_noise, dataloader_from_array, gaussian_kl
+from AE.architectures.Autoencoder import AE, VAE
+from AE.architectures.Autoencoder_binary import AE_binary, VAE_binary
+from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
+from AE.training.loss_functions import zinb_nll
+from AE.training.training_utils import ChromosomeEmbedding, add_noise, dataloader_from_array, gaussian_kl
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
@@ -445,6 +445,10 @@ def parser_args():
                         help='Whether to use binary AE/VAE models')
     parser.add_argument('--filename', type=str, default='',
                         help='Base filename for loading data (default: empty string)')
+    parser.add_argument('--denoise_percent', type=float, default=0,
+                        help='Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0, default: 0.3)')
+    parser.add_argument('--sample_fraction', type=float, default=0.25,
+                        help='Fraction of data to randomly sample for training (0.0 to 1.0, default: 0.25)')
     return parser.parse_args()
 
     
@@ -461,7 +465,7 @@ if __name__ == "__main__":
     # Load data
     train_input_path = input_path + filename + "train_data.npy"
     print("Loading training data from:", train_input_path)
-    train_dataloader = dataloader_from_array(train_input_path, chrom=True, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb)
+    train_dataloader = dataloader_from_array(train_input_path, chrom=True, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, sample_fraction=args.sample_fraction)
     
     test_input_path = input_path + filename + "test_data.npy"
     print("Loading test data from:", test_input_path)
@@ -531,7 +535,7 @@ if __name__ == "__main__":
         print("="*60)
         zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename, denoise_percent=0)
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename, denoise_percent=args.denoise_percent)
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=True, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=1.0, name=filename, denoise_percent=0)
+                                                                         plot=True, n_examples=5, beta=1.0, name=filename, denoise_percent=args.denoise_percent)

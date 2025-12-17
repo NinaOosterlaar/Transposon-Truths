@@ -2,7 +2,7 @@ import torch
 import os, sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from AE.training import add_noise
+from AE.training.training import add_noise
 
 torch.manual_seed(0)
 

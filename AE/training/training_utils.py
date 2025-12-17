@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import numpy as np
+np.random.seed(42)  
 
 def add_noise(y, denoise_percent):
     """
@@ -53,12 +55,32 @@ class ChromosomeEmbedding(nn.Module):
     def forward(self, x):
         return self.embedding(x)
 
+
 def gaussian_kl(mu, logvar):
     logvar = torch.clamp(logvar, min=-20, max=10)
     return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
-def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary=False, zinb=False):
+def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary=False, zinb=False, sample_fraction=1.0):
+    """
+    Create a DataLoader from a numpy array.
+    
+    Parameters:
+    -----------
+    sample_fraction : float
+        Fraction of data to randomly sample (0.0 to 1.0). Default=1.0 (use all data).
+        If < 1.0, will randomly select that fraction of samples once (same subset for all epochs).
+    """
     data_array = np.load(input)
+    
+    # Random sampling if requested
+    if sample_fraction < 1.0:
+        num_samples = data_array.shape[0]
+        num_to_sample = int(num_samples * sample_fraction)
+        sampled_indices = np.random.choice(num_samples, size=num_to_sample, replace=False)
+        # sampled_indices = np.sort(sampled_indices)  # Sort to maintain some order
+        data_array = data_array[sampled_indices]
+        print(f"Randomly sampled {num_to_sample}/{num_samples} samples ({sample_fraction*100:.1f}%)")
+    
     counts = data_array[:, :, 0]  # Normalized counts (Value)
     
     if binary:
