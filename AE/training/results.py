@@ -24,12 +24,14 @@ import sys
 import json
 from datetime import datetime
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
 
-# Get the directory where this script is located (AE folder)
+# Get the directory where this script is located (AE/training folder)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Get the AE folder
+AE_DIR = os.path.dirname(SCRIPT_DIR)
 # Get the project root (parent of AE folder)
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+PROJECT_ROOT = os.path.dirname(AE_DIR)
 
 
 # ==================================================================================

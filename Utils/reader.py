@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import re
 import argparse
 from tqdm import tqdm 
-from SGD_API.yeast_architecture import Nucleosomes, Centromeres
+from Utils.SGD_API.yeast_architecture import Nucleosomes, Centromeres
 
 chromosome_mapper = {
     "chrref|NC_001133|": "chrI",

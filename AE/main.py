@@ -1,5 +1,8 @@
-from preprocessing import preprocess_data
-from AE import AE, train, test
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from AE.preprocessing.preprocessing import preprocess_data
+from AE.architectures.Autoencoder import AE
+from AE.training.training import train, test
 
 FEATURES = ['Pos', 'Chrom', 'Nucl', 'Centr']
 TRAIN_VAL_TEST_SPLIT = [0.7, 0, 0.3]

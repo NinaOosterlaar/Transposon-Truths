@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import json
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
-from SGD_API.genome import Genome
+from Utils.SGD_API.genome import Genome
 from Utils.reader import read_wig, label_from_filename
 import math
 from collections import defaultdict, Counter
