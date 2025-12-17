@@ -1,0 +1,11 @@
+Task 1: --bin 10 --no_moving_average
+
+Processing complete!
+Train data shape: (15528, 2000, 6)
+Validation data shape: (0, 2000, 6)
+Test data shape: (3472, 2000, 6)
+
+Data saved to:
+  Train: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_train_data.npy
+  Validation: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_val_data.npy
+  Test: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_test_data.npy
