@@ -2,7 +2,7 @@
 #SBATCH --job-name=autocorrelation
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=01:00:00
+#SBATCH --time=00:20:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=100G
@@ -28,4 +28,4 @@ srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python Signal_processing/autocorrelation.py "Data/combined_strains" --max_lag 2000 $ZERO_FLAG --output_folder "Signal_processing/results/autocorrelation/uncombined" --plot
+    python Signal_processing/autocorrelation.py "Data/combined_strains" --max_lag 2000 $ZERO_FLAG --output_folder "Signal_processing/results/autocorrelation/combined" --plot
