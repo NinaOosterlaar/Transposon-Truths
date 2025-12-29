@@ -324,11 +324,257 @@ def save_basic_info_csv(folder_name, output_file, plot=False, output_folder_figu
             
     if plot:
         plot_basic_statistics(stats, output_folder_figures)
+        
+def data_distribution(data, sample_name, ignore_zeros=True, output_folder="Data_exploration/results/count_distribution"):
+    """Plot and save the transposon count data in a histogram and a datafile.
+    
+    Parameters:
+    - data: numpy array or list of count values
+    - sample_name: name of the sample for labeling
+    - ignore_zeros: if True, exclude positions with Value=0
+    - output_folder: folder to save outputs
+    
+    Creates:
+    - A histogram plot (PNG)
+    - A CSV file with the distribution data
+    - A percentile analysis plot and statistics
+    """
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Convert to numpy array if needed
+    data = np.array(data)
+    
+    # Filter zeros if requested
+    if ignore_zeros:
+        data = data[data > 0]
+        zero_suffix = "_no_zeros"
+    else:
+        zero_suffix = "_with_zeros"
+    
+    if len(data) == 0:
+        print(f"Warning: No data for {sample_name} after filtering")
+        return
+    
+    # Calculate percentiles
+    p5 = np.percentile(data, 5)
+    p25 = np.percentile(data, 25)
+    p50 = np.percentile(data, 50)  # median
+    p75 = np.percentile(data, 75)
+    p95 = np.percentile(data, 95)
+    mean_val = np.mean(data)
+    std_val = np.std(data)
+    
+    # Data within 5-95 percentile range
+    data_5_95 = data[(data >= p5) & (data <= p95)]
+    mean_5_95 = np.mean(data_5_95)
+    std_5_95 = np.std(data_5_95)
+    
+    # Calculate distribution
+    unique_counts, counts = np.unique(data, return_counts=True)
+    percentages = (counts / len(data)) * 100
+    
+    # Save distribution data to CSV
+    csv_path = os.path.join(output_folder, f"{sample_name}{zero_suffix}_distribution.csv")
+    df_dist = pd.DataFrame({
+        'Count': unique_counts,
+        'Frequency': counts,
+        'Percentage': percentages
+    })
+    df_dist.to_csv(csv_path, index=False)
+    
+    # Save percentile statistics
+    stats_path = os.path.join(output_folder, f"{sample_name}{zero_suffix}_percentile_stats.txt")
+    with open(stats_path, 'w') as f:
+        f.write(f"Percentile Statistics for {sample_name}\n")
+        f.write("=" * 60 + "\n")
+        f.write(f"Total positions: {len(data)}\n")
+        f.write(f"Unique count values: {len(unique_counts)}\n\n")
+        f.write("Percentiles:\n")
+        f.write(f"  5th percentile:  {p5:.2f}\n")
+        f.write(f"  25th percentile: {p25:.2f}\n")
+        f.write(f"  50th percentile (median): {p50:.2f}\n")
+        f.write(f"  75th percentile: {p75:.2f}\n")
+        f.write(f"  95th percentile: {p95:.2f}\n\n")
+        f.write("Overall statistics:\n")
+        f.write(f"  Mean: {mean_val:.2f}\n")
+        f.write(f"  Std Dev: {std_val:.2f}\n\n")
+        f.write("Statistics for 5-95 percentile range:\n")
+        f.write(f"  Data points in range: {len(data_5_95)} ({len(data_5_95)/len(data)*100:.1f}%)\n")
+        f.write(f"  Mean: {mean_5_95:.2f}\n")
+        f.write(f"  Std Dev: {std_5_95:.2f}\n")
+    
+    # Create two subplots: full distribution and 5-95 percentile range
+    fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+    
+    # Plot 1: Full distribution
+    ax1 = axes[0]
+    max_count = np.max(data)
+    min_count = np.min(data)
+    
+    # Better binning strategy based on data range
+    if max_count > 1000:
+        # For very large ranges, use intelligent binning
+        # Use finer bins for low values, coarser for high values
+        bins_low = np.arange(min_count, min(100, p95), 1)
+        bins_high = np.logspace(np.log10(max(100, p95)), np.log10(max_count + 1), 30)
+        bins = np.concatenate([bins_low, bins_high])
+        ax1.set_xscale('log')
+    elif max_count > 100:
+        # For medium ranges, use adaptive binning
+        bins = np.linspace(min_count, max_count, min(100, int(max_count - min_count + 1)))
+    else:
+        # For small ranges, use integer bins
+        bins = np.arange(min_count, max_count + 2) - 0.5  # Center bins on integers
+    
+    ax1.hist(data, bins=bins, color='steelblue', alpha=0.7, edgecolor='black', 
+             weights=np.ones(len(data)) / len(data) * 100)
+    ax1.axvline(p5, color='red', linestyle='--', linewidth=2, label=f'5th percentile ({p5:.1f})')
+    ax1.axvline(p95, color='red', linestyle='--', linewidth=2, label=f'95th percentile ({p95:.1f})')
+    ax1.axvline(p50, color='green', linestyle='--', linewidth=2, label=f'Median ({p50:.1f})')
+    
+    ax1.set_title(f'Full Transposon Count Distribution - {sample_name}{"" if not ignore_zeros else " (excluding zeros)"}')
+    ax1.set_xlabel('Transposon Count')
+    ax1.set_ylabel('Percentage of Positions (%)')
+    ax1.grid(axis='y', alpha=0.3)
+    ax1.legend()
+    
+    # Plot 2: 5-95 percentile range only
+    ax2 = axes[1]
+    # Use linear bins for the percentile range
+    range_size = p95 - p5
+    if range_size > 100:
+        bins_5_95 = np.linspace(p5, p95, 100)
+    elif range_size > 50:
+        bins_5_95 = np.linspace(p5, p95, 50)
+    else:
+        # For narrow ranges, use integer bins
+        bins_5_95 = np.arange(int(p5), int(p95) + 2) - 0.5
+    
+    ax2.hist(data_5_95, bins=bins_5_95, color='darkseagreen', alpha=0.7, edgecolor='black',
+             weights=np.ones(len(data_5_95)) / len(data_5_95) * 100)
+    ax2.axvline(mean_5_95, color='orange', linestyle='--', linewidth=2, label=f'Mean in range ({mean_5_95:.1f})')
+    ax2.axvline(p50, color='green', linestyle='--', linewidth=2, label=f'Median ({p50:.1f})')
+    
+    ax2.set_title(f'5-95 Percentile Range (n={len(data_5_95)}, {len(data_5_95)/len(data)*100:.1f}% of data)')
+    ax2.set_xlabel('Transposon Count')
+    ax2.set_ylabel('Percentage of Positions (%)')
+    ax2.grid(axis='y', alpha=0.3)
+    ax2.legend()
+    
+    plt.tight_layout()
+    
+    # Save plot
+    plot_path = os.path.join(output_folder, f"distribution.png")
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+    
+    # Create boxplot (using 5-95 percentile data for better visualization)
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    
+    bp = ax.boxplot([data_5_95], vert=True, patch_artist=True, labels=[sample_name],
+                     showmeans=True, meanline=True,
+                     boxprops=dict(facecolor='lightblue', alpha=0.7),
+                     meanprops=dict(color='red', linewidth=2),
+                     medianprops=dict(color='darkgreen', linewidth=2))
+    ax.set_ylabel('Transposon Count')
+    ax.set_title(f'Boxplot (5-95 percentile range) - {sample_name}{"" if not ignore_zeros else " (excluding zeros)"}\n5th: {p5:.1f}, Median: {p50:.1f}, 95th: {p95:.1f}')
+    ax.grid(axis='y', alpha=0.3)
+    
+    plt.tight_layout()
+    
+    # Save boxplot
+    boxplot_path = os.path.join(output_folder, f"boxplot.png")
+    plt.savefig(boxplot_path, dpi=300)
+    plt.close()
+    
+    print(f"  Saved: {sample_name}{zero_suffix} - Total: {len(data)}, P5-P95: [{p5:.1f}, {p95:.1f}]")
+
+
+def analyze_count_dsitribution(base_folder="Data/distances_with_zeros", ignore_zeros=True, output_base_folder="Data_exploration/results/count_distribution"):
+    """
+    Analyzes transposon count distribution for all samples in distances_with_zeros folder.
+    Creates individual plots for each sample and one combined plot for all samples together.
+    Each dataset gets its own folder within the output directory.
+    
+    Parameters:
+    - base_folder: path to distances_with_zeros folder
+    - ignore_zeros: if True, exclude positions with Value=0
+    - output_base_folder: base folder to save outputs
+    """
+    print(f"\nAnalyzing transposon count distributions (ignore_zeros={ignore_zeros})...")
+    print("=" * 80)
+    
+    all_data = []  # To collect all data for combined analysis
+    
+    # Determine zero suffix for folder naming
+    zero_suffix = "_no_zeros" if ignore_zeros else "_with_zeros"
+    
+    # Iterate through all strain folders
+    for strain_folder in sorted(os.listdir(base_folder)):
+        strain_path = os.path.join(base_folder, strain_folder)
+        if not os.path.isdir(strain_path):
+            continue
+        
+        print(f"\nProcessing strain: {strain_folder}")
+        
+        # Iterate through all sample folders within the strain
+        for sample_folder in sorted(os.listdir(strain_path)):
+            sample_path = os.path.join(strain_path, sample_folder)
+            if not os.path.isdir(sample_path):
+                continue
             
+            print(f"  Sample: {sample_folder}")
+            
+            # Read all chromosome CSV files for this sample
+            sample_data = []
+            
+            for csv_file in sorted(os.listdir(sample_path)):
+                if not csv_file.endswith('_distances.csv'):
+                    continue
+                
+                csv_path = os.path.join(sample_path, csv_file)
+                df = pd.read_csv(csv_path)
+                
+                # Extract Value column
+                if 'Value' in df.columns:
+                    sample_data.extend(df['Value'].tolist())
+            
+            if len(sample_data) > 0:
+                # Create sanitized sample name
+                sample_name = sample_folder.replace('_merged-DpnII-NlaIII-a_trimmed.sorted.bam', '') \
+                                          .replace('_merged-DpnII-NlaIII-b_trimmed.sorted.bam', '') \
+                                          .replace('.bam', '')
+                
+                # Create sample-specific output folder
+                sample_output_folder = os.path.join(output_base_folder, sample_name + zero_suffix)
+                os.makedirs(sample_output_folder, exist_ok=True)
+                
+                # Plot distribution for this sample
+                data_distribution(sample_data, sample_name, ignore_zeros=ignore_zeros, output_folder=sample_output_folder)
+                
+                # Add to combined data
+                all_data.extend(sample_data)
+    
+    # Create combined plot for all samples
+    if len(all_data) > 0:
+        print("\n" + "=" * 80)
+        print("Creating combined distribution for all samples...")
+        combined_output_folder = os.path.join(output_base_folder, "all_samples_combined" + zero_suffix)
+        os.makedirs(combined_output_folder, exist_ok=True)
+        data_distribution(all_data, "all_samples_combined", ignore_zeros=ignore_zeros, output_folder=combined_output_folder)
+    
+    print("\n" + "=" * 80)
+    print(f"Analysis complete! Results saved to: {output_base_folder}")
+    print(f"Total datasets processed: {len(all_data)}")
+
 
 # Example usage:
 # For wiggle format files (without zeros):
 # save_basic_info("Data/old/wiggle_format", "Data_exploration/results/basic_statistics_wiggle.txt", plot=False, output_folder_figures="Data_exploration/figures")
 
 # For combined_replicates CSV files (with zeros):
-save_basic_info_csv("Data/combined_strains", "Data_exploration/results/basic_statistics_combined_strains.txt", plot=False, output_folder_figures="Data_exploration/figures")
+# save_basic_info_csv("Data/combined_strains", "Data_exploration/results/basic_statistics_combined_strains.txt", plot=False, output_folder_figures="Data_exploration/figures")
+
+# For analyzing count distributions in distances_with_zeros:
+analyze_count_dsitribution(ignore_zeros=True)
+# analyze_count_dsitribution(ignore_zeros=False)

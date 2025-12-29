@@ -1,0 +1,20 @@
+Percentile Statistics for yWT03a_21_FDDP210317592-2a_HTWL7DSX2_L4_trimmed_forward_notrimmed.sorted
+============================================================
+Total positions: 216814
+Unique count values: 399
+
+Percentiles:
+  5th percentile:  1.00
+  25th percentile: 1.00
+  50th percentile (median): 1.00
+  75th percentile: 3.00
+  95th percentile: 10.00
+
+Overall statistics:
+  Mean: 74.74
+  Std Dev: 29103.44
+
+Statistics for 5-95 percentile range:
+  Data points in range: 206022 (95.0%)
+  Mean: 2.03
+  Std Dev: 1.73

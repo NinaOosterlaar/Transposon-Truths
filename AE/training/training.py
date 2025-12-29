@@ -6,7 +6,9 @@ from tqdm import tqdm
 from sklearn.metrics import mean_absolute_error, r2_score
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
-from AE.training.results import plot_binary_training_loss, plot_test_results, plot_training_loss, plot_binary_test_results, plot_zinb_training_loss, plot_zinb_test_results
+from AE.plotting.results_standard import plot_test_results, plot_binary_test_results
+from AE.plotting.plot_loss import plot_training_loss, plot_binary_training_loss, plot_zinb_training_loss
+from AE.plotting.results_ZINB import plot_zinb_test_results
 import argparse
 from AE.architectures.Autoencoder import AE, VAE
 from AE.architectures.Autoencoder_binary import AE_binary, VAE_binary
@@ -445,10 +447,17 @@ def parser_args():
                         help='Whether to use binary AE/VAE models')
     parser.add_argument('--filename', type=str, default='',
                         help='Base filename for loading data (default: empty string)')
+    parser.add_argument('--results_subdir', type=str, default='',
+                        help='Subdirectory name for organizing results (e.g., "small_data"). Creates AE/results/training/<subdir>/ and AE/results/testing/<subdir>/')
     parser.add_argument('--denoise_percent', type=float, default=0,
                         help='Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0, default: 0.3)')
     parser.add_argument('--sample_fraction', type=float, default=0.25,
                         help='Fraction of data to randomly sample for training (0.0 to 1.0, default: 0.25)')
+    parser.add_argument('--no_test', action='store_true',
+                        help='Evaluate on training data instead of test data')
+    parser.add_argument('--chrom', action='store_true', help='Whether to use chromosome embedding')
+    parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs (default: 10)')
+    parser.add_argument('--beta', type=float, default=1.0, help='Beta weight for KL divergence in VAE/ZINBVAE (default: 1.0)')
     return parser.parse_args()
 
     
@@ -458,6 +467,9 @@ if __name__ == "__main__":
     input_path = "Data/processed_data/"
     
     filename = args.filename
+    results_subdir = args.results_subdir if args.results_subdir else ""
+    no_test = args.no_test if args.no_test else False 
+    chrom = args.chrom if args.chrom else False
     
     # Determine if we're using ZINB models
     is_zinb = args.model in ['ZINBAE', 'ZINBVAE', 'all']
@@ -465,19 +477,30 @@ if __name__ == "__main__":
     # Load data
     train_input_path = input_path + filename + "train_data.npy"
     print("Loading training data from:", train_input_path)
-    train_dataloader = dataloader_from_array(train_input_path, chrom=True, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, sample_fraction=args.sample_fraction)
+    train_dataloader = dataloader_from_array(train_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, sample_fraction=args.sample_fraction)
     
-    test_input_path = input_path + filename + "test_data.npy"
-    print("Loading test data from:", test_input_path)
-    test_dataloader = dataloader_from_array(test_input_path, chrom=True, batch_size=64, shuffle=False, binary=args.binary, zinb=is_zinb)
+    # If no_test, use training data for evaluation; otherwise load test data
+    if no_test:
+        print("Using training data for evaluation (--no_test flag set)")
+        test_dataloader = train_dataloader
+    else:
+        test_input_path = input_path + filename + "test_data.npy"
+        print("Loading test data from:", test_input_path)
+        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=False, binary=args.binary, zinb=is_zinb)
     
+    # Print size of train data
+    num_train_samples = len(train_dataloader.dataset)
+    print(f"Number of training samples: {num_train_samples}")
     
     # Create chromosome embedding once to use consistently
-    chrom = True 
     if chrom:
         chrom_embedding = ChromosomeEmbedding()
     else:
         chrom_embedding = None
+        
+    feature_dim = train_dataloader.dataset.tensors[0].shape[2] 
+    feature_dim += 1  # +1 for y_in (the noisy input)
+    feature_dim += chrom_embedding.embedding.embedding_dim if chrom else 0  # +4 for chromosome embedding
     
     
     # Train and test based on model choice
@@ -486,14 +509,14 @@ if __name__ == "__main__":
         print("TRAINING AUTOENCODER (AE)")
         print("="*60)
         if args.binary:
-            ae_model = AE_binary(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
+            ae_model = AE_binary(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         else:
-            ae_model = AE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
-        trained_ae = train(ae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=filename)
+            ae_model = AE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        trained_ae = train(ae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=results_subdir)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
-                                                          chrom=True, chrom_embedding=chrom_embedding, 
-                                                          plot=True, n_examples=5, binary=args.binary, name=filename)
+                                                          chrom=chrom, chrom_embedding=chrom_embedding, 
+                                                          plot=True, n_examples=5, binary=args.binary, name=results_subdir)
     
     if args.model in ['VAE', 'both', 'all']:
         if args.model in ['both', 'all']:
@@ -503,14 +526,15 @@ if __name__ == "__main__":
         print("TRAINING VARIATIONAL AUTOENCODER (VAE)")
         print("="*60)
         if args.binary:
-            vae_model = VAE_binary(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
+            vae_model = VAE_binary(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         else:   
-            vae_model = VAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
-        trained_vae = train(vae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, binary=args.binary, name=filename, denoise_percent=0)
+            vae_model = VAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        trained_vae = train(vae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=0)
+        
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
-                                                             chrom=True, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=1.0, binary=args.binary, name=filename, denoise_percent=0)
+                                                             chrom=chrom, chrom_embedding=chrom_embedding, 
+                                                             plot=True, n_examples=5, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=0)
     
     if args.model in ['ZINBAE', 'all']:
         if args.model == 'all':
@@ -519,12 +543,13 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
-        zinbae_model = ZINBAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
-        trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=filename, denoise_percent=0.3)
+        zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
+                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=0.3)
+        
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
-                                                                      chrom=True, chrom_embedding=chrom_embedding, 
-                                                                      plot=True, n_examples=5, name=filename, denoise_percent=0)
+                                                                      chrom=chrom, chrom_embedding=chrom_embedding, 
+                                                                      plot=True, n_examples=5, name=results_subdir, denoise_percent=0)
     
     if args.model in ['ZINBVAE', 'all']:
         if args.model == 'all':
@@ -533,9 +558,10 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)")
         print("="*60)
-        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=8, layers=[512, 256, 128], use_conv=args.use_conv)
-        trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=10, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=1.0, name=filename, denoise_percent=args.denoise_percent)
+        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=0)
+        
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
-                                                                         chrom=True, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=1.0, name=filename, denoise_percent=args.denoise_percent)
+                                                                         chrom=chrom, chrom_embedding=chrom_embedding, 
+                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, denoise_percent=0)

@@ -56,9 +56,30 @@ class ChromosomeEmbedding(nn.Module):
         return self.embedding(x)
 
 
-def gaussian_kl(mu, logvar):
+def gaussian_kl(mu, logvar, reduction='mean'):
+    """
+    KL divergence between N(mu, sigma^2) and N(0, 1)
+
+    reduction:
+        'mean'      : mean over batch (standard VAE loss)
+        'sum'       : sum over batch
+        'none'      : per-sample KL
+    """
     logvar = torch.clamp(logvar, min=-20, max=10)
-    return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+
+    kl = -0.5 * torch.sum(
+        1 + logvar - mu.pow(2) - logvar.exp(),
+        dim=1  # sum over latent dims
+    )
+
+    if reduction == 'mean':
+        return kl.mean()
+    elif reduction == 'sum':
+        return kl.sum()
+    elif reduction == 'none':
+        return kl
+    else:
+        raise ValueError(f"Invalid reduction: {reduction}")
 
 def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary=False, zinb=False, sample_fraction=1.0):
     """

@@ -1,0 +1,20 @@
+Percentile Statistics for all_samples_combined
+============================================================
+Total positions: 29042917
+Unique count values: 7962
+
+Percentiles:
+  5th percentile:  1.00
+  25th percentile: 2.00
+  50th percentile (median): 5.00
+  75th percentile: 19.00
+  95th percentile: 78.00
+
+Overall statistics:
+  Mean: 51.50
+  Std Dev: 28277.83
+
+Statistics for 5-95 percentile range:
+  Data points in range: 27613919 (95.1%)
+  Mean: 11.69
+  Std Dev: 15.67

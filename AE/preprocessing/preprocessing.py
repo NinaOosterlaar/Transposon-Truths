@@ -31,10 +31,70 @@ chromosome_length = {
     "ChrXVI": 948066,
 }
 
-def standardize_data(train_data, val_data, test_data, features):
+def clip_outliers(data, percentile=95, multiplier=1.5):
+    """Clip outliers in transposon count data based on percentile analysis.
+    
+    Calculates the 95th percentile (excluding zeros) and caps all values above 
+    multiplier * 95th_percentile to that threshold.
+    
+    Args:
+        data (Dictionary): Dictionary containing {dataset: {chromosome: DataFrame}} structure.
+        percentile (float): Percentile to use for threshold calculation. Default=95.
+        multiplier (float): Multiplier for the percentile threshold. Default=1.5.
+        
+    Returns:
+        data (Dictionary): Data with clipped outliers (same object, modified in-place).
+        clip_stats (Dictionary): Statistics about clipping per dataset.
+    """
+    clip_stats = {}
+    
+    for dataset in data:
+        # Collect all non-zero values for this dataset
+        all_values = []
+        for chrom in data[dataset]:
+            df = data[dataset][chrom]
+            if 'Value' in df.columns:
+                non_zero_values = df[df['Value'] > 0]['Value'].values
+                all_values.extend(non_zero_values)
+        
+        if len(all_values) == 0:
+            print(f"Warning: No non-zero values found for {dataset}")
+            continue
+        
+        # Calculate percentile threshold (excluding zeros)
+        all_values = np.array(all_values)
+        percentile_value = np.percentile(all_values, percentile)
+        clip_threshold = multiplier * percentile_value
+        
+        # Count values that will be clipped
+        values_above_threshold = np.sum(all_values > clip_threshold)
+        
+        # Apply clipping to all chromosomes in this dataset
+        for chrom in data[dataset]:
+            df = data[dataset][chrom]
+            if 'Value' in df.columns:
+                data[dataset][chrom]['Value'] = df['Value'].clip(upper=clip_threshold)
+        
+        # Store statistics
+        clip_stats[dataset] = {
+            'percentile': percentile,
+            'percentile_value': percentile_value,
+            'multiplier': multiplier,
+            'clip_threshold': clip_threshold,
+            'total_non_zero': len(all_values),
+            'clipped_count': int(values_above_threshold),
+            'clipped_percentage': (values_above_threshold / len(all_values)) * 100
+        }
+        
+        print(f"{dataset}: Clipping values above {clip_threshold:.2f} (P{percentile}={percentile_value:.2f}). "
+              f"Clipped {values_above_threshold}/{len(all_values)} values ({clip_stats[dataset]['clipped_percentage']:.2f}%)")
+    
+    return data, clip_stats
+
+def standardize_data(train_data, val_data, test_data, features, standardize_value = True):
     """Standardize features to have mean 0 and standard deviation 1.
     Fits scalers on training data and applies to all splits.
-    Does NOT standardize 'Value' (counts - already log-normalized) or 'Chrom' (categorical).
+    Standardizes 'Value' (log-normalized counts) and other features. Does NOT standardize 'Chrom' (categorical).
     
     Args:
         train_data, val_data, test_data: Dictionaries containing {dataset: {chromosome: DataFrame}}.
@@ -46,9 +106,11 @@ def standardize_data(train_data, val_data, test_data, features):
     """
     scalers = {}
     
-    # Features to standardize (exclude 'Value' and 'Chrom')
-    features_to_standardize = []
+    # Features to standardize (exclude only 'Chrom')
+    if standardize_value:
+        features_to_standardize = ['Value']  # Always standardize Value
     feature_to_column = {
+        'Value': 'Value',
         'Pos': 'Position',
         'Nucl': 'Nucleosome_Distance',
         'Centr': 'Centromere_Distance'
@@ -547,6 +609,23 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
         data_points = np.array([], dtype=np.float32).reshape(0, data_point_length, len(cols_to_keep))
     
     return data_points
+
+def remove_empty_datapoints(data):
+    """Remove data points that are completely empty (all zeros) from the dataset.
+    
+    Args:
+        data (np.ndarray): 3D array of shape (num_samples, window_length, num_features).
+    Returns:
+        np.ndarray: Filtered data with empty data points removed.
+    """    
+    if data.size == 0:
+        return data
+    
+    # Identify non-empty data points
+    non_empty_mask = np.any(data != 0, axis=(1, 2))
+    print(f"Removing {np.sum(~non_empty_mask)} empty data points out of {data.shape[0]}")
+    filtered_data = data[non_empty_mask]
+    return filtered_data
             
 def preprocess(input_folder, 
                features = ['Pos', 'Chrom', 'Nucl', 'Centr'], 
@@ -558,7 +637,10 @@ def preprocess(input_folder,
                bin_size = 10, 
                moving_average = True,
                data_point_length = 2000,
-               step_size = 500
+               step_size = 500,
+               clip_outliers_flag = True,
+               outlier_percentile = 95,
+               outlier_multiplier = 1.5
                ):
     """Preprocessing the data before using at as an input for the Autoencoder
 
@@ -579,6 +661,9 @@ def preprocess(input_folder,
         moving_average (bool, optional): Whether to apply a moving average to the data or use separate bins. Defaults to True.
         data_point_length (int, optional): The length of each data point. Defaults to 2000.
         step_size (int, optional): The step size for sliding window for the data points. Defaults to 200.
+        clip_outliers_flag (bool, optional): Whether to clip outliers based on percentile analysis. Defaults to False.
+        outlier_percentile (float, optional): Percentile to use for outlier threshold. Defaults to 95.
+        outlier_multiplier (float, optional): Multiplier for the percentile threshold. Defaults to 1.5.
     
     Returns:
         train (np.ndarray): Training data, shape (n_train_samples, window_length, n_features)
@@ -588,6 +673,12 @@ def preprocess(input_folder,
         count_stats (dict, optional): Statistics from count normalization if normalize_counts=True.
     """
     transposon_data = read_csv_file_with_distances(input_folder)
+    
+    # First step: Clip outliers if requested (before any normalization)
+    clip_stats = None
+    if clip_outliers_flag:
+        print(f"\nClipping outliers using {outlier_percentile}th percentile * {outlier_multiplier}...")
+        transposon_data, clip_stats = clip_outliers(transposon_data, percentile=outlier_percentile, multiplier=outlier_multiplier)
     
     # Optionally normalize counts before splitting
     count_stats = None
@@ -602,15 +693,18 @@ def preprocess(input_folder,
     
     # Bin/window and convert to 3D arrays
     train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
+    train = remove_empty_datapoints(train)
     gc.collect()  # Clean up memory after processing train
     
     val = process_data(val, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
+    val = remove_empty_datapoints(val)
     gc.collect()  # Clean up memory after processing val
     
     test = process_data(test, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
+    test = remove_empty_datapoints(test)
     gc.collect()  # Clean up memory after processing test
 
-    return train, val, test, scalers, count_stats
+    return train, val, test, scalers, count_stats, clip_stats
 
 def parse_args():
     """Parse command line arguments for preprocessing."""
@@ -624,9 +718,9 @@ def parse_args():
     
     # Features
     parser.add_argument('--features', type=str, nargs='+', 
-                        default=['Pos', 'Nucl', 'Centr'],
-                        choices=['Pos', 'Nucl', 'Centr'],
-                        help='Features to use (default: Pos Nucl Centr)')
+                        default=['Nucl', 'Centr'],
+                        choices=['Pos', 'Nucl', 'Centr', 'Chrom'],
+                        help='Features to use (default: Nucl Centr)')
     
     # Data splitting
     parser.add_argument('--train_val_test_split', type=float, nargs=3, 
@@ -657,6 +751,8 @@ def parse_args():
                         help='Length of each data point (default: 2000)')
     parser.add_argument('--step_size', type=int, default=500,
                         help='Step size for sliding window (default: 500)')
+    parser.add_argument('--no_clip_outliers', action='store_false', dest='clip_outliers',
+                        help='Do not clip outliers')
     
     return parser.parse_args()
 
@@ -666,9 +762,10 @@ if __name__ == "__main__":
     args = parse_args()
     print("Starting preprocessing with the following parameters:")
     print(args)
+    clip_outliers_flag = getattr(args, 'clip_outliers', True)
     
     # Run preprocessing with parsed arguments
-    train, val, test, scalers, count_stats = preprocess(
+    train, val, test, scalers, count_stats, clip_stats = preprocess(
         input_folder=args.input_folder,
         features=args.features,
         train_val_test_split=args.train_val_test_split,
@@ -680,6 +777,7 @@ if __name__ == "__main__":
         moving_average=args.moving_average,
         data_point_length=args.data_point_length,
         step_size=args.step_size
+        ,clip_outliers_flag=clip_outliers_flag
     )
 
     # Print some info
@@ -687,6 +785,14 @@ if __name__ == "__main__":
     print(f"Train data shape: {train.shape}")
     print(f"Validation data shape: {val.shape}")
     print(f"Test data shape: {test.shape}")
+    
+    # Print mean and standard deviation of each feature in training data
+    if train.shape[0] > 0:
+        feature_means = np.mean(train, axis=(0,1))
+        feature_stds = np.std(train, axis=(0,1))
+        print("\nTraining data feature means and standard deviations:")
+        for i in range(train.shape[2]):
+            print(f"  Feature {i}: mean={feature_means[i]:.4f}, std={feature_stds[i]:.4f}")
     
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)

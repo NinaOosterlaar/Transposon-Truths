@@ -106,20 +106,32 @@ class ZINBAE(nn.Module):
         
         # ZINB parameters with clamping to prevent overflow
         # Use softplus or clamped exp to prevent exploding values
-        mu_hat_logits = self.mu_layer(D)
-        mu_hat = torch.clamp(mu_hat_logits, min=-20, max=20)  # Clamp before exp
-        mu_hat = torch.exp(mu_hat)       # (batch, seq_length), positive
+        mu_hat_logits = self.mu_layer(D)                 # log-mean (unscaled)
+        mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
+
+        if size_factors.dim() == 1:
+            size_factors = size_factors.unsqueeze(1)
+        log_sf = torch.log(size_factors.clamp_min(1e-8))
+
+        log_mu = mu_hat_logits + log_sf
+        mu = torch.exp(log_mu)
+        # mu = torch.softplus(log_mu) + 1e-4  # ensure positivity 
         
         theta_logits = self.theta_layer(D)
         theta = torch.clamp(theta_logits, min=-20, max=10)  # Clamp before exp
-        theta = torch.exp(theta)    # (batch, seq_length), positive
+        # theta = torch.exp(theta)    # (batch, seq_length), positive
+        theta = torch.nn.functional.softplus(self.theta_layer(D)) + 1e-4
         
-        pi = torch.sigmoid(self.pi_layer(D))   # (batch, seq_length), in (0,1)
+        pi = torch.sigmoid(self.pi_layer(D))
+        pi = pi.clamp(1e-5, 1 - 1e-5)
+        
+        # Print shapes for check
+        print(f"ZINBAE forward shapes: mu {mu.shape}, theta {theta.shape}, pi {pi.shape}, z {z.shape}")
         
         # apply size factors to μ
-        if size_factors.dim() == 1:
-            size_factors = size_factors.unsqueeze(1)  # (batch, 1)
-        mu = mu_hat * size_factors                   # broadcast over seq_length
+        # if size_factors.dim() == 1:
+        #     size_factors = size_factors.unsqueeze(1)  # (batch, 1)
+        # mu = mu_hat * size_factors                   # broadcast over seq_length
         
         return mu, theta, pi, z
     
@@ -234,23 +246,25 @@ class ZINBVAE(nn.Module):
         z = self.reparameterize(mu_z, logvar_z)
         
         D = self.decoder_shared(z)  # shape (batch, decoder_out_dim)
-        
         # ZINB parameters with clamping to prevent overflow
-        # Use softplus or clamped exp to prevent exploding values
+        # Compute mu similar to ZINBAE: mu_hat logits + log(size_factors) then exp
         mu_hat_logits = self.mu_layer(D)
-        mu_hat = torch.clamp(mu_hat_logits, min=-20, max=20)  # Clamp before exp
-        mu_hat = torch.exp(mu_hat)       # (batch, seq_length), positive
-        
-        theta_logits = self.theta_layer(D)
-        theta = torch.clamp(theta_logits, min=-20, max=10)  # Clamp before exp
-        theta = torch.exp(theta)    # (batch, seq_length), positive
-        
-        pi = torch.sigmoid(self.pi_layer(D))   # (batch, seq_length), in (0,1)
-        
-        # apply size factors to μ
+        mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
+
         if size_factors.dim() == 1:
-            size_factors = size_factors.unsqueeze(1)  # (batch, 1)
-        mu = mu_hat * size_factors                   # broadcast over seq_length
-        
+            size_factors = size_factors.unsqueeze(1)
+        log_sf = torch.log(size_factors.clamp_min(1e-8))
+
+        log_mu = mu_hat_logits + log_sf
+        mu = torch.exp(log_mu)
+
+        # theta via softplus (positive, stable)
+        theta_logits = self.theta_layer(D)
+        theta = torch.nn.functional.softplus(theta_logits) + 1e-4
+
+        # dropout / zero-inflation probability
+        pi = torch.sigmoid(self.pi_layer(D))
+        pi = pi.clamp(1e-5, 1 - 1e-5)
+
         return mu, theta, pi, z, mu_z, logvar_z
         

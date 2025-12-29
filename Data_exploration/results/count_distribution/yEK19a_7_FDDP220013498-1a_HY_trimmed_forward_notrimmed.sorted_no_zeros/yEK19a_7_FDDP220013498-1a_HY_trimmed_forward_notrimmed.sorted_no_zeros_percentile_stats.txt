@@ -1,0 +1,20 @@
+Percentile Statistics for yEK19a_7_FDDP220013498-1a_HY_trimmed_forward_notrimmed.sorted
+============================================================
+Total positions: 1030435
+Unique count values: 1194
+
+Percentiles:
+  5th percentile:  1.00
+  25th percentile: 1.00
+  50th percentile (median): 5.00
+  75th percentile: 19.00
+  95th percentile: 74.00
+
+Overall statistics:
+  Mean: 44.57
+  Std Dev: 25173.85
+
+Statistics for 5-95 percentile range:
+  Data points in range: 979942 (95.1%)
+  Mean: 11.81
+  Std Dev: 15.56

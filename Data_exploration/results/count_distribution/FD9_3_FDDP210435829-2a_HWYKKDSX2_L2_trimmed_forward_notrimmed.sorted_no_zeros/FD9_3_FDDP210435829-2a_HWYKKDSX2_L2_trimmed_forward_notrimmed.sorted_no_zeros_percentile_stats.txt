@@ -1,0 +1,20 @@
+Percentile Statistics for FD9_3_FDDP210435829-2a_HWYKKDSX2_L2_trimmed_forward_notrimmed.sorted
+============================================================
+Total positions: 1154282
+Unique count values: 1343
+
+Percentiles:
+  5th percentile:  1.00
+  25th percentile: 2.00
+  50th percentile (median): 5.00
+  75th percentile: 19.00
+  95th percentile: 77.00
+
+Overall statistics:
+  Mean: 47.84
+  Std Dev: 29455.45
+
+Statistics for 5-95 percentile range:
+  Data points in range: 1097259 (95.1%)
+  Mean: 12.02
+  Std Dev: 15.88

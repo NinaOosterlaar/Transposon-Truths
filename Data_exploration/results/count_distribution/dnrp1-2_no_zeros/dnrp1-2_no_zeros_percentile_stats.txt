@@ -1,0 +1,20 @@
+Percentile Statistics for dnrp1-2
+============================================================
+Total positions: 510200
+Unique count values: 2087
+
+Percentiles:
+  5th percentile:  1.00
+  25th percentile: 4.00
+  50th percentile (median): 14.00
+  75th percentile: 48.00
+  95th percentile: 189.00
+
+Overall statistics:
+  Mean: 52.81
+  Std Dev: 301.77
+
+Statistics for 5-95 percentile range:
+  Data points in range: 484736 (95.0%)
+  Mean: 29.66
+  Std Dev: 39.00

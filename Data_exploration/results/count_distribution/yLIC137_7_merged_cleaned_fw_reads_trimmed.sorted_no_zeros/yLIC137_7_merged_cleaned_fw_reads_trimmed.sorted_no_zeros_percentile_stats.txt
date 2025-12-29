@@ -1,0 +1,20 @@
+Percentile Statistics for yLIC137_7_merged_cleaned_fw_reads_trimmed.sorted
+============================================================
+Total positions: 598687
+Unique count values: 1070
+
+Percentiles:
+  5th percentile:  1.00
+  25th percentile: 1.00
+  50th percentile (median): 3.00
+  75th percentile: 17.00
+  95th percentile: 81.00
+
+Overall statistics:
+  Mean: 91.42
+  Std Dev: 54783.55
+
+Statistics for 5-95 percentile range:
+  Data points in range: 569000 (95.0%)
+  Mean: 10.76
+  Std Dev: 16.11
