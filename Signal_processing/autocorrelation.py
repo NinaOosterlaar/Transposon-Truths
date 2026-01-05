@@ -189,7 +189,8 @@ def plot_acf_with_weights(acf_avg, w_sum, bin_size_bp=None, title="Average ACF",
     plt.xlabel(xlab)
     plt.ylabel("Autocorrelation")
     plt.title(title)
-    plt.grid(True, which="both", ls="--")
+    plt.locator_params(axis="x", nbins=8)
+    plt.grid(True, which="major", ls="--")
     plt.savefig(os.path.join(output_folder, "average_acf.png"))
 
     # --- Plot total contributing pairs (reliability) ---
@@ -200,8 +201,8 @@ def plot_acf_with_weights(acf_avg, w_sum, bin_size_bp=None, title="Average ACF",
     plt.yscale("log") 
     plt.xlabel(xlab)
     plt.ylabel("Total contributing pairs")
-    plt.title(title + " (pair counts per lag)")
-    plt.grid(True, which="both", ls="--")
+    plt.locator_params(axis="x", nbins=8)
+    plt.grid(True, which="major", ls="--")
     plt.savefig(os.path.join(output_folder, "average_acf_pair_counts.png"))
     
 def parse_arguments():
