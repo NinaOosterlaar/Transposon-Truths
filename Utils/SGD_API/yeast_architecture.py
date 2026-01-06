@@ -108,9 +108,72 @@ def create_nucleosome_dict(input_file, output_dir):
         with open(file_path, 'w') as f:
             json.dump(nucleosomes[chrom], f, indent=4)
 
+
+def create_nucleosome_dict_nature(input_file, output_dir, nucleosome_width=147):
+    """Create a dictionary of nucleosome positions for each chromosome from Nature file.
+    
+    The Nature file format (2013 data) contains:
+    - chromosome name (e.g., 'chrI')
+    - nucleosome center position
+    - occupancy value
+    
+    A separate file is created for each chromosome in the specified directory.
+    The nucleosome_width parameter defines the typical nucleosome size (default 147 bp).
+    """
+    nucleosomes = {}
+    
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            parts = line.strip().split()
+            if len(parts) < 3:
+                continue
+            
+            chrom = parts[0]
+            if chrom not in nucleosomes:
+                nucleosomes[chrom] = []
+            
+            middle = int(parts[1])
+            
+            # Calculate start and end positions based on nucleosome width
+            # Assuming the position is the center
+            half_width = nucleosome_width // 2
+            start = middle - half_width
+            end = middle + half_width
+            
+            # All nucleosomes from this dataset are considered not fuzzy
+            fuzzy = False
+            
+            nucleosomes[chrom].append((start, middle, end, fuzzy))
+    
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    # Save nucleosome positions for each chromosome
+    for chrom in nucleosomes:
+        print(chrom)
+        # Convert chromosome name from 'chrI', 'chrII', etc. to Roman numerals
+        number = chrom.replace("chr", "")
+        if number.upper() in ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI"]:
+            chrom_name = number.upper()
+        else:
+            # Handle numeric format (e.g., 'chr1' -> 'I')
+            try:
+                chrom_name = mapping_to_roman[int(number)]
+            except (ValueError, KeyError):
+                print(f"Warning: Could not convert chromosome name: {chrom}")
+                continue
+        
+        # Save nucleosome positions (same format as 2009 data)
+        file_path = os.path.join(output_dir, f"Chr{chrom_name}.json")
+        with open(file_path, 'w') as f:
+            json.dump(nucleosomes[chrom], f, indent=4)
+        
+
         
 class Centromeres:
-    def __init__(self, centromere_file = "SGD_API/architecture_info/centromeres.json"):
+    def __init__(self, centromere_file = "Utils/SGD_API/architecture_info/centromeres.json"):
         with open(centromere_file, 'r') as f:
             self.centromeres = json.load(f)
     
@@ -179,9 +242,10 @@ class Centromeres:
         
     
 class Nucleosomes:
-    def __init__(self, nucleosome_dir="SGD_API/nucleosome_data/"):
+    def __init__(self, nucleosome_dir="Utils/SGD_API/nucleosome_data/2013/"):
         """Load all chromosome nucleosome files from a directory."""
         self.nucleosomes = {}
+        print(nucleosome_dir)
         for chrom in chromosome_length.keys():
             file_path = os.path.join(nucleosome_dir, f"{chrom}.json")
             if os.path.exists(file_path):
@@ -239,7 +303,7 @@ class Nucleosomes:
         return int(min_distance)
     
     
-    def compute_exposure(self, chrom, folder = "SGD_API/nucleosome_data/"):
+    def compute_exposure(self, chrom, folder = "Utils/SGD_API/nucleosome_data/2013/"):
         """ Compute how often each distance from a nucleosome occurs on a chromosome
         
         Args:
@@ -267,3 +331,15 @@ class Nucleosomes:
             return distance_counts
 
 
+if __name__ == "__main__":
+    # Example usage: Create 2013 nucleosome data from Nature file
+    # nature_file = "Utils/SGD_API/nucleosome_data/41586_2012_BFnature11142_MOESM263_ESM.txt"
+    # output_dir_2013 = "Utils/SGD_API/nucleosome_data/2013"
+    
+    # # Create the 2013 nucleosome dictionary
+    # create_nucleosome_dict_nature(nature_file, output_dir_2013)
+    # print(f"\n2013 nucleosome data created successfully in {output_dir_2013}")
+    nucleosomes = Nucleosomes()
+    for chrom in chromosome_length.keys():
+        exposure = nucleosomes.compute_exposure(chrom)
+        print(f"Computed exposure for {chrom}, number of unique distances: {len(exposure)}")
