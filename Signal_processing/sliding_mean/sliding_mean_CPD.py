@@ -77,11 +77,8 @@ def save_results(output_folder, dataset_name, change_points, means, sigmas, wind
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Apply a sliding window mean change point detection algorithm on discrete count data.")
-#     parser.add_argument("input_file", type=str, help="Path to the input CSV file containing the count data.")
-#     parser.add_argument("--window_size", type=int, default=30, help="Size of the sliding window.")
-#     parser.add_argument("--overlap", type=float, default=0.5, help="Fractional overlap between windows (0 to 1).")
-#     parser.add_argument("--threshold", type=float, default=3, help="Threshold for change point detection based on z-score.")
-#     parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean_CPD", help="Output folder for results.")
+    parser.add_argument("input_file", type=str, help="Path to the input CSV file containing the count data.")
+    parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean_CPD", help="Output folder for results.")
     parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
     return parser.parse_args()
 
