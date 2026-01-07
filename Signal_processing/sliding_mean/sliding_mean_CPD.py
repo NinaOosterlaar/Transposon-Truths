@@ -75,30 +75,29 @@ def save_results(output_folder, dataset_name, change_points, means, sigmas, wind
         f.write(f"window_size: {window_size}, overlap: {overlap}, threshold: {threshold}\n")
     
 
-# def parse_arguments():
-#     parser = argparse.ArgumentParser(description="Apply a sliding window mean change point detection algorithm on discrete count data.")
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Apply a sliding window mean change point detection algorithm on discrete count data.")
 #     parser.add_argument("input_file", type=str, help="Path to the input CSV file containing the count data.")
 #     parser.add_argument("--window_size", type=int, default=30, help="Size of the sliding window.")
 #     parser.add_argument("--overlap", type=float, default=0.5, help="Fractional overlap between windows (0 to 1).")
 #     parser.add_argument("--threshold", type=float, default=3, help="Threshold for change point detection based on z-score.")
 #     parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean_CPD", help="Output folder for results.")
-#     parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
-#     return parser.parse_args()
+    parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    # args = parse_arguments()
-    # input_file = args.input_file
-    # window_size = args.window_size
-    # overlap = args.overlap
-    # threshold = args.threshold
-    # output_folder = args.output_folder
-    input_file = "Signal_processing/sample_data/pretty_data.csv"
+    args = parse_arguments()
+    input_file = args.input_file
     window_size = [10, 30, 50, 80]
     overlap = 0.5
-    thresholds = np.linspace(2, 6, 20) 
-    output_folder = "Signal_processing/results/sliding_mean_CPD"
-    dataset_name = "pretty_data"
+    thresholds = np.concatenate([
+        np.linspace(0.5, 2, 8),   # Low thresholds for high recall
+        np.linspace(2, 6, 15),     # Your current range
+        np.linspace(6, 10, 8)      # High thresholds for high precision
+    ])
+    output_folder = args.output_folder
+    dataset_name = args.dataset_name
     
     # Read data
     # datasets = read_csv_file_with_distances(input_file)
@@ -106,9 +105,11 @@ if __name__ == "__main__":
         lines = f.readlines()[1:]  # Skip header
         data = [int(line.strip().split(",")[1]) for line in lines]
     for ws in window_size:
+        # Create a subfolder for each window size
+        window_output_folder = os.path.join(output_folder, f"window{ws}")
         for threshold in thresholds:
             print(f"Processing window size: {ws}, threshold: {threshold:.2f}")
             change_points, means, sigma = sliding_mean_CPD(data, ws, overlap, threshold)
-            save_results(output_folder, dataset_name, change_points, means, sigma, ws, overlap, threshold)
+            save_results(window_output_folder, dataset_name, change_points, means, sigma, ws, overlap, threshold)
     
     
