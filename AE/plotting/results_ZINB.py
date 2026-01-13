@@ -11,7 +11,7 @@ from AE.plotting.plot_helper import generate_prefix, prepare_output_dirs, clip_h
 
 # Set up standardized plot style
 setup_plot_style()
-    
+""" 
     **Variance from ZINB**: variance = μ + μ²/θ
 """
 
