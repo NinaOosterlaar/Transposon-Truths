@@ -120,6 +120,8 @@ def standardize_data(train_data, val_data, test_data, features, standardize_valu
         if feature in feature_to_column:
             features_to_standardize.append(feature)
     
+    print(f"Standardizing features: {features_to_standardize}")
+    
     # For each feature, fit scaler on training data
     for feature in features_to_standardize:
         column_name = feature_to_column[feature]
@@ -503,6 +505,8 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
             # Add chromosome column (categorical encoding)
             cols_to_keep.append('Chromosome')
         
+        print(f"Column order in final array (Random split): {cols_to_keep}")
+        
         # Filter columns for each segment
         for dataset in processed_segments:
             for chrom in processed_segments[dataset]:
@@ -569,6 +573,8 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
             # Add chromosome column (categorical encoding)
             cols_to_keep.append('Chromosome')
         
+        print(f"Column order in final array (Dataset/Chrom split): {cols_to_keep}")
+        
         # For ZINB mode, add raw counts and size factor columns at the end
         if zinb_mode:
             cols_to_keep.append('Value_Raw')
@@ -628,7 +634,7 @@ def remove_empty_datapoints(data):
     return filtered_data
             
 def preprocess(input_folder, 
-               features = ['Pos', 'Chrom', 'Nucl', 'Centr'], 
+               features = ['Nucl', 'Centr'], 
                train_val_test_split = [0.7, 0.15, 0.15], 
                split_on = 'Dataset',
                chunk_size = 50000,

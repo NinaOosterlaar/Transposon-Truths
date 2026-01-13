@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0-6
+#SBATCH --array=0-5
 
 set -euo pipefail
 
