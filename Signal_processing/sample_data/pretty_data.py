@@ -1,5 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from Utils.plot_config import setup_plot_style, COLORS
+
+# Set up standardized plot style
+setup_plot_style()
 import pandas as pd
 
 
@@ -99,9 +106,9 @@ if __name__ == "__main__":
     )
         positions = np.arange(len(counts))
         plt.figure(figsize=(12, 3))
-        plt.bar(positions, counts, width=1.0, color="black")
+        plt.bar(positions, counts, width=1.0, color=COLORS['black'])
         for b in boundaries[:-1]:
-            plt.axvline(b + 0.5, linestyle="--", color="gray", linewidth=1)
+            plt.axvline(b + 0.5, linestyle="--", color=COLORS['red'], linewidth=1)
         plt.xlabel("Position")
         plt.ylabel("Count")
         plt.title("Randomly Generated Gaussian Counts")

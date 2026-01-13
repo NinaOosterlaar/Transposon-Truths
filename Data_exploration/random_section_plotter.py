@@ -1,8 +1,14 @@
 import os
+import sys
 import random
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.plot_config import setup_plot_style, COLORS
+
+# Set up standardized plot style
+setup_plot_style()
 
 
 def get_all_datasets(base_path):

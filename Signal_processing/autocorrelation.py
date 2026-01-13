@@ -3,8 +3,12 @@ import os, sys
 import matplotlib.pyplot as plt
 import csv
 import argparse
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from Utils.reader import read_csv_file_with_distances
+
+# Set up standardized plot style
+setup_plot_style()
 
 def fisher_z(r):
     # guard against exactly +/-1

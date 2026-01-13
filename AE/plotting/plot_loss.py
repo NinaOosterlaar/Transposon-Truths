@@ -1,8 +1,14 @@
 import os
+import sys
 from datetime import datetime
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from AE.plotting.plot_helper import generate_prefix, prepare_output_dirs
 import matplotlib.pyplot as plt
 import json
+
+# Set up standardized plot style
+setup_plot_style()
 
 
 def plot_training_loss(losses, model_type='AE', save_path=None, 
@@ -95,7 +101,7 @@ def plot_binary_training_loss(losses, model_type='AE_binary',
     plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
     
     plt.figure(figsize=(10, 6))
-    plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color='purple')
+    plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['pink'])
     plt.xlabel('Epoch')
     plt.ylabel('Loss (BCE)')
     plt.title(f'{model_type}: Training Loss (Binary Cross-Entropy) over Epochs')
@@ -168,7 +174,7 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
         
         axes[0].plot(range(1, len(losses) + 1), losses, marker='o', 
-                    linewidth=2, color='purple', label='Total Loss')
+                    linewidth=2, color=COLORS['pink'], label='Total Loss')
         axes[0].set_xlabel('Epoch')
         axes[0].set_ylabel('Loss')
         axes[0].set_title(f'{model_type}: Total Training Loss')
@@ -176,7 +182,7 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         axes[0].legend()
         
         axes[1].plot(range(1, len(recon_losses) + 1), recon_losses, marker='s', 
-                    linewidth=2, color='blue', label='Reconstruction Loss')
+                    linewidth=2, color=COLORS['blue'], label='Reconstruction Loss')
         axes[1].set_xlabel('Epoch')
         axes[1].set_ylabel('ZINB NLL')
         axes[1].set_title(f'{model_type}: Reconstruction Loss (ZINB NLL)')
@@ -184,7 +190,7 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         axes[1].legend()
         
         axes[2].plot(range(1, len(kl_losses) + 1), kl_losses, marker='^', 
-                    linewidth=2, color='red', label='KL Divergence')
+                    linewidth=2, color=COLORS['red'], label='KL Divergence')
         axes[2].set_xlabel('Epoch')
         axes[2].set_ylabel('KL Divergence')
         axes[2].set_title(f'{model_type}: KL Divergence')
@@ -199,11 +205,11 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         # Also create a combined plot
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         ax.plot(range(1, len(losses) + 1), losses, marker='o', 
-               linewidth=2, color='purple', label='Total Loss')
+               linewidth=2, color=COLORS['pink'], label='Total Loss')
         ax.plot(range(1, len(recon_losses) + 1), recon_losses, marker='s', 
-               linewidth=2, color='blue', alpha=0.7, label='Recon Loss')
+               linewidth=2, color=COLORS['blue'], alpha=0.7, label='Recon Loss')
         ax.plot(range(1, len(kl_losses) + 1), kl_losses, marker='^', 
-               linewidth=2, color='red', alpha=0.7, label='KL Loss')
+               linewidth=2, color=COLORS['red'], alpha=0.7, label='KL Loss')
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Loss')
         ax.set_title(f'{model_type}: Training Losses over Epochs')
@@ -219,7 +225,7 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
     else:
         # Simple plot for ZINBAE
         plt.figure(figsize=(10, 6))
-        plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color='blue')
+        plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['blue'])
         plt.xlabel('Epoch')
         plt.ylabel('Loss (ZINB NLL)')
         plt.title(f'{model_type}: Training Loss (ZINB NLL) over Epochs')

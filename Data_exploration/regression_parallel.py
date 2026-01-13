@@ -8,10 +8,13 @@ import sys
 import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from Utils.reader import read_csv_file_with_distances
+from Utils.plot_config import setup_plot_style, COLORS, NUCLEOSOME_CENTROMERE
 from multiprocessing import Pool, Process
 import pickle
 import gc  # For explicit memory cleanup
 
+# Set up standardized plot style
+setup_plot_style()
 
 
 def ZINB_regression(Y, X, Z = None, offset = None, p = 2, exposure = None, method = 'lbfgs', regularized = None, alpha = 1.0):
@@ -383,9 +386,9 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     # ---------- 5. Create overview plot with 4 subplots (2x2 grid) ----------
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     
-    bar_color = '#3498db'  # Single blue color for all bars
-    nucleosome_color = '#e74c3c'  # Red for nucleosome
-    centromere_color = '#2ecc71'  # Green for centromere
+    bar_color = COLORS['blue']  # Single blue color for all bars
+    nucleosome_color = NUCLEOSOME_CENTROMERE['nucleosome']  # Red for nucleosome
+    centromere_color = NUCLEOSOME_CENTROMERE['centromere']  # Green for centromere
     
     x_pos = np.arange(len(datasets))
     
@@ -393,9 +396,9 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax = axes[0, 0]
     ax.bar(x_pos, pi_const, color=bar_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
-    ax.set_title('Zero-probability: baseline π', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Probability of structural zero', fontsize=10)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Zero-probability: baseline π', fontweight='bold')
+    ax.set_ylabel('Probability of structural zero')
     ax.grid(True, alpha=0.3, axis='y')
     ax.set_ylim(0, 1)
     
@@ -408,12 +411,13 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax.bar(x_pos_nuc, pi_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
     ax.bar(x_pos_cent, pi_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
-    ax.set_title('Zero-probability odds ratio', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Odds ratio per unit distance', fontsize=10)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Zero-probability odds ratio', fontweight='bold')
+    ax.set_ylabel('Odds ratio per unit distance')
     ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3, axis='y')
-    ax.legend(loc='best', fontsize=9)
+    ax.legend(loc='best')
+    ax.set_ylim(0, 2)
     
     # Add std dev info as text
     std_text_lines = []
@@ -422,7 +426,7 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
             std_text_lines.append(f"{ds}: σ_nuc={std_values[ds]['nucleosome_std']:.2f}, σ_cent={std_values[ds]['centromere_std']:.2f}")
     if std_text_lines:
         std_text = "Standard deviations:\n" + "\n".join(std_text_lines[:5])  # Show first 5 to avoid crowding
-        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=7,
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes,
                 verticalalignment='top', horizontalalignment='right',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
     
@@ -430,9 +434,9 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax = axes[1, 0]
     ax.bar(x_pos, count_const, color=bar_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
-    ax.set_title('Count: baseline mean', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Baseline expected mean', fontsize=10)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Count: baseline mean', fontweight='bold')
+    ax.set_ylabel('Baseline expected mean')
     ax.grid(True, alpha=0.3, axis='y')
     
     # Plot 4: Count: Fold Change (bottom-right)
@@ -440,16 +444,17 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax.bar(x_pos_nuc, count_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
     ax.bar(x_pos_cent, count_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
-    ax.set_title('Count: Fold Change', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Fold Change per unit distance', fontsize=10)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Count: Fold Change', fontweight='bold')
+    ax.set_ylabel('Fold Change per unit distance')
     ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3, axis='y')
-    ax.legend(loc='best', fontsize=9)
+    ax.legend(loc='best')
+    ax.set_ylim(0, max(count_nuc + count_cent) * 1.05)
     
     # Add std dev info as text
     if std_text_lines:
-        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=7,
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes,
                 verticalalignment='top', horizontalalignment='right',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
     
@@ -459,16 +464,16 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
                  max([v for v in pi_cent if np.isfinite(v)] or [1]))
     or_min = min(min([v for v in pi_nuc if np.isfinite(v)] or [1]), 
                  min([v for v in pi_cent if np.isfinite(v)] or [1]))
-    axes[0, 1].set_ylim(or_min * 0.95, or_max * 1.05)
+    axes[0, 1].set_ylim(0, max(2, or_max * 1.05))
     
     # Fold Change plots should have same y-axis
     fc_max = max(max([v for v in count_nuc if np.isfinite(v)] or [1]), 
                  max([v for v in count_cent if np.isfinite(v)] or [1]))
     fc_min = min(min([v for v in count_nuc if np.isfinite(v)] or [1]), 
                  min([v for v in count_cent if np.isfinite(v)] or [1]))
-    axes[1, 1].set_ylim(fc_min * 0.95, fc_max * 1.05)
+    axes[1, 1].set_ylim(0, fc_max * 1.05)
     
-    plt.suptitle('ZINB Regression Parameters by Dataset', fontsize=16, y=0.995)
+    plt.suptitle('ZINB Regression Parameters by Dataset', y=0.995)
     plt.tight_layout()
     plt.savefig(output_file.replace(f".png", f"_overview.png"), dpi=300, bbox_inches='tight')
     plt.close()
@@ -480,9 +485,9 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.bar(x_pos, pi_const, color=bar_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
-    ax.set_title('Zero-probability: baseline π', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Probability of structural zero', fontsize=11)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Zero-probability: baseline π', fontweight='bold')
+    ax.set_ylabel('Probability of structural zero')
     ax.grid(True, alpha=0.3, axis='y')
     ax.set_ylim(0, 1)
     plt.tight_layout()
@@ -495,17 +500,17 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax.bar(x_pos_nuc, pi_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
     ax.bar(x_pos_cent, pi_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
-    ax.set_title('Zero-probability odds ratio', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Odds ratio per unit distance', fontsize=11)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Zero-probability odds ratio', fontweight='bold')
+    ax.set_ylabel('Odds ratio per unit distance')
     ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3, axis='y')
-    ax.legend(loc='best', fontsize=10)
+    ax.legend(loc='best')
     ax.set_ylim(0, 2)
     
     # Add std dev info
     if std_text_lines:
-        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=8,
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes,
                 verticalalignment='top', horizontalalignment='right',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
     
@@ -518,9 +523,9 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.bar(x_pos, count_const, color=bar_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
-    ax.set_title('Count: baseline mean', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Baseline expected mean', fontsize=11)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Count: baseline mean', fontweight='bold')
+    ax.set_ylabel('Baseline expected mean')
     ax.grid(True, alpha=0.3, axis='y')
     plt.tight_layout()
     plt.savefig(output_file.replace(f".png", f"_baseline_mean.png"), dpi=300, bbox_inches='tight')
@@ -532,17 +537,17 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax.bar(x_pos_nuc, count_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
     ax.bar(x_pos_cent, count_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
-    ax.set_title('Count: Fold Change', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Fold Change per unit distance', fontsize=11)
+    ax.set_xticklabels(datasets, rotation=45, ha='right')
+    ax.set_title('Count: Fold Change', fontweight='bold')
+    ax.set_ylabel('Fold Change per unit distance')
     ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3, axis='y')
-    ax.legend(loc='best', fontsize=10)
-    ax.set_ylim(fc_min * 0.95, fc_max * 1.05)
+    ax.legend(loc='best')
+    ax.set_ylim(0, fc_max * 1.05)
     
     # Add std dev info
     if std_text_lines:
-        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=8,
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes,
                 verticalalignment='top', horizontalalignment='right',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
     

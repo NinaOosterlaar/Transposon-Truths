@@ -3,11 +3,15 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 import json
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from Utils.SGD_API.genome import Genome
 from Utils.reader import read_wig, label_from_filename
 import math
 from collections import defaultdict, Counter
+
+# Set up standardized plot style
+setup_plot_style()
 from statistics import mean, stdev
 
 def _revcomp(s: str) -> str:

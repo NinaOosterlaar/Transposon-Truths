@@ -5,8 +5,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns  
 from tqdm import tqdm
 import pandas as pd
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from Utils.reader import read_wig, label_from_filename
+
+# Set up standardized plot style
+setup_plot_style()
 
 
 yeast_chrom_lengths = {

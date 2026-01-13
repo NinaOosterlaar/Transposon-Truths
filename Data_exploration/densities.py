@@ -3,8 +3,12 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt 
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from Utils.SGD_API.yeast_architecture import Nucleosomes
+
+# Set up standardized plot style
+setup_plot_style()
 # import statsmodels.api as sm
 # from statsmodels.gam.api import GLMGam, BSplines
 

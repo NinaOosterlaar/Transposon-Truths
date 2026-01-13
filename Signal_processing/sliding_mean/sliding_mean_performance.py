@@ -3,6 +3,11 @@ import os, sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from Utils.plot_config import setup_plot_style, COLORS
+
+# Set up standardized plot style
+setup_plot_style()
     
 
 # Precision/recall curve or ROC curve
@@ -90,24 +95,24 @@ def plot_change_points_overlay(data, detected_cps, true_cps, start_pos, end_pos,
     # Plot true change points in the range
     true_in_range = [cp for cp in true_cps if start_pos <= cp <= end_pos]
     for cp in true_in_range:
-        plt.axvline(x=cp, color='green', linestyle='--', linewidth=2, alpha=0.7)
+        plt.axvline(x=cp, color=COLORS['green'], linestyle='--', linewidth=2, alpha=0.7)
     
     # Plot detected change points in the range
     detected_in_range = [cp for cp in detected_cps if start_pos <= cp <= end_pos]
     for cp in detected_in_range:
-        plt.axvline(x=cp, color='red', linestyle='-', linewidth=1.5, alpha=0.7)
+        plt.axvline(x=cp, color=COLORS['red'], linestyle='-', linewidth=1.5, alpha=0.7)
     
     # Create custom legend
     from matplotlib.lines import Line2D
     legend_elements = [
-        Line2D([0], [0], color='b', linewidth=1, label='Signal'),
-        Line2D([0], [0], color='green', linestyle='--', linewidth=2, label='True change points'),
-        Line2D([0], [0], color='red', linestyle='-', linewidth=1.5, label='Detected change points')
+        Line2D([0], [0], color=COLORS['blue'], linewidth=1, label='Signal'),
+        Line2D([0], [0], color=COLORS['green'], linestyle='--', linewidth=2, label='True change points'),
+        Line2D([0], [0], color=COLORS['red'], linestyle='-', linewidth=1.5, label='Detected change points')
     ]
     
-    plt.xlabel('Position', fontsize=12)
-    plt.ylabel('Count', fontsize=12)
-    plt.title(f'Change Point Detection (Window={window_size}, Threshold={threshold:.2f})', fontsize=14)
+    plt.xlabel('Position')
+    plt.ylabel('Count')
+    plt.title(f'Change Point Detection (Window={window_size}, Threshold={threshold:.2f})')
     plt.legend(handles=legend_elements, loc='upper right')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -304,9 +309,9 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
                 plt.plot(window_data['recall'], window_data['precision'], 
                         marker='o', label=f'Window {window_size}', linewidth=2, markersize=4)
         
-        plt.xlabel('Recall', fontsize=12)
-        plt.ylabel('Precision', fontsize=12)
-        plt.title(f'Precision-Recall Curve (Tolerance: {tol_name})', fontsize=14)
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title(f'Precision-Recall Curve (Tolerance: {tol_name})')
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.xlim([0, 1.05])

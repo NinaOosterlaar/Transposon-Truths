@@ -6,15 +6,11 @@ import sys
 import json
 from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
+from Utils.plot_config import setup_plot_style, COLORS
 from AE.plotting.plot_helper import generate_prefix, prepare_output_dirs, clip_hi
 
-"""
-    **Notes about results**
-    - all_originals: Normalized log counts (NOT used for main comparisons)
-    - all_reconstructions_mu: Predicted mean parameter μ (in RAW COUNT SPACE)
-    - all_raw_counts: Raw count data before normalization (PRIMARY comparison target)
-    - all_theta: Dispersion parameter (θ > 0, controls variance)
-    - all_pi: Zero-inflation probability (0 < π < 1, represents P(zero))
+# Set up standardized plot style
+setup_plot_style()
     
     **Variance from ZINB**: variance = μ + μ²/θ
 """
@@ -25,7 +21,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
         
         # Theta distribution
         theta_flat = all_theta.flatten()
-        axes[0, 0].hist(theta_flat, bins=100, alpha=0.7, color='blue', edgecolor='black')
+        axes[0, 0].hist(theta_flat, bins=100, alpha=0.7, color=COLORS['blue'], edgecolor='black')
         axes[0, 0].set_xlabel('Dispersion (θ)')
         axes[0, 0].set_ylabel('Frequency')
         axes[0, 0].set_title(f'{model_type}: Distribution of Dispersion θ\n(Controls variance: smaller θ = larger variance)')
@@ -37,7 +33,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
         # Pi distribution
         pi_flat = all_pi.flatten()
         axes[0, 1].set_yscale('log')
-        axes[0, 1].hist(pi_flat, bins=100, alpha=0.7, color='orange', edgecolor='black')
+        axes[0, 1].hist(pi_flat, bins=100, alpha=0.7, color=COLORS['orange'], edgecolor='black')
         axes[0, 1].set_xlabel('Zero-inflation Probability (π)')
         axes[0, 1].set_ylabel('Frequency')
         axes[0, 1].set_title(f'{model_type}: Distribution of Zero-inflation π\n(Probability of structural zero)')
@@ -49,7 +45,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
         # Mean (mu) distribution
         mu_flat = all_reconstructions_mu.flatten()
         mu_log = np.log1p(np.clip(mu_flat, 0, None))
-        axes[0, 2].hist(mu_log, bins=100, alpha=0.7, color='green', edgecolor='black')
+        axes[0, 2].hist(mu_log, bins=100, alpha=0.7, color=COLORS['green'], edgecolor='black')
         axes[0, 2].set_xlabel('log1p Mean (μ)')
         axes[0, 2].set_ylabel('Frequency')
         axes[0, 2].set_title(f'{model_type}: Distribution of Mean μ')
@@ -69,7 +65,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
                 clip_note = f" (clipped at p{clip_q}={var_hi:.2g})"
 
             # var_log = np.log1p(np.clip(var_plot, 0, None))
-            axes[1, 0].hist(var_plot, bins=100, alpha=0.7, color='purple', edgecolor='black')
+            axes[1, 0].hist(var_plot, bins=100, alpha=0.7, color=COLORS['pink'], edgecolor='black')
             axes[1, 0].set_xlabel('log1p(Variance = μ + μ²/θ)')
             axes[1, 0].set_ylabel('Frequency')
             # y-axis log scale
@@ -94,7 +90,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
                 clip_note = f" (clipped at p{clip_q}={vmr_hi:.2g})"
 
             # vmr_log = np.log1p(np.clip(vmr_plot, 0, None))
-            axes[1, 1].hist(vmr_plot, bins=100, alpha=0.7, color='teal', edgecolor='black')
+            axes[1, 1].hist(vmr_plot, bins=100, alpha=0.7, color=COLORS['light_blue'], edgecolor='black')
             axes[1, 1].set_xlabel('log1p(Variance-to-Mean Ratio)')
             axes[1, 1].set_ylabel('Frequency')
             # y-axis log scale

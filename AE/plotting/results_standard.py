@@ -4,8 +4,12 @@ from sklearn.metrics import mean_absolute_error, r2_score, confusion_matrix, roc
 import os, sys
 import json
 from datetime import datetime
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from AE.plotting.plot_helper import generate_prefix, prepare_output_dirs
+
+# Set up standardized plot style
+setup_plot_style()
 
 
 def plot_test_results(all_originals, all_reconstructions, model_type='AE', 

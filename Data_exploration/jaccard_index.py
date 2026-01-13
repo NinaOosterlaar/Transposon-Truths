@@ -5,7 +5,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from Utils.plot_config import setup_plot_style, COLORS
 from Utils.reader import read_wig, label_from_filename
+
+# Set up standardized plot style
+setup_plot_style()
                     
 chromosome_length = {
     "ChrI": 230218,

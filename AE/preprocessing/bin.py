@@ -3,11 +3,10 @@ import sys, os
 import matplotlib.pyplot as plt
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
+from Utils.plot_config import setup_plot_style, COLORS
 
-def bin_data(data, bin_size, method = 'average'):
-    """Bin data into specified bin size using the given method.
-    The transposon count should be binned together and then the mean of the features should be taken. 
-    Only bins non-padded values and updates the actual_length accordingly.
+# Set up standardized plot style
+setup_plot_style()
     The shape of arrays is reduced to reflect the binning (maximum_region_size / bin_size).
     
     Args:
