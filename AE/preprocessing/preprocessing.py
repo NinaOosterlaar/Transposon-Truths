@@ -105,8 +105,10 @@ def standardize_data(train_data, val_data, test_data, features, standardize_valu
     scalers = {}
     
     # Features to standardize (exclude only 'Chrom')
+    features_to_standardize = []
     if standardize_value:
-        features_to_standardize = ['Value']  # Always standardize Value
+        features_to_standardize.append('Value')  # Always standardize Value
+    
     feature_to_column = {
         'Value': 'Value',
         'Pos': 'Position',
