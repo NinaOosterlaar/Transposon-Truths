@@ -451,8 +451,8 @@ def parser_args():
                         help='Subdirectory name for organizing results (e.g., "small_data"). Creates AE/results/training/<subdir>/ and AE/results/testing/<subdir>/')
     parser.add_argument('--denoise_percent', type=float, default=0,
                         help='Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0, default: 0.3)')
-    parser.add_argument('--sample_fraction', type=float, default=0.25,
-                        help='Fraction of data to randomly sample for training (0.0 to 1.0, default: 0.25)')
+    parser.add_argument('--sample_fraction', type=float, default=0.5,
+                        help='Fraction of data to randomly sample for training (0.0 to 1.0, default: 0.5)')
     parser.add_argument('--no_test', action='store_true',
                         help='Evaluate on training data instead of test data')
     parser.add_argument('--chrom', action='store_true', help='Whether to use chromosome embedding')
