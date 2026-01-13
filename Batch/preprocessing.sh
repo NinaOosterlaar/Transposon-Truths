@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=preprocessing
+#SBATCH --job-name=test
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=02:00:00
+#SBATCH --time=00:10:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=100G
@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0-6
+#SBATCH --array=0
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
 
-BINS=(5 10 20 30 50 75 100)
+BINS=(5)
 MA_FLAGS=("--no_moving_average")
 
 BIN_IDX=$((SLURM_ARRAY_TASK_ID / ${#MA_FLAGS[@]}))
@@ -33,7 +33,7 @@ srun apptainer exec \
   --bind "$PROJECT_DIR":/workspace \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
-  python AE/preprocessing.py \
+  python AE/preprocessing/preprocessing.py \
     --bin "$BIN" \
     --zinb_mode \
     "${MA_FLAG}" \
