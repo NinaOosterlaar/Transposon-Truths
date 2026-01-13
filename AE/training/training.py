@@ -486,7 +486,7 @@ if __name__ == "__main__":
     else:
         test_input_path = input_path + filename + "test_data.npy"
         print("Loading test data from:", test_input_path)
-        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=False, binary=args.binary, zinb=is_zinb)
+        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb)
     
     # Print size of train data
     num_train_samples = len(train_dataloader.dataset)

@@ -5,6 +5,7 @@ import statsmodels.api as sm
 import pandas as pd
 from math import exp
 import sys
+import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from Utils.reader import read_csv_file_with_distances
 from multiprocessing import Pool, Process
@@ -222,7 +223,15 @@ def _logistic(x: float) -> float:
         return z / (1.0 + z)
 
 
-def plot_regression_results(folder, output_file, transform: bool = False) -> None:
+def _natural_sort_key(text):
+    """
+    Generate a key for natural sorting that handles numbers correctly.
+    E.g., FD7 comes before FD12 instead of FD12 before FD7.
+    """
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', text)]
+
+
+def plot_regression_results(folder, output_file, transform: bool = False, input_folder: str = "Data_exploration/results/distances_with_zeros") -> None:
     """
     Generate plots for regression results stored in the specified folder.
 
@@ -235,6 +244,7 @@ def plot_regression_results(folder, output_file, transform: bool = False) -> Non
                             - other inflate_* -> odds ratio (exp)
                             - count_const -> baseline mean (exp)
                             - other count_* -> fold-change (exp)
+        input_folder (str): Path to the original data folder to compute standard deviations
     """
 
     # ---------- 1. Read all summaries ----------
@@ -260,8 +270,8 @@ def plot_regression_results(folder, output_file, transform: bool = False) -> Non
                                 params[key] = value
                 regression_results[dataset_name] = params
 
-    # ---------- 2. Extract parameters ----------
-    datasets = list(regression_results.keys())
+    # ---------- 2. Extract parameters and sort with natural sorting ----------
+    datasets = sorted(list(regression_results.keys()), key=_natural_sort_key)
 
     # raw values from file
     raw_pi_const = [regression_results[ds].get('inflate_const', np.nan) for ds in datasets]
@@ -350,118 +360,198 @@ def plot_regression_results(folder, output_file, transform: bool = False) -> Non
         count_const, count_nuc, count_cent
     ]
 
-    # ---------- 4. Heatmap ----------
-    param_data = np.array(all_param_lists, dtype=float)
+    # ---------- 4. Compute standard deviations from input data ----------
+    std_values = {}
+    try:
+        datasets_data = read_csv_file_with_distances(input_folder)
+        for dataset_name in datasets:
+            if dataset_name in datasets_data:
+                df_all = pd.concat(datasets_data[dataset_name].values(), ignore_index=True)
+                df_all = df_all.dropna(subset=["Value", "Nucleosome_Distance", "Centromere_Distance"]).copy()
+                df_all["Centromere_Distance"] = df_all["Centromere_Distance"] / 1000.0
+                
+                std_values[dataset_name] = {
+                    'nucleosome_std': df_all["Nucleosome_Distance"].std(),
+                    'centromere_std': df_all["Centromere_Distance"].std()
+                }
+    except Exception as e:
+        print(f"Warning: Could not compute standard deviations: {e}")
+        # Use default values if data is not available
+        for dataset_name in datasets:
+            std_values[dataset_name] = {'nucleosome_std': 1.0, 'centromere_std': 1.0}
 
-    fig, ax = plt.subplots(figsize=(max(12, len(datasets) * 0.4), 8))
-    im = ax.imshow(param_data, aspect='auto', cmap='RdBu_r', interpolation='nearest')
-
-    ax.set_xticks(np.arange(len(datasets)))
-    ax.set_yticks(np.arange(len(param_names)))
-    ax.set_xticklabels(datasets, rotation=45, ha='right')
-    ax.set_yticklabels(param_names)
-
-    cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label(heatmap_label, rotation=270, labelpad=20)
-
-    # annotate heatmap cells
-    for i in range(len(param_names)):
-        for j in range(len(datasets)):
-            val = param_data[i, j]
-            txt = f'{val:.2f}' if np.isfinite(val) else 'NA'
-            ax.text(j, i, txt,
-                    ha="center", va="center", color="black", fontsize=8)
-
-    title_suffix = " (transformed)" if transform else " (raw coef)"
-    ax.set_title('ZINB Regression Parameters by Dataset - Heatmap' + title_suffix,
-                 fontsize=14, pad=20)
-
+    # ---------- 5. Create overview plot with 4 subplots (2x2 grid) ----------
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    
+    bar_color = '#3498db'  # Single blue color for all bars
+    nucleosome_color = '#e74c3c'  # Red for nucleosome
+    centromere_color = '#2ecc71'  # Green for centromere
+    
+    x_pos = np.arange(len(datasets))
+    
+    # Plot 1: Zero-probability: baseline pi (top-left)
+    ax = axes[0, 0]
+    ax.bar(x_pos, pi_const, color=bar_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
+    ax.set_title('Zero-probability: baseline π', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Probability of structural zero', fontsize=10)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.set_ylim(0, 1)
+    
+    # Plot 2: Zero-probability odds ratio (top-right)
+    ax = axes[0, 1]
+    bar_width = 0.35
+    x_pos_nuc = x_pos - bar_width/2
+    x_pos_cent = x_pos + bar_width/2
+    
+    ax.bar(x_pos_nuc, pi_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
+    ax.bar(x_pos_cent, pi_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
+    ax.set_title('Zero-probability odds ratio', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Odds ratio per unit distance', fontsize=10)
+    ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.legend(loc='best', fontsize=9)
+    
+    # Add std dev info as text
+    std_text_lines = []
+    for ds in datasets:
+        if ds in std_values:
+            std_text_lines.append(f"{ds}: σ_nuc={std_values[ds]['nucleosome_std']:.2f}, σ_cent={std_values[ds]['centromere_std']:.2f}")
+    if std_text_lines:
+        std_text = "Standard deviations:\n" + "\n".join(std_text_lines[:5])  # Show first 5 to avoid crowding
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=7,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+    
+    # Plot 3: Count: baseline mean (bottom-left)
+    ax = axes[1, 0]
+    ax.bar(x_pos, count_const, color=bar_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
+    ax.set_title('Count: baseline mean', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Baseline expected mean', fontsize=10)
+    ax.grid(True, alpha=0.3, axis='y')
+    
+    # Plot 4: Count: Fold Change (bottom-right)
+    ax = axes[1, 1]
+    ax.bar(x_pos_nuc, count_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
+    ax.bar(x_pos_cent, count_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=9)
+    ax.set_title('Count: Fold Change', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Fold Change per unit distance', fontsize=10)
+    ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.legend(loc='best', fontsize=9)
+    
+    # Add std dev info as text
+    if std_text_lines:
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=7,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+    
+    # Match axes for related plots
+    # OR plots should have same y-axis
+    or_max = max(max([v for v in pi_nuc if np.isfinite(v)] or [1]), 
+                 max([v for v in pi_cent if np.isfinite(v)] or [1]))
+    or_min = min(min([v for v in pi_nuc if np.isfinite(v)] or [1]), 
+                 min([v for v in pi_cent if np.isfinite(v)] or [1]))
+    axes[0, 1].set_ylim(or_min * 0.95, or_max * 1.05)
+    
+    # Fold Change plots should have same y-axis
+    fc_max = max(max([v for v in count_nuc if np.isfinite(v)] or [1]), 
+                 max([v for v in count_cent if np.isfinite(v)] or [1]))
+    fc_min = min(min([v for v in count_nuc if np.isfinite(v)] or [1]), 
+                 min([v for v in count_cent if np.isfinite(v)] or [1]))
+    axes[1, 1].set_ylim(fc_min * 0.95, fc_max * 1.05)
+    
+    plt.suptitle('ZINB Regression Parameters by Dataset', fontsize=16, y=0.995)
     plt.tight_layout()
-    plt.savefig(output_file.replace(f".png", f"_heatmap_{transform}.png"), dpi=300, bbox_inches='tight')
+    plt.savefig(output_file.replace(f".png", f"_overview.png"), dpi=300, bbox_inches='tight')
     plt.close()
 
-    # ---------- 5. Dot plot ----------
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, max(6, len(datasets) * 0.3)))
-    y_pos = np.arange(len(datasets))
-
-    # Inflate
-    ax1.plot(pi_const, y_pos, 'o', label=param_names[0], markersize=8, alpha=0.7)
-    ax1.plot(pi_nuc,   y_pos, 's', label=param_names[1], markersize=8, alpha=0.7)
-    ax1.plot(pi_cent,  y_pos, '^', label=param_names[2], markersize=8, alpha=0.7)
-    ax1.set_yticks(y_pos)
-    ax1.set_yticklabels(datasets)
-    ax1.set_xlabel(heatmap_label)
-    ax1.set_title('Inflate Parameters' + title_suffix)
-    ax1.legend(fontsize=8)
-    ax1.grid(True, alpha=0.3, axis='x')
-
-    # show reference line:
-    if transform:
-        # neutral odds/fold-change is 1
-        ax1.axvline(x=1.0, color='gray', linestyle='--', alpha=0.5)
-    else:
-        ax1.axvline(x=0.0, color='gray', linestyle='--', alpha=0.5)
-
-    # Count
-    ax2.plot(count_const, y_pos, 'o', label=param_names[3], markersize=8, alpha=0.7)
-    ax2.plot(count_nuc,   y_pos, 's', label=param_names[4], markersize=8, alpha=0.7)
-    ax2.plot(count_cent,  y_pos, '^', label=param_names[5], markersize=8, alpha=0.7)
-    ax2.set_yticks(y_pos)
-    ax2.set_yticklabels(datasets)
-    ax2.set_xlabel(heatmap_label)
-    ax2.set_title('Count Parameters' + title_suffix)
-    ax2.legend(fontsize=8)
-    ax2.grid(True, alpha=0.3, axis='x')
-
-    if transform:
-        ax2.axvline(x=1.0, color='gray', linestyle='--', alpha=0.5)
-    else:
-        ax2.axvline(x=0.0, color='gray', linestyle='--', alpha=0.5)
-
-    plt.suptitle('ZINB Regression Parameters by Dataset' + title_suffix,
-                 fontsize=14, y=1.02)
+    print(f"✓ Generated overview plot: {output_file.replace(f'.png', f'_overview.png')}")
+    
+    # ---------- 6. Create individual plots ----------
+    # Plot 1: Zero-probability: baseline pi
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(x_pos, pi_const, color=bar_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
+    ax.set_title('Zero-probability: baseline π', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Probability of structural zero', fontsize=11)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.set_ylim(0, 1)
     plt.tight_layout()
-    plt.savefig(output_file.replace(f".png", f"_dotplot_{transform}.png"), dpi=300, bbox_inches='tight')
+    plt.savefig(output_file.replace(f".png", f"_baseline_pi.png"), dpi=300, bbox_inches='tight')
     plt.close()
-
-    # ---------- 6. Detailed bar subplots ----------
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.flatten()
-
-    params_to_plot = [
-        (pi_const, 0, param_names[0]),
-        (pi_nuc,   1, param_names[1]),
-        (pi_cent,  2, param_names[2]),
-        (count_const, 3, param_names[3]),
-        (count_nuc,   4, param_names[4]),
-        (count_cent,  5, param_names[5]),
-    ]
-
-    colors = plt.cm.viridis(np.linspace(0, 1, len(datasets)))
-
-    for (values, idx, title), ax in zip(params_to_plot, axes):
-        x_pos = np.arange(len(datasets))
-        ax.barh(x_pos, values, color=colors, alpha=0.7)
-        ax.set_yticks(x_pos)
-        ax.set_yticklabels(datasets, fontsize=8)
-        ax.set_title(title)
-        ax.set_xlabel(detailed_xlabel[idx])
-
-        # reference line (0 in raw space, 1 in transformed ratio space)
-        zl = zero_line_for_bars[idx]
-        if zl is not None:
-            ax.axvline(x=zl, color='gray', linestyle='--', alpha=0.5)
-
-        ax.grid(True, alpha=0.3, axis='x')
-
-    plt.suptitle('ZINB Regression Parameters - Detailed View' + title_suffix,
-                 fontsize=16, y=1.00)
+    print(f"✓ Generated individual plot: {output_file.replace(f'.png', f'_baseline_pi.png')}")
+    
+    # Plot 2: Zero-probability odds ratio
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(x_pos_nuc, pi_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
+    ax.bar(x_pos_cent, pi_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
+    ax.set_title('Zero-probability odds ratio', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Odds ratio per unit distance', fontsize=11)
+    ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.legend(loc='best', fontsize=10)
+    ax.set_ylim(or_min * 0.95, or_max * 1.05)
+    
+    # Add std dev info
+    if std_text_lines:
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=8,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+    
     plt.tight_layout()
-    plt.savefig(output_file.replace(f".png", f"_detailed_{transform}.png"), dpi=300, bbox_inches='tight')
+    plt.savefig(output_file.replace(f".png", f"_odds_ratio.png"), dpi=300, bbox_inches='tight')
     plt.close()
-
-    print("✓ Generated 3 visualization types:",
-          "_heatmap.png, _dotplot.png, _detailed.png")
+    print(f"✓ Generated individual plot: {output_file.replace(f'.png', f'_odds_ratio.png')}")
+    
+    # Plot 3: Count: baseline mean
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(x_pos, count_const, color=bar_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
+    ax.set_title('Count: baseline mean', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Baseline expected mean', fontsize=11)
+    ax.grid(True, alpha=0.3, axis='y')
+    plt.tight_layout()
+    plt.savefig(output_file.replace(f".png", f"_baseline_mean.png"), dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✓ Generated individual plot: {output_file.replace(f'.png', f'_baseline_mean.png')}")
+    
+    # Plot 4: Count: Fold Change
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(x_pos_nuc, count_nuc, bar_width, label='Nucleosome', color=nucleosome_color, alpha=0.7)
+    ax.bar(x_pos_cent, count_cent, bar_width, label='Centromere', color=centromere_color, alpha=0.7)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(datasets, rotation=45, ha='right', fontsize=10)
+    ax.set_title('Count: Fold Change', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Fold Change per unit distance', fontsize=11)
+    ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.legend(loc='best', fontsize=10)
+    ax.set_ylim(fc_min * 0.95, fc_max * 1.05)
+    
+    # Add std dev info
+    if std_text_lines:
+        ax.text(0.98, 0.98, std_text, transform=ax.transAxes, fontsize=8,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+    
+    plt.tight_layout()
+    plt.savefig(output_file.replace(f".png", f"_fold_change.png"), dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✓ Generated individual plot: {output_file.replace(f'.png', f'_fold_change.png')}")
+    
+    print(f"\n✓ Generated 5 plots total: 1 overview + 4 individual plots")
     
 def retrieve_average_parameters(folder):
     """
@@ -516,8 +606,8 @@ def retrieve_average_parameters(folder):
             
 
 if __name__ == "__main__":
-    # plot_regression_results("Data_exploration/results/regression/linear", "Data_exploration/results/regression/linear/regression_parameters.png", transform=False)
-    print(retrieve_average_parameters("Data_exploration/results/regression/linear"))
+    plot_regression_results("Data_exploration/results/regression/linear", "Data_exploration/results/regression/linear/regression_parameters.png", transform=True)
+    # print(retrieve_average_parameters("Data_exploration/results/regression/linear"))
     # out_dir = "Data_exploration/results/regression/linear"
     # # Run per-dataset with immediate writes
     # regression_results = perform_regression_on_datasets(
@@ -535,4 +625,4 @@ if __name__ == "__main__":
     #     write_immediately=True,
     # )
 
-   
+    

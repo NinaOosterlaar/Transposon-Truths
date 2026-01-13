@@ -119,8 +119,8 @@ class ZINBAE(nn.Module):
         
         theta_logits = self.theta_layer(D)
         theta = torch.clamp(theta_logits, min=-20, max=10)  # Clamp before exp
-        # theta = torch.exp(theta)    # (batch, seq_length), positive
-        theta = torch.nn.functional.softplus(self.theta_layer(D)) + 1e-4
+        theta = torch.exp(theta)    # (batch, seq_length), positive
+        # theta = torch.nn.functional.softplus(self.theta_layer(D)) + 1e-4
         
         pi = torch.sigmoid(self.pi_layer(D))
         pi = pi.clamp(1e-5, 1 - 1e-5)
@@ -260,7 +260,9 @@ class ZINBVAE(nn.Module):
 
         # theta via softplus (positive, stable)
         theta_logits = self.theta_layer(D)
-        theta = torch.nn.functional.softplus(theta_logits) + 1e-4
+        theta = torch.clamp(theta_logits, min=-20, max=10)
+        theta = torch.exp(theta)
+        # theta = torch.nn.functional.softplus(theta_logits) + 1e-4
 
         # dropout / zero-inflation probability
         pi = torch.sigmoid(self.pi_layer(D))

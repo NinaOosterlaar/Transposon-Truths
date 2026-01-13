@@ -47,10 +47,15 @@ def read_true_params(file_path):
     """Read true change point parameters from a CSV file with region parameters.
     
     Calculates change points from cumulative sum of region lengths.
+    Works with both pretty_data_params.csv and realistic_data_params.csv formats.
     """
     
     # Read the CSV file with region parameters
     df = pd.read_csv(file_path)
+    
+    # Check if 'region_lengths' column exists (should be in both formats)
+    if 'region_lengths' not in df.columns:
+        raise ValueError(f"Column 'region_lengths' not found in {file_path}. Available columns: {df.columns.tolist()}")
     
     # Get region lengths and round them to integers
     region_lengths = df['region_lengths'].values
@@ -65,14 +70,149 @@ def read_true_params(file_path):
     # Return as a list (excluding the last point which is the end of the data)
     return change_points[:-1].tolist()
 
-def evaluate_all_windows_and_thresholds():
-    """Evaluate precision, recall, and F1 for all window sizes and thresholds."""
+def read_data(data_file):
+    """Read the signal data from CSV file."""
+    with open(data_file, "r") as f:
+        lines = f.readlines()[1:]  # Skip header
+        data = np.array([int(line.strip().split(",")[1]) for line in lines])
+    return data
+
+def plot_change_points_overlay(data, detected_cps, true_cps, start_pos, end_pos, 
+                                window_size, threshold, output_path):
+    """Plot a section of data with detected and true change points overlaid."""
+    plt.figure(figsize=(15, 6))
+    
+    # Plot the data
+    positions = np.arange(start_pos, end_pos)
+    data_section = data[start_pos:end_pos]
+    plt.plot(positions, data_section, 'b-', linewidth=0.8, label='Data', alpha=0.7)
+    
+    # Plot true change points in the range
+    true_in_range = [cp for cp in true_cps if start_pos <= cp <= end_pos]
+    for cp in true_in_range:
+        plt.axvline(x=cp, color='green', linestyle='--', linewidth=2, alpha=0.7)
+    
+    # Plot detected change points in the range
+    detected_in_range = [cp for cp in detected_cps if start_pos <= cp <= end_pos]
+    for cp in detected_in_range:
+        plt.axvline(x=cp, color='red', linestyle='-', linewidth=1.5, alpha=0.7)
+    
+    # Create custom legend
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='b', linewidth=1, label='Signal'),
+        Line2D([0], [0], color='green', linestyle='--', linewidth=2, label='True change points'),
+        Line2D([0], [0], color='red', linestyle='-', linewidth=1.5, label='Detected change points')
+    ]
+    
+    plt.xlabel('Position', fontsize=12)
+    plt.ylabel('Count', fontsize=12)
+    plt.title(f'Change Point Detection (Window={window_size}, Threshold={threshold:.2f})', fontsize=14)
+    plt.legend(handles=legend_elements, loc='upper right')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+def create_overlay_plots(dataset_name='pretty_data', num_plots=5, section_length=5000, 
+                         base_results_folder=None):
+    """Create overlay plots showing detected vs true change points on random sections of data."""
+    
+    # Setup paths
+    data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
+    param_file = f"Signal_processing/sample_data/{dataset_name}_params.csv"
+    
+    # If base_results_folder not provided, try dataset-specific folder first, then fall back to general folder
+    if base_results_folder is None:
+        dataset_specific_folder = f"Signal_processing/results/sliding_mean_CPD/{dataset_name}"
+        general_folder = "Signal_processing/results/sliding_mean_CPD"
+        
+        if os.path.exists(dataset_specific_folder):
+            base_results_folder = dataset_specific_folder
+        elif os.path.exists(general_folder):
+            base_results_folder = general_folder
+        else:
+            print(f"Error: Could not find results folder for {dataset_name}")
+            print(f"Tried: {dataset_specific_folder} and {general_folder}")
+            return
+    
+    output_plots_folder = f"Signal_processing/results/overlay_plots/{dataset_name}"
+    
+    os.makedirs(output_plots_folder, exist_ok=True)
+    
+    # Read data and true change points
+    data = read_data(data_file)
+    true_cps = read_true_params(param_file)
+    data_length = len(data)
+    
+    print(f"Data length: {data_length}")
+    print(f"Number of true change points: {len(true_cps)}")
+    
+    # Get all window folders
+    window_folders = [f for f in os.listdir(base_results_folder) 
+                     if os.path.isdir(os.path.join(base_results_folder, f)) and f.startswith("window")]
+    window_folders.sort()
+    
+    # For each window, select a few representative thresholds
+    for window_folder in window_folders:
+        window_size = int(window_folder.replace("window", ""))
+        window_path = os.path.join(base_results_folder, window_folder)
+        
+        # Get all result files and select a few thresholds
+        result_files = sorted([f for f in os.listdir(window_path) if f.endswith('.txt')])
+        
+        if len(result_files) == 0:
+            continue
+        
+        # Select low, medium, high thresholds
+        indices = [0, len(result_files)//2, -1]
+        selected_files = [result_files[i] for i in indices if i < len(result_files)]
+        
+        for result_file in selected_files:
+            # Extract threshold
+            match = re.search(r'th(\d+\.\d+)', result_file)
+            if not match:
+                continue
+            threshold = float(match.group(1))
+            
+            # Read detected change points
+            file_path = os.path.join(window_path, result_file)
+            detected_cps = read_change_points(file_path)
+            
+            print(f"Window {window_size}, Threshold {threshold:.2f}: {len(detected_cps)} detected CPs")
+            
+            # Generate random sections for overlay plots
+            for plot_idx in range(num_plots):
+                # Select a random starting position
+                max_start = max(0, data_length - section_length)
+                start_pos = np.random.randint(0, max_start + 1) if max_start > 0 else 0
+                end_pos = min(start_pos + section_length, data_length)
+                
+                # Create output filename
+                output_filename = f"overlay_ws{window_size}_th{threshold:.2f}_section{plot_idx+1}.png"
+                output_path = os.path.join(output_plots_folder, output_filename)
+                
+                # Create the plot
+                plot_change_points_overlay(data, detected_cps, true_cps, start_pos, end_pos,
+                                          window_size, threshold, output_path)
+            
+            print(f"  Created {num_plots} overlay plots for window={window_size}, threshold={threshold:.2f}")
+    
+    print(f"\nOverlay plots saved to {output_plots_folder}")
+
+def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
+    """Evaluate precision, recall, and F1 for all window sizes and thresholds.
+    
+    Args:
+        dataset_name: Name of the dataset to evaluate (e.g., 'pretty_data', 'realistic_data')
+    """
 
     # Setup paths
-    true_param_file = "Signal_processing/sample_data/pretty_data_params.csv"
-    base_results_folder = "Signal_processing/results/sliding_mean_CPD"
-    output_csv = "Signal_processing/results/performance_metrics.csv"
-    output_plots_folder = "Signal_processing/results/performance_plots"
+    true_param_file = f"Signal_processing/sample_data/{dataset_name}_params.csv"
+    base_results_folder = f"Signal_processing/results/sliding_mean_CPD/{dataset_name}"
+    output_csv = f"Signal_processing/results/performance_metrics_{dataset_name}.csv"
+    output_plots_folder = f"Signal_processing/results/performance_plots/{dataset_name}"
     
     # Create output folder for plots
     os.makedirs(output_plots_folder, exist_ok=True)
@@ -181,7 +321,19 @@ def evaluate_all_windows_and_thresholds():
 
 
 if __name__ == "__main__":
-    results_df = evaluate_all_windows_and_thresholds()
+    # Specify which dataset to analyze
+    dataset_name = 'realistic_data'  # Change to 'realistic_data' to analyze the other dataset
+    
+    # Evaluate performance metrics
+    print(f"Analyzing dataset: {dataset_name}")
+    print("="*50)
+    results_df = evaluate_all_windows_and_thresholds(dataset_name=dataset_name)
     print("\nSummary statistics:")
     print(results_df.groupby(['window_size', 'tolerance_type'])[['precision', 'recall', 'F1']].mean())
+    
+    # # Create overlay plots for visualization
+    # print("\n" + "="*50)
+    # print("Creating overlay plots...")
+    # print("="*50)
+    # create_overlay_plots(dataset_name=dataset_name, num_plots=3, section_length=5000)
     
