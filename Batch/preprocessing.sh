@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=test
+#SBATCH --job-name=preprocessing
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=00:10:00
@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0
+#SBATCH --array=0-6
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
 
-BINS=(5)
+BINS=(5 10 20 50 75 100)
 MA_FLAGS=("--no_moving_average")
 
 BIN_IDX=$((SLURM_ARRAY_TASK_ID / ${#MA_FLAGS[@]}))
