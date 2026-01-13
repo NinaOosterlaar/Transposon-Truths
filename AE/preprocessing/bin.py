@@ -7,6 +7,10 @@ from Utils.plot_config import setup_plot_style, COLORS
 
 # Set up standardized plot style
 setup_plot_style()
+
+def bin_data(data, bin_size, method, maximum_region_size):
+    """Bin all data in the dictionary to reduce data dimensionality.
+    
     The shape of arrays is reduced to reflect the binning (maximum_region_size / bin_size).
     
     Args:

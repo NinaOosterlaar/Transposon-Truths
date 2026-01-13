@@ -10,8 +10,6 @@ from Utils.reader import read_csv_file_with_distances
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-replicate_names = ["FD7", "FD9", "dnrp1-1", "dnrp1-2"]
-
 chromosome_length = {
     "ChrI": 230218,
     "ChrII": 813184,
