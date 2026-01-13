@@ -501,7 +501,7 @@ def plot_regression_results(folder, output_file, transform: bool = False, input_
     ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3, axis='y')
     ax.legend(loc='best', fontsize=10)
-    ax.set_ylim(or_min * 0.95, or_max * 1.05)
+    ax.set_ylim(0, 2)
     
     # Add std dev info
     if std_text_lines:

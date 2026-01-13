@@ -18,4 +18,5 @@ From: pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime
         scikit-learn \
         seaborn \
         sgd-rest --upgrade \
-        statsmodels
+        statsmodels \
+        bayesian-optimization

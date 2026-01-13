@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) 
+from Utils.reader import read_csv_file_with_distances
 
 # Mapping of replicate names to their strain folders
 replicate_to_strain = {
@@ -309,7 +310,15 @@ def combine_strain_datasets(input_folder, output_folder, method="average"):
 
 
 if __name__ == "__main__":
+    data = read_csv_file_with_distances("Data/distances_with_zeros")
     # Example usage: Combine all biological replicates within each strain
+    combine_replicates(
+        data=data,  # Load your data dictionary here
+        replicate_names=["FD7", "FD9", "dnrp1-1", "dnrp1-2"],
+        method="average",
+        save=True,
+        output_folder="Data/combined_replicates/"
+    )
     combine_strain_datasets(
         input_folder="Data/combined_replicates",
         output_folder="Data/combined_strains",
