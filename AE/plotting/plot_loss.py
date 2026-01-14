@@ -225,7 +225,7 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
     else:
         # Simple plot for ZINBAE
         plt.figure(figsize=(10, 6))
-        plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['blue'])
+        plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['black'])
         plt.xlabel('Epoch')
         plt.ylabel('Loss (ZINB NLL)')
         plt.title(f'{model_type}: Training Loss (ZINB NLL) over Epochs')

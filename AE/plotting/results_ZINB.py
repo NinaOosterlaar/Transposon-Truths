@@ -59,10 +59,10 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
             var_flat = np.asarray(all_variance).flatten()
             var_plot = var_flat
 
-            clip_note = ""
-            if clip_q is not None:
-                var_plot, var_hi = clip_hi(var_plot, q=clip_q)
-                clip_note = f" (clipped at p{clip_q}={var_hi:.2g})"
+            # clip_note = ""
+            # if clip_q is not None:
+            #     var_plot, var_hi = clip_hi(var_plot, q=clip_q)
+            #     clip_note = f" (clipped at p{clip_q}={var_hi:.2g})"
 
             # var_log = np.log1p(np.clip(var_plot, 0, None))
             axes[1, 0].hist(var_plot, bins=100, alpha=0.7, color=COLORS['pink'], edgecolor='black')
@@ -70,7 +70,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
             axes[1, 0].set_ylabel('Frequency')
             # y-axis log scale
             axes[1, 0].set_yscale('log')
-            axes[1, 0].set_title(f'{model_type}: Predicted Variance {clip_note}')
+            axes[1, 0].set_title(f'{model_type}: Predicted Variance ')
             axes[1, 0].grid(True, alpha=0.3)
         else:
             axes[1, 0].text(0.5, 0.5, 'Variance not available',
@@ -84,10 +84,10 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
             vmr[valid] = var_flat[valid] / mu_flat[valid]
 
             vmr_plot = vmr[valid]
-            clip_note = ""
-            if clip_q is not None and vmr_plot.size > 0:
-                vmr_plot, vmr_hi = clip_hi(vmr_plot, q=clip_q)
-                clip_note = f" (clipped at p{clip_q}={vmr_hi:.2g})"
+            # clip_note = ""
+            # if clip_q is not None and vmr_plot.size > 0:
+            #     vmr_plot, vmr_hi = clip_hi(vmr_plot, q=clip_q)
+            #     clip_note = f" (clipped at p{clip_q}={vmr_hi:.2g})"
 
             # vmr_log = np.log1p(np.clip(vmr_plot, 0, None))
             axes[1, 1].hist(vmr_plot, bins=100, alpha=0.7, color=COLORS['light_blue'], edgecolor='black')
@@ -95,7 +95,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
             axes[1, 1].set_ylabel('Frequency')
             # y-axis log scale
             axes[1, 1].set_yscale('log')
-            axes[1, 1].set_title(f'{model_type}: VMR {clip_note}')
+            axes[1, 1].set_title(f'{model_type}: VMR ')
             axes[1, 1].grid(True, alpha=0.3)
         else:
             axes[1, 1].text(0.5, 0.5, 'VMR not available',
@@ -111,7 +111,7 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
         axes[1, 2].hexbin(mu_flat, theta_flat, gridsize=50, cmap='YlOrRd', mincnt=1)
         axes[1, 2].set_xlabel('Mean (μ)')
         axes[1, 2].set_ylabel('Dispersion (θ)')
-        axes[1, 2].set_title(f'{model_type}: θ vs μ Relationship (μ clipped at p99.9={var_hi:.2f})')
+        axes[1, 2].set_title(f'{model_type}: θ vs μ Relationship')
         axes[1, 2].grid(True, alpha=0.3)
         
         plt.tight_layout()
@@ -119,14 +119,32 @@ def plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_
                     dpi=300, bbox_inches='tight')
         plt.close()
         
-def density_plots(actual_counts_flat, all_reconstructions_mu, residuals, comparison_label, model_type, save_dir, prefix, r2, mae):
+def density_plots(actual_counts_flat, all_reconstructions_mu, residuals, comparison_label, model_type, save_dir, prefix, r2, mae, all_pi=None):
     fig, axes = plt.subplots(1, 2, figsize=(18, 5))
 
     sample_indices = np.arange(0, actual_counts_flat.size, 10)
     recon_flat = all_reconstructions_mu.flatten()
     
-    axes[0].scatter(actual_counts_flat[sample_indices], recon_flat[sample_indices], 
-                   alpha=0.3, s=1, c='blue')
+    # Separate points by π threshold if available
+    if all_pi is not None:
+        pi_flat = all_pi.flatten()
+        high_pi_mask = pi_flat > 0.5
+        low_pi_mask = ~high_pi_mask
+        
+        # Sample from each group
+        low_pi_sample = sample_indices[low_pi_mask[sample_indices]]
+        high_pi_sample = sample_indices[high_pi_mask[sample_indices]]
+        
+        # Plot low π points (reliable mean predictions)
+        axes[0].scatter(actual_counts_flat[low_pi_sample], recon_flat[low_pi_sample], 
+                       alpha=0.3, s=1, c=COLORS['black'], label='π ≤ 0.5 (reliable μ)')
+        # Plot high π points (unreliable mean predictions)
+        axes[0].scatter(actual_counts_flat[high_pi_sample], recon_flat[high_pi_sample], 
+                       alpha=0.3, s=1, c=COLORS['orange'], label='π > 0.5 (structural zeros)')
+    else:
+        axes[0].scatter(actual_counts_flat[sample_indices], recon_flat[sample_indices], 
+                       alpha=0.3, s=1, c=COLORS['black'])
+    
     axes[0].plot([actual_counts_flat.min(), actual_counts_flat.max()], 
                 [actual_counts_flat.min(), actual_counts_flat.max()], 
                 'r--', lw=2, label='Perfect prediction')
@@ -136,15 +154,28 @@ def density_plots(actual_counts_flat, all_reconstructions_mu, residuals, compari
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     
+    # Residuals plot: exclude high π points
     residuals = actual_counts_flat - recon_flat
-    axes[1].hist(residuals[sample_indices], bins=100, alpha=0.7, 
-                color='purple', edgecolor='black')
-    axes[1].axvline(x=0, color='red', linestyle='--', linewidth=2)
-    axes[1].axvline(x=np.median(residuals), color='green', linestyle='--', 
-                   linewidth=2, label=f'Median: {np.median(residuals):.4f}')
+    if all_pi is not None:
+        pi_flat = all_pi.flatten()
+        low_pi_mask = pi_flat <= 0.5
+        residuals_filtered = residuals[low_pi_mask]
+        sample_indices_filtered = sample_indices[low_pi_mask[sample_indices]]
+        median_residual = np.median(residuals_filtered)
+        axes[1].hist(residuals_filtered[::10], bins=100, alpha=0.7, 
+                    color=COLORS['pink'], edgecolor='black')
+        axes[1].set_title(f'{model_type}: Residual Distribution (π ≤ 0.5 only)\n(MAE={mae:.4f})')
+    else:
+        median_residual = np.median(residuals)
+        axes[1].hist(residuals[sample_indices], bins=100, alpha=0.7, 
+                    color=COLORS['pink'], edgecolor='black')
+        axes[1].set_title(f'{model_type}: Residual Distribution\n(MAE={mae:.4f})')
+    
+    axes[1].axvline(x=0, color=COLORS['red'], linestyle='--', linewidth=2)
+    axes[1].axvline(x=median_residual, color=COLORS['green'], linestyle='--', 
+                   linewidth=2, label=f'Median: {median_residual:.4f}')
     axes[1].set_xlabel('Residuals (Actual - Predicted μ)')
     axes[1].set_ylabel('Frequency')
-    axes[1].set_title(f'{model_type}: Residual Distribution\n(MAE={mae:.4f})')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
     
@@ -209,13 +240,13 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
         mu_clipped, mu_hi = clip_hi(all_reconstructions_mu.flatten(), q=99.9)
         axes[1, 0].scatter(mu_clipped[actual_zeros], 
                           pi_flat[actual_zeros],
-                          alpha=0.3, s=5, label='Actual Zeros', color='blue')
+                          alpha=0.3, s=5, label='Actual Zeros', color=COLORS['blue'])
         axes[1, 0].scatter(mu_clipped[actual_nonzeros], 
                           pi_flat[actual_nonzeros],
-                          alpha=0.3, s=5, label='Actual Non-zeros', color='red')
+                          alpha=0.3, s=5, label='Actual Non-zeros', color=COLORS['red'])
         axes[1, 0].set_xlabel('Predicted Mean (μ)')
         axes[1, 0].set_ylabel('Zero-inflation Probability (π)')
-        axes[1, 0].set_title(f'{model_type}: π vs μ Relationship, (μ clipped at p99.9={mu_hi:.2f})')
+        axes[1, 0].set_title(f'{model_type}: π vs μ Relationship')
         axes[1, 0].legend()
         axes[1, 0].grid(True, alpha=0.3)   
         
@@ -266,9 +297,9 @@ def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, al
             actual_label = 'Actual (Normalized)'
         
         ax.plot(positions, actual_data, label=actual_label, 
-               linewidth=2, alpha=0.8, color='blue')
+               linewidth=2, alpha=0.8, color=COLORS['blue'])
         ax.plot(positions, all_reconstructions_mu[i], label='Predicted μ (Raw Counts)', 
-               linewidth=2, alpha=0.8, color='red', linestyle='--')
+               linewidth=2, alpha=0.8, color=COLORS['red'], linestyle='--')
         
         # Add uncertainty bands if variance available
         if all_variance is not None:
@@ -276,13 +307,13 @@ def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, al
             ax.fill_between(positions, 
                            all_reconstructions_mu[i] - std_dev,
                            all_reconstructions_mu[i] + std_dev,
-                           alpha=0.2, color='red', label='μ ± σ (uncertainty)')
+                           alpha=0.2, color=COLORS['red'], label='μ ± σ (uncertainty)')
         
         if all_pi is not None:
             zero_pred_mask = all_pi[i] > 0.5
             if np.any(zero_pred_mask):
                 ax.scatter(positions[zero_pred_mask], 
-                          np.zeros(np.sum(zero_pred_mask)), marker='x', s=30, color='orange', 
+                          np.zeros(np.sum(zero_pred_mask)), marker='x', s=30, color=COLORS['orange'], 
                           label='Predicted Zero (π>0.5)', zorder=5)
         
         if all_raw_counts is not None:
@@ -290,7 +321,7 @@ def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, al
             if np.any(actual_zero_mask):
                 ax.scatter(positions[actual_zero_mask], 
                           all_raw_counts[i][actual_zero_mask],
-                          marker='o', s=15, color='green', alpha=0.37,
+                          marker='o', s=15, color=COLORS['green'], alpha=0.37,
                           label='Actual Zero (raw)', zorder=4)
         
         ax.set_xlabel('Position')
@@ -480,7 +511,7 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
     plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_variance, 
                                  model_type=model_type, save_dir=save_dir, prefix=prefix)
     # 2. Actual vs Predicted with Density Plot (RAW COUNTS)
-    density_plots(actual_counts_flat, all_reconstructions_mu, residuals, comparison_label, model_type, save_dir, prefix, r2, mae)
+    density_plots(actual_counts_flat, all_reconstructions_mu, residuals, comparison_label, model_type, save_dir, prefix, r2, mae, all_pi)
     # 3. Zero-Inflation Analysis (if π available)
     zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts , 
                             model_type, save_dir, prefix)
