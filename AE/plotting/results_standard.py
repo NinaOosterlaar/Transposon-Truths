@@ -13,7 +13,7 @@ setup_plot_style()
 
 
 def plot_test_results(all_originals, all_reconstructions, model_type='AE', 
-                      save_dir=None, n_examples=5, metrics=None, use_conv=False, name=""):
+                      save_dir=None, n_examples=5, metrics=None, use_conv=False, name="", subdir="testing"):
     """
     Create comprehensive visualizations of test results for continuous models (AE, VAE).
     
@@ -128,7 +128,7 @@ def plot_test_results(all_originals, all_reconstructions, model_type='AE',
 
 def plot_binary_test_results(all_originals, all_reconstructions, all_probabilities, 
                              model_type='AE_binary', save_dir=None, 
-                             n_examples=5, metrics=None, use_conv=False, name=""):
+                             n_examples=5, metrics=None, use_conv=False, name="", subdir="testing"):
     """
     Create comprehensive visualizations of binary classification test results.
     
@@ -169,7 +169,7 @@ def plot_binary_test_results(all_originals, all_reconstructions, all_probabiliti
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     prefix = generate_prefix(model_type, timestamp, use_conv, name)
-    save_dir = prepare_output_dirs(save_dir, subdir='testing', name=name)
+    save_dir = prepare_output_dirs(save_dir, subdir=subdir, name=name)
     
     y_true = all_originals.flatten()
     y_pred = all_reconstructions.flatten()

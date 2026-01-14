@@ -3,7 +3,6 @@ import torch
 def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
     """
     Zero-Inflated Negative Binomial Negative Log-Likelihood loss.
-    Numerically stable version with additional safeguards.
     
     Parameters:
     -----------

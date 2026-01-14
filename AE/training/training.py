@@ -63,11 +63,13 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         raise ValueError("binary=True is not supported for ZINB models in this setup.")
     
     # Set criterion (not used for ZINB models)
+    # Use reduction='mean' to average over all elements (batch * seq_length)
+    # We'll also normalize KL by seq_length to make both losses "per-element" losses
     if not is_zinb:
         if binary:
-            criterion = nn.BCELoss(reduction='mean')  # Mean reduction per batch
+            criterion = nn.BCELoss(reduction='mean')  # Mean over all elements
         else:
-            criterion = nn.MSELoss(reduction='mean')  # Mean reduction per batch
+            criterion = nn.MSELoss(reduction='mean')  # Mean over all elements
     
     optimizer = optim.Adam(parameters, lr=learning_rate)
     
@@ -129,7 +131,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 if model.model_type == 'ZINBVAE':
                     mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
                     recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
-                    kl_loss = gaussian_kl(mu_z, logvar_z)
+                    # KL loss: divide by seq_length to get "per-element" KL
+                    kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
                     loss = recon_loss + beta * kl_loss
                 else:  # ZINBAE
                     mu, theta, pi, z = model(batch_input, size_factors)
@@ -138,16 +141,19 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
 
             elif is_vae:
                 recon_batch, z, mu, logvar = model(batch_input)
+                # Reconstruction loss: mean over all elements (batch * seq_length)
                 recon_loss = criterion(recon_batch, y_binary if binary else y)
-                kl_loss = gaussian_kl(mu, logvar)
+                # KL loss: divide by seq_length to get "per-element" KL, matching recon_loss scale
+                kl_loss = gaussian_kl(mu, logvar) / model.seq_length
                 loss = recon_loss + beta * kl_loss
 
             else:  # AE
                 recon_batch, z = model(batch_input)
+                # Reconstruction loss: mean over all elements (batch * seq_length)
                 recon_loss = criterion(recon_batch, y_binary if binary else y)
                 loss = recon_loss
 
-            # bookkeeping
+            # bookkeeping (recon_loss and kl_loss are already per-sample averages)
             epoch_recon_loss += recon_loss.item() * y.size(0)
             if kl_loss is not None:
                 epoch_kl_loss += kl_loss.item() * y.size(0)
@@ -214,9 +220,17 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
     
+    # Evaluate on training data to get reconstruction plots
+    print("\n" + "="*50)
+    print("EVALUATING ON TRAINING DATA")
+    print("="*50)
+    test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
+         plot=True, n_examples=5, beta=beta, binary=binary, name=name, 
+         denoise_percent=denoise_percent, eval_mode="training")
+    
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing"):
     """
     Test AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -240,6 +254,8 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         Whether to use binary AE/VAE models. Default=False
     denoise_percent : float
         Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
+    eval_mode : str
+        Either "testing" or "training" - determines subdirectory for saving plots. Default="testing"
     """
     model.to(device)
     model.eval()
@@ -265,11 +281,13 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     is_vae = getattr(model, "model_type", None) in {"VAE", "VAE_binary", "ZINBVAE"}
     
     # Set criterion (not used for ZINB models)
+    # Use reduction='mean' to average over all elements (batch * seq_length)
+    # We'll also normalize KL by seq_length to make both losses "per-element" losses
     if not is_zinb:
         if binary:
-            criterion = nn.BCELoss(reduction='mean')  # Mean reduction per batch
+            criterion = nn.BCELoss(reduction='mean')  # Mean over all elements
         else:
-            criterion = nn.MSELoss(reduction='mean')  # Mean reduction per batch
+            criterion = nn.MSELoss(reduction='mean')  # Mean over all elements
     
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Testing"):
@@ -324,7 +342,8 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 if model.model_type == "ZINBVAE":
                     mu, theta, pi, z, mu_z, logvar_z = out
                     recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
-                    kl_loss = gaussian_kl(mu_z, logvar_z)
+                    # KL loss: divide by seq_length to get "per-element" KL
+                    kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
                     loss = recon_loss + beta * kl_loss
                 else:  # ZINBAE
                     mu, theta, pi, z = out
@@ -336,12 +355,15 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
 
             elif is_vae:
                 recon_batch, z, mu, logvar = model(batch_input)
+                # Reconstruction loss: mean over all elements (batch * seq_length)
                 recon_loss = criterion(recon_batch, target)
-                kl_loss = gaussian_kl(mu, logvar)
+                # KL loss: divide by seq_length to get "per-element" KL
+                kl_loss = gaussian_kl(mu, logvar) / model.seq_length
                 loss = recon_loss + beta * kl_loss
 
             else:  # AE
                 recon_batch, z = model(batch_input)
+                # Reconstruction loss: mean over all elements (batch * seq_length)
                 recon_loss = criterion(recon_batch, target)
                 loss = recon_loss
 
@@ -418,7 +440,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_binary_test_results(all_originals, all_reconstructions, all_reconstructions,
-                                    model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name )
+                                    model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
         elif is_zinb:
             # Use special ZINB plotting function
             model_type_str = model.model_type
@@ -426,12 +448,12 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             plot_zinb_test_results(all_originals, all_reconstructions, 
                                   all_theta=all_theta, all_pi=all_pi, all_raw_counts=all_raw_counts,
                                   model_type=model_type_str, n_examples=n_examples, 
-                                  metrics=metrics, use_conv=use_conv, name=name)
+                                  metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             plot_test_results(all_originals, all_reconstructions, model_type=model_type_str, 
-                            n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name)
+                            n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
         
     return all_reconstructions, all_latents, metrics
 

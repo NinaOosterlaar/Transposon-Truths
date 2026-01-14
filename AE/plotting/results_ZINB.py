@@ -434,7 +434,7 @@ def metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, resid
 def plot_zinb_test_results(all_originals, all_reconstructions_mu, 
                            all_theta=None, all_pi=None, all_raw_counts=None,
                            model_type='ZINBAE', save_dir=None, 
-                           n_examples=10, metrics=None, use_conv=False, name=""):
+                           n_examples=10, metrics=None, use_conv=False, name="", subdir="testing"):
     """
     Create comprehensive visualizations specifically for ZINB models (ZINBAE/ZINBVAE).
     
@@ -481,7 +481,7 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     prefix = generate_prefix(model_type, timestamp, use_conv, name)
-    save_dir = prepare_output_dirs(save_dir, subdir='testing', name=name)
+    save_dir = prepare_output_dirs(save_dir, subdir=subdir, name=name)
     
     # Use RAW COUNTS for comparison
     if all_raw_counts is not None:

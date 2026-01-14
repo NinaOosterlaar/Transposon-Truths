@@ -56,14 +56,23 @@ class ChromosomeEmbedding(nn.Module):
         return self.embedding(x)
 
 
-def gaussian_kl(mu, logvar, reduction='mean'):
+def gaussian_kl(mu, logvar, reduction='mean', normalize_by_dims=None):
     """
     KL divergence between N(mu, sigma^2) and N(0, 1)
 
-    reduction:
+    Parameters:
+    -----------
+    mu : torch.Tensor
+        Mean of the latent distribution (batch_size, latent_dim)
+    logvar : torch.Tensor
+        Log variance of the latent distribution (batch_size, latent_dim)
+    reduction : str
         'mean'      : mean over batch (standard VAE loss)
         'sum'       : sum over batch
         'none'      : per-sample KL
+    normalize_by_dims : int, optional
+        If provided, divide KL by this number (e.g., seq_length) to match
+        the scale of reconstruction loss that averages over all output dimensions
     """
     logvar = torch.clamp(logvar, min=-20, max=10)
 
@@ -71,6 +80,10 @@ def gaussian_kl(mu, logvar, reduction='mean'):
         1 + logvar - mu.pow(2) - logvar.exp(),
         dim=1  # sum over latent dims
     )
+    
+    # Normalize by number of output dimensions to match reconstruction loss scale
+    if normalize_by_dims is not None:
+        kl = kl / normalize_by_dims
 
     if reduction == 'mean':
         return kl.mean()
