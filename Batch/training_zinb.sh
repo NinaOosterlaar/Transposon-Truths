@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=32G
-#SBATCH --gres=gpu
+#SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
@@ -27,6 +27,7 @@ MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}
 
 echo "Task ${SLURM_ARRAY_TASK_ID}: Training ${MODEL}"
 srun apptainer exec \
+  --nv \
   --bind "$PROJECT_DIR":/workspace \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
