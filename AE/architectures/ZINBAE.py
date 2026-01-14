@@ -254,13 +254,14 @@ class ZINBVAE(nn.Module):
         log_sf = torch.log(size_factors.clamp_min(1e-8))
 
         log_mu = mu_hat_logits + log_sf
-        mu = torch.exp(log_mu)
+        mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity
+        # mu = torch.exp(log_mu)
 
         # theta via softplus (positive, stable)
         theta_logits = self.theta_layer(D)
         theta = torch.clamp(theta_logits, min=-20, max=10)
-        theta = torch.exp(theta)
-        # theta = torch.nn.functional.softplus(theta_logits) + 1e-4
+        # theta = torch.exp(theta)
+        theta = torch.nn.functional.softplus(theta_logits) + 1e-4
 
         # dropout / zero-inflation probability
         pi = torch.sigmoid(self.pi_layer(D))
