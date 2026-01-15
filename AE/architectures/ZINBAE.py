@@ -107,20 +107,20 @@ class ZINBAE(nn.Module):
         # ZINB parameters with clamping to prevent overflow
         # Use softplus or clamped exp to prevent exploding values
         mu_hat_logits = self.mu_layer(D)                 # log-mean (unscaled)
-        # mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
+        mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
 
         if size_factors.dim() == 1:
             size_factors = size_factors.unsqueeze(1)
         log_sf = torch.log(size_factors.clamp_min(1e-8))
 
         log_mu = mu_hat_logits + log_sf
-        # mu = torch.exp(log_mu)
-        mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity 
+        mu = torch.exp(log_mu)
+        # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity 
         
         theta_logits = self.theta_layer(D)
         theta = torch.clamp(theta_logits, min=-20, max=10)
-        # theta = torch.exp(theta)    # (batch, seq_length), positive
-        theta = torch.nn.functional.softplus(theta) + 1e-4
+        theta = torch.exp(theta)    # (batch, seq_length), positive
+        # theta = torch.nn.functional.softplus(theta) + 1e-4
         
         pi = torch.sigmoid(self.pi_layer(D))
         pi = pi.clamp(1e-5, 1 - 1e-5)
@@ -254,14 +254,14 @@ class ZINBVAE(nn.Module):
         log_sf = torch.log(size_factors.clamp_min(1e-8))
 
         log_mu = mu_hat_logits + log_sf
-        mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity
-        # mu = torch.exp(log_mu)
+        # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity
+        mu = torch.exp(log_mu)
 
         # theta via softplus (positive, stable)
         theta_logits = self.theta_layer(D)
         theta = torch.clamp(theta_logits, min=-20, max=10)
-        # theta = torch.exp(theta)
-        theta = torch.nn.functional.softplus(theta) + 1e-4
+        theta = torch.exp(theta)
+        # theta = torch.nn.functional.softplus(theta) + 1e-4
 
         # dropout / zero-inflation probability
         pi = torch.sigmoid(self.pi_layer(D))
