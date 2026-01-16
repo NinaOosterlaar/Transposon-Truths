@@ -11,7 +11,7 @@ class ZINBAE(nn.Module):
         conv_channels=64,
         pool_size=2,
         kernel_size=3,
-        padding=1,
+        padding='same',
         stride=1,
     ):
         super().__init__()

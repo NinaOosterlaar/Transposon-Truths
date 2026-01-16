@@ -560,11 +560,11 @@ if __name__ == "__main__":
         else:   
             vae_model = VAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=0)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent)
         
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=0)
+                                                             plot=True, n_examples=5, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent)
     
     if args.model in ['ZINBAE', 'all']:
         if args.model == 'all':
@@ -575,11 +575,11 @@ if __name__ == "__main__":
         print("="*60)
         zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=0.3)
+                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent)
         
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                                      plot=True, n_examples=5, name=results_subdir, denoise_percent=0)
+                                                                      plot=True, n_examples=5, name=results_subdir, denoise_percent=args.denoise_percent)
     
     if args.model in ['ZINBVAE', 'all']:
         if args.model == 'all':
@@ -590,8 +590,8 @@ if __name__ == "__main__":
         print("="*60)
         zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=0)
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent)
         
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, denoise_percent=0)
+                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent)

@@ -16,3 +16,38 @@ from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
 from AE.training.loss_functions import zinb_nll
 from AE.training.training_utils import ChromosomeEmbedding, add_noise, dataloader_from_array, gaussian_kl
 
+# Preprocessing hyperparameters
+FEATURES = [["Pos", "Centr", "Nucl"], ["Pos", "Centr"], ["Pos", "Nucl"], ["Centr", "Nucl"], ["Pos"], ["Centr"], ["Nucl"]]
+SEQUENCE_LENGTHS = [500, 1000, 2000, 3000, 5000, 10000]
+STEP_SIZES = [1/20, 1/10, 1/5, 1/2, 1]  # relative sequence lengths
+BIN_SIZES = [5, 10, 20, 50, 75, 100]
+
+# Model Architecture hyperparameters
+MODEL_TYPE = ["ZINBAE", "ZINBVAE"]
+LAYERS = [[512, 256, 128], [256, 128, 64], [128, 64, 32]
+          ]
+
+# Convolutional Layer hyperparameters
+USE_CONV = [True, False]
+CONV_CHANNELS = [16, 32, 64, 128]
+POOL_SIZES = [2, 4, 8]
+POOLING_OPERATIONS = ['max', 'avg']
+KERNEL_SIZES = [3, 5, 7, 9, 11, 13]
+PADDING = ['same', 'valid']
+STRIDE = [1, 2, 3]
+
+# Training hyperparameters
+EPOCHS = [30, 50, 70, 100, 150]
+BATCH_SIZES = [32, 64, 128, 256]
+NOISE_LEVELS = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
+KL_BETA = [0.1, 0.5, 1.0, 1.5, 2.0]
+OPTIMIZERS = ['adam', 'sgd', 'rmsprop']
+LEARNING_RATES = [1e-2, 1e-3, 1e-4, 1e-5]
+DROPOUT_RATES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+
+# Regularization hyperparameters
+REGULARIZATIONS = ["l1", "l2", "none"]
+REGULARIZATION_WEIGHTS = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+
+
+
