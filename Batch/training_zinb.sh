@@ -1,4 +1,4 @@
-# or: vim training_zinb.sh#!/bin/bash
+#!/bin/sh
 #SBATCH --job-name=AE
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
