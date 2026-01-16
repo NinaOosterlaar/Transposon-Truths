@@ -1,0 +1,114 @@
+Task 0: Training ZINBAE
+Device: cuda
+Loading training data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_train_data.npy
+Loading test data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_test_data.npy
+Number of training samples: 14824
+============================================================
+TRAINING ZINB AUTOENCODER (ZINBAE)
+============================================================
+Epoch [1/100], Loss: 2.0599
+Epoch [2/100], Loss: 1.8924
+Epoch [3/100], Loss: 1.8732
+Epoch [4/100], Loss: 1.8682
+Epoch [5/100], Loss: 1.8542
+Epoch [6/100], Loss: 1.8403
+Epoch [7/100], Loss: 1.8314
+Epoch [8/100], Loss: 1.8246
+Epoch [9/100], Loss: 1.8175
+Epoch [10/100], Loss: 1.8109
+Epoch [11/100], Loss: 1.8011
+Epoch [12/100], Loss: 1.7915
+Epoch [13/100], Loss: 1.7827
+Epoch [14/100], Loss: 1.7744
+Epoch [15/100], Loss: 1.7666
+Epoch [16/100], Loss: 1.7597
+Epoch [17/100], Loss: 1.7549
+Epoch [18/100], Loss: 1.7475
+Epoch [19/100], Loss: 1.7414
+Epoch [20/100], Loss: 1.7365
+Epoch [21/100], Loss: 1.7308
+Epoch [22/100], Loss: 1.7267
+Epoch [23/100], Loss: 1.7221
+Epoch [24/100], Loss: 1.7184
+Epoch [25/100], Loss: 1.7150
+Epoch [26/100], Loss: 1.7118
+Epoch [27/100], Loss: 1.7087
+Epoch [28/100], Loss: 1.7063
+Epoch [29/100], Loss: 1.7031
+Epoch [30/100], Loss: 1.7006
+Epoch [31/100], Loss: 1.6980
+Epoch [32/100], Loss: 1.6967
+Epoch [33/100], Loss: 1.6943
+Epoch [34/100], Loss: 1.6937
+Epoch [35/100], Loss: 1.6908
+Epoch [36/100], Loss: 1.6891
+Epoch [37/100], Loss: 1.6857
+Epoch [38/100], Loss: 1.6835
+Epoch [39/100], Loss: 1.6822
+Epoch [40/100], Loss: 1.6834
+Epoch [41/100], Loss: 1.6798
+Epoch [42/100], Loss: 1.6768
+Epoch [43/100], Loss: 1.6752
+Epoch [44/100], Loss: 1.6730
+Epoch [45/100], Loss: 1.6722
+Epoch [46/100], Loss: 1.6711
+Epoch [47/100], Loss: 1.6687
+Epoch [48/100], Loss: 1.6670
+Epoch [49/100], Loss: 1.6657
+Epoch [50/100], Loss: 1.6656
+Epoch [51/100], Loss: 1.6629
+Epoch [52/100], Loss: 1.6631
+Epoch [53/100], Loss: 1.6608
+Epoch [54/100], Loss: 1.6602
+Epoch [55/100], Loss: 1.6579
+Epoch [56/100], Loss: 1.6578
+Epoch [57/100], Loss: 1.6568
+Epoch [58/100], Loss: 1.6544
+Epoch [59/100], Loss: 1.6532
+Epoch [60/100], Loss: 1.6526
+Epoch [61/100], Loss: 1.6515
+Epoch [62/100], Loss: 1.6510
+Epoch [63/100], Loss: 1.6530
+Epoch [64/100], Loss: 1.6514
+Epoch [65/100], Loss: 1.6487
+Epoch [66/100], Loss: 1.6472
+Epoch [67/100], Loss: 1.6460
+Epoch [68/100], Loss: 1.6450
+Epoch [69/100], Loss: 1.6443
+Epoch [70/100], Loss: 1.6431
+Epoch [71/100], Loss: 1.6444
+Epoch [72/100], Loss: 1.6419
+Epoch [73/100], Loss: 1.6406
+Epoch [74/100], Loss: 1.6403
+Epoch [75/100], Loss: 1.6403
+Epoch [76/100], Loss: 1.6390
+Epoch [77/100], Loss: 1.6396
+Epoch [78/100], Loss: 1.6380
+Epoch [79/100], Loss: 1.6366
+Epoch [80/100], Loss: 1.6361
+Epoch [81/100], Loss: 1.6358
+Epoch [82/100], Loss: 1.6349
+Epoch [83/100], Loss: 1.6353
+Epoch [84/100], Loss: 1.6335
+Epoch [85/100], Loss: 1.6345
+Epoch [86/100], Loss: 1.6326
+Epoch [87/100], Loss: 1.6320
+Epoch [88/100], Loss: 1.6312
+Epoch [89/100], Loss: 1.6306
+Epoch [90/100], Loss: 1.6326
+Epoch [91/100], Loss: 1.6313
+Epoch [92/100], Loss: 1.6298
+Epoch [93/100], Loss: 1.6297
+Epoch [94/100], Loss: 1.6281
+Epoch [95/100], Loss: 1.6270
+Epoch [96/100], Loss: 1.6277
+Epoch [97/100], Loss: 1.6267
+Epoch [98/100], Loss: 1.6257
+Epoch [99/100], Loss: 1.6266
+Epoch [100/100], Loss: 1.6250
+Training loss plot saved to /workspace/AE/results/training/trial2/trial2_ZINBAE_20260116_112011_conv_training_loss.png
+Training losses saved to /workspace/AE/results/training/trial2/trial2_ZINBAE_20260116_112011_conv_training_losses.json
+
+==================================================
+EVALUATING ON TRAINING DATA
+==================================================
