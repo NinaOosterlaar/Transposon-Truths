@@ -755,8 +755,8 @@ def parse_args():
                         help='Use separate bins instead of moving average')
     parser.add_argument('--data_point_length', type=int, default=2000,
                         help='Length of each data point (default: 2000)')
-    parser.add_argument('--step_size', type=int, default=500,
-                        help='Step size for sliding window (default: 500)')
+    parser.add_argument('--step_size', type=float, default=0.25,
+                        help='Step size for sliding window relative to sequence length (default: 0.25 of data_point_length)')
     parser.add_argument('--no_clip_outliers', action='store_false', dest='clip_outliers',
                         help='Do not clip outliers')
     
@@ -769,6 +769,7 @@ if __name__ == "__main__":
     print("Starting preprocessing with the following parameters:")
     print(args)
     clip_outliers_flag = getattr(args, 'clip_outliers', True)
+    step_size = int(args.data_point_length * args.step_size)
     
     # Run preprocessing with parsed arguments
     train, val, test, scalers, count_stats, clip_stats = preprocess(
@@ -782,7 +783,7 @@ if __name__ == "__main__":
         bin_size=args.bin_size,
         moving_average=args.moving_average,
         data_point_length=args.data_point_length,
-        step_size=args.step_size
+        step_size=step_size,
         ,clip_outliers_flag=clip_outliers_flag
     )
 

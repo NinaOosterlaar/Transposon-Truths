@@ -13,14 +13,14 @@ import argparse
 from AE.architectures.Autoencoder import AE, VAE
 from AE.architectures.Autoencoder_binary import AE_binary, VAE_binary
 from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
-from AE.training.loss_functions import zinb_nll
+from AE.training.loss_functions import zinb_nll, l1_regularization
 from AE.training.training_utils import ChromosomeEmbedding, add_noise, dataloader_from_array, gaussian_kl
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3, regularizer='none', alpha=0.0):
     """
     Train AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -46,6 +46,10 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         Whether to use binary AE/VAE models. Default=False
     denoise_percent : float
         Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
+    regularizer : str
+        Type of regularization: 'none', 'L1', or 'L2'. Default='none'
+    alpha : float
+        Regularization strength. Default=0.0
     """
     model.to(device)
     parameters = list(model.parameters())
@@ -71,16 +75,20 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         else:
             criterion = nn.MSELoss(reduction='mean')  # Mean over all elements
     
-    optimizer = optim.Adam(parameters, lr=learning_rate)
+    # Create optimizer with L2 regularization if specified
+    weight_decay = alpha if regularizer.lower() == 'l2' else 0.0
+    optimizer = optim.Adam(parameters, lr=learning_rate, weight_decay=weight_decay)
     
     epoch_losses = []
     epoch_recon_losses = []  # For ZINBVAE/VAE
     epoch_kl_losses = []      # For ZINBVAE/VAE
+    epoch_reg_losses = []     # For regularization
     model.train()
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_recon_loss = 0.0
         epoch_kl_loss = 0.0
+        epoch_reg_loss = 0.0
         
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
         for batch in pbar:
@@ -153,10 +161,22 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 recon_loss = criterion(recon_batch, y_binary if binary else y)
                 loss = recon_loss
 
+            # Add L1 regularization if specified
+            reg_penalty = 0.0
+            if regularizer.lower() == 'l1' and alpha > 0:
+                l1_penalty = l1_regularization(parameters)
+                reg_penalty = alpha * l1_penalty.item()
+                loss = loss + alpha * l1_penalty
+            elif regularizer.lower() == 'l2' and alpha > 0:
+                # L2 penalty for tracking (already applied via weight_decay in optimizer)
+                l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
+                reg_penalty = alpha * l2_penalty.item()
+
             # bookkeeping (recon_loss and kl_loss are already per-sample averages)
             epoch_recon_loss += recon_loss.item() * y.size(0)
             if kl_loss is not None:
                 epoch_kl_loss += kl_loss.item() * y.size(0)
+            epoch_reg_loss += reg_penalty * y.size(0)
             
             loss.backward()
             
@@ -183,42 +203,90 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             
             # Update progress bar with current loss
             if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
-                pbar.set_postfix({'total_loss': f'{loss.item():.4f}', 
-                                 'recon': f'{recon_loss.item():.4f}',
-                                 'kl': f'{kl_loss.item():.4f}'})
+                postfix_dict = {
+                    'total': f'{loss.item():.4f}',
+                    'recon': f'{recon_loss.item():.4f}',
+                    'kl': f'{kl_loss.item():.4f}'
+                }
+                if regularizer.lower() != 'none' and alpha > 0:
+                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
+                pbar.set_postfix(postfix_dict)
+            elif is_zinb:
+                # ZINBAE (no KL loss)
+                postfix_dict = {
+                    'total': f'{loss.item():.4f}',
+                    'nll': f'{recon_loss.item():.4f}'
+                }
+                if regularizer.lower() != 'none' and alpha > 0:
+                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
+                pbar.set_postfix(postfix_dict)
             else:
-                pbar.set_postfix({'loss': f'{loss.item():.4f}'})
+                # AE (no KL, no ZINB)
+                postfix_dict = {'loss': f'{loss.item():.4f}'}
+                if regularizer.lower() != 'none' and alpha > 0:
+                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
+                pbar.set_postfix(postfix_dict)
         
         epoch_loss /= len(dataloader.dataset)
         epoch_losses.append(epoch_loss)
         
-        if is_vae:
+        # Track regularization loss
+        epoch_reg_loss /= len(dataloader.dataset)
+        epoch_reg_losses.append(epoch_reg_loss)
+        
+        if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
             epoch_recon_loss /= len(dataloader.dataset)
             epoch_kl_loss /= len(dataloader.dataset)
             epoch_recon_losses.append(epoch_recon_loss)
             epoch_kl_losses.append(epoch_kl_loss)
-            print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
-                  f"Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}")
+            if regularizer.lower() != 'none' and alpha > 0:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
+                      f"Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}, Reg: {epoch_reg_loss:.6f}")
+            else:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
+                      f"Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}")
+        elif is_zinb:
+            # ZINBAE (has recon_loss but no KL)
+            epoch_recon_loss /= len(dataloader.dataset)
+            epoch_recon_losses.append(epoch_recon_loss)
+            if regularizer.lower() != 'none' and alpha > 0:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
+                      f"NLL: {epoch_recon_loss:.4f}, Reg: {epoch_reg_loss:.6f}")
+            else:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
+                      f"NLL: {epoch_recon_loss:.4f}")
         else:
-            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+            if regularizer.lower() != 'none' and alpha > 0:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Reg: {epoch_reg_loss:.6f}")
+            else:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
     
     if plot:
+        # Pass regularization losses if regularization is active
+        reg_losses_to_plot = epoch_reg_losses if (regularizer.lower() != 'none' and alpha > 0) else None
+        
         if binary:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name,
+                                     reg_losses=reg_losses_to_plot)
         elif is_zinb:
             model_type_str = model.model_type
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             if model.model_type == 'ZINBVAE':
                 plot_zinb_training_loss(epoch_losses, epoch_recon_losses, epoch_kl_losses, 
-                                       model_type=model_type_str, use_conv=use_conv, name=name)
+                                       model_type=model_type_str, use_conv=use_conv, name=name,
+                                       reg_losses=reg_losses_to_plot)
             else:
-                plot_zinb_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+                # ZINBAE: pass both total loss and NLL loss
+                plot_zinb_training_loss(epoch_losses, epoch_recon_losses, None,
+                                       model_type=model_type_str, use_conv=use_conv, name=name,
+                                       reg_losses=reg_losses_to_plot)
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name,
+                              reg_losses=reg_losses_to_plot)
     
     # Evaluate on training data to get reconstruction plots
     print("\n" + "="*50)
@@ -487,6 +555,9 @@ def parser_args():
     parser.add_argument('--chrom', action='store_true', help='Whether to use chromosome embedding')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs (default: 10)')
     parser.add_argument('--beta', type=float, default=1.0, help='Beta weight for KL divergence in VAE/ZINBVAE (default: 1.0)')
+    parser.add_argument('--regularizer', type=str, choices=['none', 'L1', 'L2'], default='none', help='Regularization type: none, L1, or L2 (default: none)')
+    parser.add_argument('--alpha', type=float, default=1e-4, help='Regularization strength (default: 0.0)')    
+    parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability for regularization (0.0 to 1.0, default: 0.0)')    
     return parser.parse_args()
 
     
@@ -542,7 +613,8 @@ if __name__ == "__main__":
         else:
             ae_model = AE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_ae = train(ae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=results_subdir)
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=results_subdir,
+                          regularizer=args.regularizer, alpha=args.alpha)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
                                                           chrom=chrom, chrom_embedding=chrom_embedding, 
                                                           plot=True, n_examples=5, binary=args.binary, name=results_subdir)
@@ -559,7 +631,8 @@ if __name__ == "__main__":
         else:   
             vae_model = VAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent,
+                           regularizer=args.regularizer, alpha=args.alpha)
         
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=chrom, chrom_embedding=chrom_embedding, 
@@ -572,9 +645,10 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
-        zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
         trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent)
+                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent,
+                              regularizer=args.regularizer, alpha=args.alpha)
         
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=chrom, chrom_embedding=chrom_embedding, 
@@ -587,9 +661,10 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)")
         print("="*60)
-        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
         trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent)
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
+                               regularizer=args.regularizer, alpha=args.alpha)
         
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=chrom, chrom_embedding=chrom_embedding, 

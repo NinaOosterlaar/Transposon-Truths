@@ -21,6 +21,7 @@ FEATURES = [["Pos", "Centr", "Nucl"], ["Pos", "Centr"], ["Pos", "Nucl"], ["Centr
 SEQUENCE_LENGTHS = [500, 1000, 2000, 3000, 5000, 10000]
 STEP_SIZES = [1/20, 1/10, 1/5, 1/2, 1]  # relative sequence lengths
 BIN_SIZES = [5, 10, 20, 50, 75, 100]
+SAMPLE_FRACTIONS = [0.25, 0.5, 0.75, 1.0]
 
 # Model Architecture hyperparameters
 MODEL_TYPE = ["ZINBAE", "ZINBVAE"]
@@ -41,7 +42,7 @@ EPOCHS = [30, 50, 70, 100, 150]
 BATCH_SIZES = [32, 64, 128, 256]
 NOISE_LEVELS = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
 KL_BETA = [0.1, 0.5, 1.0, 1.5, 2.0]
-OPTIMIZERS = ['adam', 'sgd', 'rmsprop']
+OPTIMIZERS = ['adam']
 LEARNING_RATES = [1e-2, 1e-3, 1e-4, 1e-5]
 DROPOUT_RATES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
 

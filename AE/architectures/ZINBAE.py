@@ -13,6 +13,7 @@ class ZINBAE(nn.Module):
         kernel_size=3,
         padding='same',
         stride=1,
+        dropout=0.0,
     ):
         super().__init__()
         
@@ -20,6 +21,7 @@ class ZINBAE(nn.Module):
         self.feature_dim = feature_dim
         self.model_type = 'ZINBAE'
         self.use_conv = use_conv
+        self.dropout = dropout
         
         # ----- Optional Conv1D Layer -----
         if use_conv:
@@ -43,6 +45,8 @@ class ZINBAE(nn.Module):
         for h in layers:
             encoder_layers.append(nn.Linear(prev_dim, h))
             encoder_layers.append(nn.ReLU())
+            if dropout > 0:
+                encoder_layers.append(nn.Dropout(p=dropout))
             prev_dim = h
         
         self.encoder = nn.Sequential(*encoder_layers)
@@ -56,6 +60,8 @@ class ZINBAE(nn.Module):
         for h in reversed(layers[:-1]):
             decoder_layers.append(nn.Linear(prev_dim, h))
             decoder_layers.append(nn.ReLU())
+            if dropout > 0:
+                decoder_layers.append(nn.Dropout(p=dropout))
             prev_dim = h
         
         # this shared decoder output D will feed μ, θ, π heads
@@ -147,6 +153,7 @@ class ZINBVAE(nn.Module):
         kernel_size=3,
         padding=1,
         stride=1,
+        dropout=0.0,
     ):
         super().__init__()
         
@@ -154,6 +161,7 @@ class ZINBVAE(nn.Module):
         self.feature_dim = feature_dim
         self.model_type = 'ZINBVAE'
         self.use_conv = use_conv
+        self.dropout = dropout
         
         # ----- Optional Conv1D Layer -----
         if self.use_conv:
@@ -177,6 +185,8 @@ class ZINBVAE(nn.Module):
         for h in layers:
             encoder_layers.append(nn.Linear(prev_dim, h))
             encoder_layers.append(nn.ReLU())
+            if dropout > 0:
+                encoder_layers.append(nn.Dropout(p=dropout))
             prev_dim = h
         
         self.encoder = nn.Sequential(*encoder_layers)
@@ -194,6 +204,8 @@ class ZINBVAE(nn.Module):
         for h in reversed(layers[:-1]):
             decoder_layers.append(nn.Linear(prev_dim, h))
             decoder_layers.append(nn.ReLU())
+            if dropout > 0:
+                decoder_layers.append(nn.Dropout(p=dropout))
             prev_dim = h
             
         # this shared decoder output D will feed μ, θ, π heads

@@ -1,5 +1,24 @@
 import torch
 
+def l1_regularization(parameters):
+    """
+    Compute L1 regularization (sum of absolute values of all parameters).
+    
+    Parameters:
+    -----------
+    parameters : iterable of torch.Tensor
+        Model parameters to regularize
+    
+    Returns:
+    --------
+    torch.Tensor
+        Scalar L1 penalty
+    """
+    l1_penalty = 0.0
+    for param in parameters:
+        l1_penalty += torch.sum(torch.abs(param))
+    return l1_penalty
+
 def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
     """
     Zero-Inflated Negative Binomial Negative Log-Likelihood loss.
