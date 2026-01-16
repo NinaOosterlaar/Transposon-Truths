@@ -35,6 +35,6 @@ srun apptainer exec \
     --model "${MODEL}" \
     --use_conv \
     --filename "BinSize10_MovingAvgFalse_ZINB_" \
-    --results_subdir "trial" \
+    --results_subdir "trial_new" \
     --epochs 100 \
     --sample_fraction 1.0

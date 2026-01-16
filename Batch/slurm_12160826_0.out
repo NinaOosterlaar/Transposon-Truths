@@ -1,0 +1,140 @@
+Task 0: Training ZINBAE
+Device: cuda
+Loading training data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_train_data.npy
+Loading test data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_test_data.npy
+Number of training samples: 14824
+============================================================
+TRAINING ZINB AUTOENCODER (ZINBAE)
+============================================================
+Epoch [1/100], Loss: 1.7213
+Epoch [2/100], Loss: 1.5942
+Epoch [3/100], Loss: 1.5745
+Epoch [4/100], Loss: 1.5732
+Epoch [5/100], Loss: 1.5658
+Epoch [6/100], Loss: 1.5574
+Epoch [7/100], Loss: 1.5521
+Epoch [8/100], Loss: 1.5467
+Epoch [9/100], Loss: 1.5447
+Epoch [10/100], Loss: 1.5442
+Epoch [11/100], Loss: 1.5364
+Epoch [12/100], Loss: 1.5330
+Epoch [13/100], Loss: 1.5331
+Epoch [14/100], Loss: 1.5277
+Epoch [15/100], Loss: 1.5252
+Epoch [16/100], Loss: 1.5179
+Epoch [17/100], Loss: 1.5162
+Epoch [18/100], Loss: 1.5105
+Epoch [19/100], Loss: 1.5065
+Epoch [20/100], Loss: 1.5041
+Epoch [21/100], Loss: 1.5008
+Epoch [22/100], Loss: 1.4938
+Epoch [23/100], Loss: 1.4922
+Epoch [24/100], Loss: 1.4903
+Epoch [25/100], Loss: 1.4857
+Epoch [26/100], Loss: 1.4837
+Epoch [27/100], Loss: 1.4800
+Epoch [28/100], Loss: 1.4786
+Epoch [29/100], Loss: 1.4752
+Epoch [30/100], Loss: 1.4748
+Epoch [31/100], Loss: 1.4732
+Epoch [32/100], Loss: 1.4707
+Epoch [33/100], Loss: 1.4666
+Epoch [34/100], Loss: 1.4641
+Epoch [35/100], Loss: 1.4627
+Epoch [36/100], Loss: 1.4598
+Epoch [37/100], Loss: 1.4580
+Epoch [38/100], Loss: 1.4557
+Epoch [39/100], Loss: 1.4554
+Epoch [40/100], Loss: 1.4507
+Epoch [41/100], Loss: 1.4516
+Epoch [42/100], Loss: 1.4493
+Epoch [43/100], Loss: 1.4455
+Epoch [44/100], Loss: 1.4493
+Epoch [45/100], Loss: 1.4438
+Epoch [46/100], Loss: 1.4412
+Epoch [47/100], Loss: 1.4403
+Epoch [48/100], Loss: 1.4396
+Epoch [49/100], Loss: 1.4410
+Epoch [50/100], Loss: 1.4343
+Epoch [51/100], Loss: 1.4373
+Epoch [52/100], Loss: 1.4373
+Epoch [53/100], Loss: 1.4326
+Epoch [54/100], Loss: 1.4313
+Epoch [55/100], Loss: 1.4317
+Epoch [56/100], Loss: 1.4315
+Epoch [57/100], Loss: 1.4290
+Epoch [58/100], Loss: 1.4304
+Epoch [59/100], Loss: 1.4249
+Epoch [60/100], Loss: 1.4275
+Epoch [61/100], Loss: 1.4240
+Epoch [62/100], Loss: 1.4222
+Epoch [63/100], Loss: 1.4226
+Epoch [64/100], Loss: 1.4224
+Epoch [65/100], Loss: 1.4219
+Epoch [66/100], Loss: 1.4200
+Epoch [67/100], Loss: 1.4178
+Epoch [68/100], Loss: 1.4184
+Epoch [69/100], Loss: 1.4177
+Epoch [70/100], Loss: 1.4149
+Epoch [71/100], Loss: 1.4149
+Epoch [72/100], Loss: 1.4182
+Epoch [73/100], Loss: 1.4125
+Epoch [74/100], Loss: 1.4140
+Epoch [75/100], Loss: 1.4155
+Epoch [76/100], Loss: 1.4104
+Epoch [77/100], Loss: 1.4106
+Epoch [78/100], Loss: 1.4099
+Epoch [79/100], Loss: 1.4118
+Epoch [80/100], Loss: 1.4078
+Epoch [81/100], Loss: 1.4133
+Epoch [82/100], Loss: 1.4123
+Epoch [83/100], Loss: 1.4071
+Epoch [84/100], Loss: 1.4049
+Epoch [85/100], Loss: 1.4042
+Epoch [86/100], Loss: 1.4080
+Epoch [87/100], Loss: 1.4029
+Epoch [88/100], Loss: 1.4016
+Epoch [89/100], Loss: 1.4048
+Epoch [90/100], Loss: 1.4037
+Epoch [91/100], Loss: 1.4016
+Epoch [92/100], Loss: 1.4036
+Epoch [93/100], Loss: 1.4007
+Epoch [94/100], Loss: 1.4007
+Epoch [95/100], Loss: 1.3983
+Epoch [96/100], Loss: 1.4018
+Epoch [97/100], Loss: 1.3997
+Epoch [98/100], Loss: 1.3973
+Epoch [99/100], Loss: 1.3959
+Epoch [100/100], Loss: 1.3956
+Training loss plot saved to /workspace/AE/results/training/trial_new/trial_new_ZINBAE_20260116_101308_conv_training_loss.png
+Training losses saved to /workspace/AE/results/training/trial_new/trial_new_ZINBAE_20260116_101308_conv_training_losses.json
+
+==================================================
+EVALUATING ON TRAINING DATA
+==================================================
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (ZINB NLL): 1.391105
+Mean Absolute Error (MAE): 2.251040
+R² Score: -135.694397
+==================================================
+
+Using raw counts for evaluation metrics.
+29648000 13164927 16483073
+ZINB metrics saved to /workspace/AE/results/training/trial_new/trial_new_ZINBAE_20260116_101311_conv_test_metrics.json
+ZINB-specific plots saved to /workspace/AE/results/training/trial_new/
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (ZINB NLL): 2.284994
+Mean Absolute Error (MAE): 2.137755
+R² Score: -49.769440
+==================================================
+
+Using raw counts for evaluation metrics.
+3920000 1662825 2257175
+ZINB metrics saved to /workspace/AE/results/testing/trial_new/trial_new_ZINBAE_20260116_101901_conv_test_metrics.json
+ZINB-specific plots saved to /workspace/AE/results/testing/trial_new/

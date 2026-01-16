@@ -1,0 +1,144 @@
+Task 1: Training ZINBVAE
+Device: cuda
+Loading training data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_train_data.npy
+Loading test data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_test_data.npy
+Number of training samples: 14824
+============================================================
+TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)
+============================================================
+Epoch [1/100], Total Loss: 1.6620, Recon: 1.6518, KL: 0.0102
+Epoch [2/100], Total Loss: 1.6003, Recon: 1.5977, KL: 0.0026
+Epoch [3/100], Total Loss: 1.5878, Recon: 1.5840, KL: 0.0038
+Epoch [4/100], Total Loss: 1.5794, Recon: 1.5750, KL: 0.0044
+Epoch [5/100], Total Loss: 1.5777, Recon: 1.5729, KL: 0.0049
+Epoch [6/100], Total Loss: 1.5714, Recon: 1.5671, KL: 0.0043
+Epoch [7/100], Total Loss: 1.5693, Recon: 1.5654, KL: 0.0039
+Epoch [8/100], Total Loss: 1.5660, Recon: 1.5623, KL: 0.0036
+Epoch [9/100], Total Loss: 1.5665, Recon: 1.5632, KL: 0.0032
+Epoch [10/100], Total Loss: 1.5633, Recon: 1.5602, KL: 0.0030
+Epoch [11/100], Total Loss: 1.5621, Recon: 1.5591, KL: 0.0030
+Epoch [12/100], Total Loss: 1.5606, Recon: 1.5578, KL: 0.0028
+Epoch [13/100], Total Loss: 1.5620, Recon: 1.5591, KL: 0.0030
+Epoch [14/100], Total Loss: 1.5609, Recon: 1.5581, KL: 0.0028
+Epoch [15/100], Total Loss: 1.5594, Recon: 1.5567, KL: 0.0027
+Epoch [16/100], Total Loss: 1.5599, Recon: 1.5572, KL: 0.0027
+Epoch [17/100], Total Loss: 1.5580, Recon: 1.5553, KL: 0.0028
+Epoch [18/100], Total Loss: 1.5591, Recon: 1.5564, KL: 0.0027
+Epoch [19/100], Total Loss: 1.5588, Recon: 1.5561, KL: 0.0027
+Epoch [20/100], Total Loss: 1.5562, Recon: 1.5536, KL: 0.0026
+Epoch [21/100], Total Loss: 1.5573, Recon: 1.5546, KL: 0.0027
+Epoch [22/100], Total Loss: 1.5567, Recon: 1.5540, KL: 0.0027
+Epoch [23/100], Total Loss: 1.5591, Recon: 1.5564, KL: 0.0027
+Epoch [24/100], Total Loss: 1.5553, Recon: 1.5526, KL: 0.0027
+Epoch [25/100], Total Loss: 1.5544, Recon: 1.5517, KL: 0.0027
+Epoch [26/100], Total Loss: 1.5546, Recon: 1.5519, KL: 0.0027
+Epoch [27/100], Total Loss: 1.5513, Recon: 1.5478, KL: 0.0035
+Epoch [28/100], Total Loss: 1.5490, Recon: 1.5452, KL: 0.0038
+Epoch [29/100], Total Loss: 1.5490, Recon: 1.5451, KL: 0.0039
+Epoch [30/100], Total Loss: 1.5467, Recon: 1.5427, KL: 0.0040
+Epoch [31/100], Total Loss: 1.5445, Recon: 1.5403, KL: 0.0043
+Epoch [32/100], Total Loss: 1.5405, Recon: 1.5356, KL: 0.0049
+Epoch [33/100], Total Loss: 1.5403, Recon: 1.5354, KL: 0.0050
+Epoch [34/100], Total Loss: 1.5377, Recon: 1.5329, KL: 0.0049
+Epoch [35/100], Total Loss: 1.5387, Recon: 1.5339, KL: 0.0049
+Epoch [36/100], Total Loss: 1.5376, Recon: 1.5329, KL: 0.0048
+Epoch [37/100], Total Loss: 1.5367, Recon: 1.5320, KL: 0.0047
+Epoch [38/100], Total Loss: 1.5394, Recon: 1.5347, KL: 0.0047
+Epoch [39/100], Total Loss: 1.5338, Recon: 1.5291, KL: 0.0047
+Epoch [40/100], Total Loss: 1.5326, Recon: 1.5279, KL: 0.0047
+Epoch [41/100], Total Loss: 1.5325, Recon: 1.5277, KL: 0.0048
+Epoch [42/100], Total Loss: 1.5319, Recon: 1.5270, KL: 0.0048
+Epoch [43/100], Total Loss: 1.5309, Recon: 1.5260, KL: 0.0049
+Epoch [44/100], Total Loss: 1.5287, Recon: 1.5233, KL: 0.0054
+Epoch [45/100], Total Loss: 1.5262, Recon: 1.5204, KL: 0.0058
+Epoch [46/100], Total Loss: 1.5254, Recon: 1.5195, KL: 0.0059
+Epoch [47/100], Total Loss: 1.5232, Recon: 1.5172, KL: 0.0060
+Epoch [48/100], Total Loss: 1.5226, Recon: 1.5165, KL: 0.0061
+Epoch [49/100], Total Loss: 1.5209, Recon: 1.5147, KL: 0.0061
+Epoch [50/100], Total Loss: 1.5190, Recon: 1.5131, KL: 0.0060
+Epoch [51/100], Total Loss: 1.5238, Recon: 1.5177, KL: 0.0061
+Epoch [52/100], Total Loss: 1.5190, Recon: 1.5130, KL: 0.0060
+Epoch [53/100], Total Loss: 1.5177, Recon: 1.5117, KL: 0.0060
+Epoch [54/100], Total Loss: 1.5189, Recon: 1.5130, KL: 0.0060
+Epoch [55/100], Total Loss: 1.5153, Recon: 1.5093, KL: 0.0060
+Epoch [56/100], Total Loss: 1.5144, Recon: 1.5083, KL: 0.0061
+Epoch [57/100], Total Loss: 1.5133, Recon: 1.5073, KL: 0.0061
+Epoch [58/100], Total Loss: 1.5128, Recon: 1.5067, KL: 0.0061
+Epoch [59/100], Total Loss: 1.5127, Recon: 1.5065, KL: 0.0062
+Epoch [60/100], Total Loss: 1.5116, Recon: 1.5054, KL: 0.0062
+Epoch [61/100], Total Loss: 1.5105, Recon: 1.5043, KL: 0.0062
+Epoch [62/100], Total Loss: 1.5102, Recon: 1.5039, KL: 0.0063
+Epoch [63/100], Total Loss: 1.5096, Recon: 1.5034, KL: 0.0063
+Epoch [64/100], Total Loss: 1.5092, Recon: 1.5029, KL: 0.0063
+Epoch [65/100], Total Loss: 1.5079, Recon: 1.5015, KL: 0.0064
+Epoch [66/100], Total Loss: 1.5109, Recon: 1.5045, KL: 0.0064
+Epoch [67/100], Total Loss: 1.5066, Recon: 1.5002, KL: 0.0065
+Epoch [68/100], Total Loss: 1.5060, Recon: 1.4995, KL: 0.0065
+Epoch [69/100], Total Loss: 1.5051, Recon: 1.4986, KL: 0.0065
+Epoch [70/100], Total Loss: 1.5046, Recon: 1.4980, KL: 0.0065
+Epoch [71/100], Total Loss: 1.5035, Recon: 1.4969, KL: 0.0066
+Epoch [72/100], Total Loss: 1.5031, Recon: 1.4965, KL: 0.0066
+Epoch [73/100], Total Loss: 1.5025, Recon: 1.4959, KL: 0.0067
+Epoch [74/100], Total Loss: 1.5018, Recon: 1.4952, KL: 0.0067
+Epoch [75/100], Total Loss: 1.5010, Recon: 1.4943, KL: 0.0067
+Epoch [76/100], Total Loss: 1.5012, Recon: 1.4945, KL: 0.0068
+Epoch [77/100], Total Loss: 1.5002, Recon: 1.4934, KL: 0.0068
+Epoch [78/100], Total Loss: 1.4992, Recon: 1.4924, KL: 0.0068
+Epoch [79/100], Total Loss: 1.4986, Recon: 1.4918, KL: 0.0068
+Epoch [80/100], Total Loss: 1.4982, Recon: 1.4913, KL: 0.0069
+Epoch [81/100], Total Loss: 1.4973, Recon: 1.4904, KL: 0.0069
+Epoch [82/100], Total Loss: 1.4968, Recon: 1.4899, KL: 0.0069
+Epoch [83/100], Total Loss: 1.4956, Recon: 1.4887, KL: 0.0069
+Epoch [84/100], Total Loss: 1.4962, Recon: 1.4893, KL: 0.0070
+Epoch [85/100], Total Loss: 1.4989, Recon: 1.4919, KL: 0.0071
+Epoch [86/100], Total Loss: 1.4954, Recon: 1.4884, KL: 0.0070
+Epoch [87/100], Total Loss: 1.4943, Recon: 1.4872, KL: 0.0070
+Epoch [88/100], Total Loss: 1.4931, Recon: 1.4860, KL: 0.0071
+Epoch [89/100], Total Loss: 1.4929, Recon: 1.4859, KL: 0.0071
+Epoch [90/100], Total Loss: 1.4933, Recon: 1.4862, KL: 0.0071
+Epoch [91/100], Total Loss: 1.4940, Recon: 1.4868, KL: 0.0071
+Epoch [92/100], Total Loss: 1.4935, Recon: 1.4864, KL: 0.0071
+Epoch [93/100], Total Loss: 1.4911, Recon: 1.4839, KL: 0.0072
+Epoch [94/100], Total Loss: 1.4906, Recon: 1.4834, KL: 0.0072
+Epoch [95/100], Total Loss: 1.4896, Recon: 1.4824, KL: 0.0072
+Epoch [96/100], Total Loss: 1.4890, Recon: 1.4818, KL: 0.0072
+Epoch [97/100], Total Loss: 1.4890, Recon: 1.4817, KL: 0.0072
+Epoch [98/100], Total Loss: 1.4887, Recon: 1.4815, KL: 0.0073
+Epoch [99/100], Total Loss: 1.4911, Recon: 1.4837, KL: 0.0074
+Epoch [100/100], Total Loss: 1.4903, Recon: 1.4829, KL: 0.0074
+Training loss plots saved to /workspace/AE/results/training/trial_new/
+Training losses saved to /workspace/AE/results/training/trial_new/trial_new_ZINBVAE_20260116_101033_conv_training_losses.json
+
+==================================================
+EVALUATING ON TRAINING DATA
+==================================================
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (ZINB NLL): 1.485234
+Mean Absolute Error (MAE): 2.265306
+R² Score: -65.025986
+Reconstruction Loss: 1.478001
+KL Divergence: 0.007233
+==================================================
+
+Using raw counts for evaluation metrics.
+29648000 13164927 16483073
+ZINB metrics saved to /workspace/AE/results/training/trial_new/trial_new_ZINBVAE_20260116_101035_conv_test_metrics.json
+ZINB-specific plots saved to /workspace/AE/results/training/trial_new/
+
+==================================================
+TEST RESULTS
+==================================================
+Test Loss (ZINB NLL): 1.689817
+Mean Absolute Error (MAE): 2.444700
+R² Score: -48.207314
+Reconstruction Loss: 1.682929
+KL Divergence: 0.006888
+==================================================
+
+Using raw counts for evaluation metrics.
+3920000 1662825 2257175
+ZINB metrics saved to /workspace/AE/results/testing/trial_new/trial_new_ZINBVAE_20260116_101920_conv_test_metrics.json
+ZINB-specific plots saved to /workspace/AE/results/testing/trial_new/
