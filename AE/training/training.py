@@ -386,7 +386,6 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 all_theta.append(theta.detach().cpu().numpy())
                 all_pi.append(pi.detach().cpu().numpy())
                 all_raw_counts.append(y_raw.detach().cpu().numpy())
-    print(np.shape(all_reconstructions))
     # ... after loop
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
