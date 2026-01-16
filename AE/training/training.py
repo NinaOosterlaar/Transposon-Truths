@@ -230,7 +230,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing"):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5):
     """
     Test AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -350,8 +350,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                     recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                     loss = recon_loss
 
-                # For ZINB, "reconstruction" to store/plot is the mean parameter mu
-                recon_batch = mu
+                # For ZINB, "reconstruction" to store/plot is the mean parameter mu if pi is not too high otherwise set to 0
+                recon_batch = mu * (pi < threshold).float()
+                
 
             elif is_vae:
                 recon_batch, z, mu, logvar = model(batch_input)
@@ -385,7 +386,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 all_theta.append(theta.detach().cpu().numpy())
                 all_pi.append(pi.detach().cpu().numpy())
                 all_raw_counts.append(y_raw.detach().cpu().numpy())
-
+    print(np.shape(all_reconstructions))
     # ... after loop
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
@@ -403,8 +404,15 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     
     # Calculate metrics
     test_loss = total_loss / len(all_originals)
-    mae = mean_absolute_error(all_originals.flatten(), all_reconstructions.flatten())
-    r2 = r2_score(all_originals.flatten(), all_reconstructions.flatten())
+    
+    # For ZINB models, compare raw counts to raw count predictions
+    # For other models, compare normalized values
+    if is_zinb:
+        mae = mean_absolute_error(all_raw_counts.flatten(), all_reconstructions.flatten())
+        r2 = r2_score(all_raw_counts.flatten(), all_reconstructions.flatten())
+    else:
+        mae = mean_absolute_error(all_originals.flatten(), all_reconstructions.flatten())
+        r2 = r2_score(all_originals.flatten(), all_reconstructions.flatten())
     
     # Build metrics dictionary
     if is_zinb:

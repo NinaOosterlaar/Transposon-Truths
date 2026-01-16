@@ -1,0 +1,72 @@
+{
+    "model_type": "ZINBAE",
+    "timestamp": "20260115_144350",
+    "use_conv": true,
+    "scaling_notes": {
+        "all_originals": "Normalized log counts (not used for main comparisons)",
+        "all_reconstructions_mu": "Predicted mean parameter mu in RAW COUNT SPACE",
+        "all_raw_counts": "Raw count data before normalization (PRIMARY comparison target)",
+        "all_theta": "Dispersion parameter (theta > 0, controls variance)",
+        "all_pi": "Zero-inflation probability (0 < pi < 1, represents P(zero))",
+        "variance": "Computed as mu + mu^2/theta (ZINB variance formula)"
+    },
+    "metrics": {
+        "zinb_nll": 1.1846179962158203,
+        "mae": 1.7118136882781982,
+        "r2": -35.09419250488281
+    },
+    "summary_statistics": {
+        "original": {
+            "mean": -0.003451589960604906,
+            "std": 0.6939266920089722,
+            "min": -0.5082309246063232,
+            "max": 4.122210502624512,
+            "median": -0.3000146746635437
+        },
+        "predicted_mu": {
+            "mean": 4.942592144012451,
+            "std": 44.6885871887207,
+            "min": 0.0,
+            "max": 5711.4111328125,
+            "median": 1.0161452293395996
+        },
+        "residuals": {
+            "mean": -1.1465171575546265,
+            "std": 44.15010070800781,
+            "median": -0.4692952632904053
+        }
+    },
+    "zinb_parameters": {
+        "theta": {
+            "mean": 5951.3984375,
+            "std": 8945.3076171875,
+            "min": 2.06115369216775e-09,
+            "max": 22026.46484375,
+            "median": 197.3575897216797
+        },
+        "variance": {
+            "mean": 22183354.0,
+            "std": 1635769856.0,
+            "min": 0.0,
+            "max": 217696239616.0,
+            "median": 2.7974085807800293
+        },
+        "variance_to_mean_ratio": {
+            "mean": 4049782.5,
+            "median": 1.011061191558838
+        },
+        "pi": {
+            "mean": 0.053716156631708145,
+            "std": 0.22064128518104553,
+            "min": 9.999999747378752e-06,
+            "max": 0.9999899864196777,
+            "median": 9.999999747378752e-06
+        }
+    },
+    "zero_inflation_analysis": {
+        "percent_actual_zeros": 27.0925,
+        "mean_pi_when_zero": 0.1964285522699356,
+        "mean_pi_when_nonzero": 0.0006840755231678486,
+        "zero_prediction_accuracy": 0.783
+    }
+}

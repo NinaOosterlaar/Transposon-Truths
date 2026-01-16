@@ -1,4 +1,4 @@
-#!/bin/bash
+# or: vim training_zinb.sh#!/bin/bash
 #SBATCH --job-name=AE
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
@@ -35,6 +35,6 @@ srun apptainer exec \
     --model "${MODEL}" \
     --use_conv \
     --filename "BinSize10_MovingAvgFalse_ZINB_" \
-    --results_subdir "trial_new" \
+    --results_subdir "trial2" \
     --epochs 100 \
     --sample_fraction 1.0
