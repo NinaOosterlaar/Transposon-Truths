@@ -62,7 +62,8 @@ def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
     log_pi = torch.log(pi)
     log_1_minus_pi = torch.log1p(-pi)
 
-    log_prob_zero = torch.logaddexp(log_pi, log_1_minus_pi + log_nb)
+    # log_prob_zero = torch.logaddexp(log_pi, log_1_minus_pi + log_nb)
+    log_prob_zero = log_pi
     log_prob_nonzero = log_1_minus_pi + log_nb
 
     log_prob = torch.where(is_zero, log_prob_zero, log_prob_nonzero)
@@ -85,3 +86,71 @@ def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
         return nll
     else:
         raise ValueError(f"Invalid reduction mode: {reduction}. Choose 'sum', 'mean', or 'none'.")
+    
+def mae_loss(x, mu, theta, pi, pi_threshold, reduction='sum'):
+    """
+    Mean Absolute Error loss between observed counts and mean parameter.
+    
+    Parameters:
+    -----------
+    x : torch.Tensor
+        Observed counts (raw counts, not normalized)
+    mu : torch.Tensor
+        Mean parameter of NB distribution (after size factor correction)
+    theta : torch.Tensor
+        Dispersion parameter of NB distribution (not used in MAE)
+    pi : torch.Tensor
+        Zero-inflation probability (not used in MAE)
+    eps : float
+        Small constant for numerical stability (not used in MAE)
+    reduction : str
+        'sum', 'mean', or 'none'. Default='sum' for consistency with PyTorch losses
+        
+    Returns:
+    --------
+    torch.Tensor
+        MAE loss. Shape depends on reduction:
+        - 'sum': scalar (sum over all elements)
+        - 'mean': scalar (mean over all elements)
+        - 'none': same shape as input (per-element loss)
+    """
+    reconstruction = mu * (pi < pi_threshold).float()
+    mae = torch.abs(x - reconstruction)
+    
+    if reduction == 'sum':
+        return mae.sum()
+    elif reduction == 'mean':
+        return mae.mean()
+    elif reduction == 'none':
+        return mae
+    else:
+        raise ValueError(f"Invalid reduction mode: {reduction}. Choose 'sum', 'mean', or 'none'.")
+    
+    
+def reconstruct_masked_values(x, mu, pi, mask, pi_threshold):
+    """
+    Loss that measures how well the model reconstructs masked values to not be zero.
+    
+    Parameters:
+    -----------
+    x : torch.Tensor
+        Observed counts (raw counts, not normalized)
+    mu : torch.Tensor
+        Mean parameter of NB distribution (after size factor correction)
+    pi : torch.Tensor
+        Zero-inflation probability (between 0 and 1)
+    mask : torch.Tensor
+        Boolean mask indicating which values to reconstruct (True = reconstruct)
+    pi_threshold : float
+        Threshold for zero-inflation probability to consider a value as non-zero
+    
+    Returns:
+    --------
+    torch.Tensor
+        Tensor with masked values reconstructed.
+    """
+    reconstruction = mu * (pi < pi_threshold).float()
+    x_reconstructed = x.clone()
+    x_reconstructed[mask] = reconstruction[mask]
+    return x_reconstructed
+
