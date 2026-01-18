@@ -35,6 +35,6 @@ srun apptainer exec \
     --model "${MODEL}" \
     --use_conv \
     --filename "BinSize10_MovingAvgFalse_ZINB_" \
-    --results_subdir "extra_loss_all_data" \
+    --results_subdir "extra_loss_all_data2" \
     --epochs 100 \
-    --sample_fraction 1.0
+    --sample_fraction 1.0 \
