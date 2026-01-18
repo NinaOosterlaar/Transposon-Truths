@@ -106,7 +106,7 @@ def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
     else:
         raise ValueError(f"Invalid reduction mode: {reduction}. Choose 'sum', 'mean', or 'none'.")
     
-def mae_loss(x, mu, theta, pi, pi_threshold, reduction='sum'):
+def mae_loss(x, mu, pi, pi_threshold, reduction='sum'):
     """
     Mean Absolute Error loss between observed counts and mean parameter.
     
@@ -168,8 +168,10 @@ def reconstruct_masked_values(x, mu, pi, mask, pi_threshold):
     torch.Tensor
         Tensor with masked values reconstructed.
     """
-    reconstruction = mu * (pi < pi_threshold).float()
-    x_reconstructed = x.clone()
-    x_reconstructed[mask] = reconstruction[mask]
-    return x_reconstructed
+    masked_values = x[mask]
+    if masked_values.numel() == 0:
+        return torch.tensor(0.0, device=x.device)
+    reconstruction = mu[mask] * (pi[mask] < pi_threshold).float()
+    loss = torch.abs(masked_values - reconstruction)
+    return loss.mean()
 

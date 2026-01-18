@@ -18,6 +18,8 @@ def add_noise(y, denoise_percent):
     --------
     y_noisy : torch.Tensor
         Noisy version of input with some non-zero values set to zero
+    mask : torch.Tensor
+        Boolean mask indicating which values were set to zero
     """
     if denoise_percent <= 0.0:
         return y, torch.zeros_like(y, dtype=torch.bool)

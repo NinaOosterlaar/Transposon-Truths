@@ -137,13 +137,13 @@ def density_plots(actual_counts_flat, all_reconstructions_mu, residuals, compari
         
         # Plot low π points (reliable mean predictions)
         axes[0].scatter(actual_counts_flat[low_pi_sample], recon_flat[low_pi_sample], 
-                       alpha=0.3, s=1, c=COLORS['black'], label='π ≤ 0.5 (reliable μ)')
+                       alpha=0.3, s=1, c=COLORS['black'], label='π ≤ 0.5')
         # Plot high π points (unreliable mean predictions)
-        axes[0].scatter(actual_counts_flat[high_pi_sample], recon_flat[high_pi_sample], 
-                       alpha=0.3, s=1, c=COLORS['orange'], label='π > 0.5 (structural zeros)')
+        # axes[0].scatter(actual_counts_flat[high_pi_sample], recon_flat[high_pi_sample], 
+        #                alpha=0.3, s=1, c=COLORS['orange'], label='π > 0.5 (structural zeros)')
     else:
         axes[0].scatter(actual_counts_flat[sample_indices], recon_flat[sample_indices], 
-                       alpha=0.3, s=1, c=COLORS['black'])
+                       alpha=0.3, s=1, c=COLORS['black'], label='π ≤ 0.5')
     
     axes[0].plot([actual_counts_flat.min(), actual_counts_flat.max()], 
                 [actual_counts_flat.min(), actual_counts_flat.max()], 
@@ -151,7 +151,9 @@ def density_plots(actual_counts_flat, all_reconstructions_mu, residuals, compari
     axes[0].set_xlabel(f'Actual ({comparison_label})')
     axes[0].set_ylabel('Predicted Mean (μ)')
     axes[0].set_title(f'{model_type}: Actual vs Predicted μ\n(R²={r2:.4f})')
-    axes[0].legend()
+    legend = axes[0].legend(markerscale=5)
+    for lh in legend.legend_handles:
+        lh.set_alpha(0.7)
     axes[0].grid(True, alpha=0.3)
     
     # Residuals plot: exclude high π points
@@ -212,7 +214,7 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
         axes[0,0].set_ylabel("Density (log)")
         axes[0, 0].set_xlabel('Zero-inflation Probability (π)')
         axes[0, 0].set_ylabel('Frequency')
-        axes[0, 0].set_title(f'{model_type}: π Distribution by Actual Zeros')
+        axes[0, 0].set_title(f'{model_type}: π Distribution')
         axes[0, 0].legend()
         axes[0, 0].grid(True, alpha=0.3)
         
@@ -227,27 +229,43 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
             return np.log(p/(1-p))
 
         data = [logit(pi_flat[actual_zeros]), logit(pi_flat[actual_nonzeros])]
-        axes[0,1].violinplot(data, showmedians=True, showextrema=True)
+        parts = axes[0,1].violinplot(data, showmedians=True, showextrema=True)
+        
+        # Color the violin plots: blue for zeros, orange for non-zeros
+        colors = [COLORS['blue'], COLORS['orange']]
+        for i, pc in enumerate(parts['bodies']):
+            pc.set_facecolor(colors[i])
+            pc.set_alpha(0.7)
+        
+        # Set all lines to black
+        for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+            if partname in parts:
+                parts[partname].set_edgecolor('gray')
+                parts[partname].set_linewidth(1.5)
+        
         axes[0,1].set_ylabel("logit(π)")
 
         axes[0, 1].set_xticks([1, 2])
         axes[0, 1].set_xticklabels(['Observed zeros', 'Observed non-zeros'])
         axes[0, 1].set_ylabel('Zero-inflation probability logit (π)')
-        axes[0, 1].set_title(f'{model_type}: π distribution by observed value')
+        axes[0, 1].set_title(f'{model_type}: π distribution')
         axes[0, 1].grid(True, alpha=0.3)
                 
-        # Scatter plot of pi vs mu
+        # Scatter plot of pi vs mu - separated by actual zeros vs non-zeros
         mu_clipped, mu_hi = clip_hi(all_reconstructions_mu.flatten(), q=99.9)
         axes[1, 0].scatter(mu_clipped[actual_zeros], 
                           pi_flat[actual_zeros],
-                          alpha=0.3, s=5, label='Actual Zeros', color=COLORS['blue'])
+                          alpha=0.1, s=2, label='Actual Zeros', color=COLORS['blue'])
         axes[1, 0].scatter(mu_clipped[actual_nonzeros], 
                           pi_flat[actual_nonzeros],
-                          alpha=0.3, s=5, label='Actual Non-zeros', color=COLORS['red'])
+                          alpha=0.1, s=2, label='Actual Non-zeros', color=COLORS['orange'])
         axes[1, 0].set_xlabel('Predicted Mean (μ)')
         axes[1, 0].set_ylabel('Zero-inflation Probability (π)')
         axes[1, 0].set_title(f'{model_type}: π vs μ Relationship')
-        axes[1, 0].legend()
+        legend = axes[1, 0].legend(markerscale=3)
+        # Set alpha for legend markers to make them more visible
+        for lh in legend.legend_handles:
+            lh.set_alpha(0.7)
         axes[1, 0].grid(True, alpha=0.3)   
         
         # Zero predictions
@@ -278,6 +296,169 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
         plt.savefig(os.path.join(save_dir, f'{prefix}_zero_inflation_analysis.png'), 
                     dpi=300, bbox_inches='tight')
         plt.close()
+
+def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks, model_type, save_dir, prefix):
+    """
+    Analyze how well masked values (from denoising) are reconstructed.
+    Only called when denoise_percent > 0.
+    """
+    if all_masks is None or all_raw_counts is None:
+        return
+    
+    mask_flat = all_masks.flatten()
+    masked_positions = mask_flat == True
+    
+    if not np.any(masked_positions):
+        print("No masked values to analyze.")
+        return
+    
+    mu_flat = all_reconstructions_mu.flatten()
+    raw_flat = all_raw_counts.flatten()
+    pi_flat = all_pi.flatten() if all_pi is not None else None
+    
+    # Extract masked values
+    masked_actual = raw_flat[masked_positions]
+    masked_recon = mu_flat[masked_positions]
+    
+    # Compute metrics for masked values
+    mae_masked = mean_absolute_error(masked_actual, masked_recon)
+    r2_masked = r2_score(masked_actual, masked_recon)
+    
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # 1. Actual vs Reconstructed for masked values
+    sample_size = min(10000, len(masked_actual))
+    sample_idx = np.random.choice(len(masked_actual), size=sample_size, replace=False)
+    
+    axes[0, 0].scatter(masked_actual[sample_idx], masked_recon[sample_idx],
+                      alpha=0.3, s=2, color=COLORS['black'])
+    axes[0, 0].plot([masked_actual.min(), masked_actual.max()],
+                   [masked_actual.min(), masked_actual.max()],
+                   'r--', lw=2, label='Perfect reconstruction')
+    axes[0, 0].set_xlabel('Actual Value (Raw Counts)')
+    axes[0, 0].set_ylabel('Reconstructed μ')
+    axes[0, 0].set_title(f'{model_type}: Masked Values Reconstruction\\n(MAE={mae_masked:.4f}, R²={r2_masked:.4f})')
+    axes[0, 0].legend()
+    axes[0, 0].grid(True, alpha=0.3)
+    
+    # 2. π distribution for masked positions
+    if pi_flat is not None:
+        masked_pi = pi_flat[masked_positions]
+        axes[0, 1].hist(masked_pi, bins=50, alpha=0.7, color=COLORS['orange'], edgecolor='black')
+        axes[0, 1].axvline(x=0.5, color='red', linestyle='--', linewidth=2, label='Threshold (0.5)')
+        axes[0, 1].set_xlabel('Zero-inflation Probability (π)')
+        axes[0, 1].set_ylabel('Frequency')
+        axes[0, 1].set_yscale('log')
+        axes[0, 1].set_title(f'{model_type}: π Distribution for Masked Positions\\n(Mean π={np.mean(masked_pi):.3f})')
+        axes[0, 1].legend()
+        axes[0, 1].grid(True, alpha=0.3)
+    
+    # 3. Residuals for masked values
+    residuals_masked = masked_actual - masked_recon
+    axes[1, 0].hist(residuals_masked, bins=100, alpha=0.7, color=COLORS['pink'], edgecolor='black')
+    axes[1, 0].axvline(x=0, color='red', linestyle='--', linewidth=2)
+    axes[1, 0].axvline(x=np.median(residuals_masked), color='green', linestyle='--',
+                      linewidth=2, label=f'Median: {np.median(residuals_masked):.4f}')
+    axes[1, 0].set_xlabel('Residuals (Actual - Reconstructed μ)')
+    axes[1, 0].set_ylabel('Frequency')
+    axes[1, 0].set_title(f'{model_type}: Residuals for Masked Values')
+    axes[1, 0].legend()
+    axes[1, 0].grid(True, alpha=0.3)
+    
+    # 4. π vs μ scatter plot for masked values
+    if pi_flat is not None:
+        masked_pi = pi_flat[masked_positions]
+        
+        # Sample for scatter plot if too many points
+        sample_size_scatter = min(10000, len(masked_recon))
+        if len(masked_recon) > sample_size_scatter:
+            scatter_idx = np.random.choice(len(masked_recon), size=sample_size_scatter, replace=False)
+            mu_scatter = masked_recon[scatter_idx]
+            pi_scatter = masked_pi[scatter_idx]
+        else:
+            mu_scatter = masked_recon
+            pi_scatter = masked_pi
+        
+        axes[1, 1].scatter(mu_scatter, pi_scatter, alpha=0.3, s=2, color=COLORS['green'])
+        axes[1, 1].axhline(y=0.5, color='red', linestyle='--', linewidth=2, label='Threshold (0.5)')
+        axes[1, 1].set_xlabel('Predicted Mean (μ)')
+        axes[1, 1].set_ylabel('Zero-inflation Probability (π)')
+        axes[1, 1].set_title(f'{model_type}: π vs μ for Masked Values')
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3)
+    else:
+        axes[1, 1].text(0.5, 0.5, 'π not available', ha='center', va='center', transform=axes[1, 1].transAxes)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, f'{prefix}_masked_values_analysis.png'),
+                dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Masked values analysis: {len(masked_actual)} masked positions, MAE={mae_masked:.4f}, R²={r2_masked:.4f}")
+
+def zero_imputation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, model_type, save_dir, prefix, pi_threshold=0.5):
+    """
+    Analyze zero imputation success: compare actual zeros vs predicted zeros.
+    Always called for ZINB models.
+    """
+    if all_raw_counts is None or all_pi is None:
+        return
+    
+    raw_flat = all_raw_counts.flatten()
+    pi_flat = all_pi.flatten()
+    mu_flat = all_reconstructions_mu.flatten()
+    
+    actual_zeros = (raw_flat == 0)
+    predicted_structural_zeros = (pi_flat > pi_threshold)
+    
+    n_actual_zeros = np.sum(actual_zeros)
+    n_predicted_zeros = np.sum(predicted_structural_zeros)
+    n_total = len(raw_flat)
+    
+    # Imputation success: positions that were zero but now have non-zero μ prediction (and low π)
+    imputed_positions = actual_zeros & ~predicted_structural_zeros
+    n_imputed = np.sum(imputed_positions)
+    
+    # False structural zeros: positions that are non-zero but predicted as structural zero
+    false_structural = ~actual_zeros & predicted_structural_zeros
+    n_false_structural = np.sum(false_structural)
+    
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    
+    # 1. Zero counts comparison
+    categories = ['Original\nZeros', 'Predicted\nZeros', 'Imputed\n(zero→non-zero)', '(non-zero→zero)']
+    counts = [n_actual_zeros, n_predicted_zeros, n_imputed, n_false_structural]
+    colors_bar = [COLORS['blue'], COLORS['orange'], COLORS['green'], COLORS['red']]
+    
+    axes[0].bar(categories, counts, color=colors_bar, edgecolor='black', alpha=0.7)
+    axes[0].set_ylabel('Count')
+    axes[0].set_title(f'{model_type}: Zero Imputation Overview')
+    axes[0].grid(True, alpha=0.3, axis='y')
+    # Add text labels and adjust y-axis to prevent overlap with title
+    for i, (cat, count) in enumerate(zip(categories, counts)):
+        pct = 100 * count / n_total
+        axes[0].text(i, count, f'{count:,}\n({pct:.1f}%)', ha='center', va='bottom')
+    # Set y-limit to add 20% padding at the top for labels
+    axes[0].set_ylim([0, max(counts) * 1.2])
+    
+    # 2. π distribution for original zeros (histogram)
+    pi_actual_zeros = pi_flat[actual_zeros]
+    axes[1].hist(pi_actual_zeros, bins=50, alpha=0.7, color=COLORS['blue'], edgecolor='black')
+    axes[1].axvline(x=pi_threshold, color='red', linestyle='--', linewidth=2,
+                      label=f'Threshold ({pi_threshold})')
+    axes[1].set_xlabel('Zero-inflation Probability (π)')
+    axes[1].set_ylabel('Frequency')
+    axes[1].set_yscale('log')
+    axes[1].set_title(f'{model_type}: π Distribution for Original Zeros\n(Mean π={np.mean(pi_actual_zeros):.3f})')
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, f'{prefix}_zero_imputation_analysis.png'),
+                dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Zero imputation: {n_actual_zeros:,} actual zeros, {n_imputed:,} imputed ({100*n_imputed/n_actual_zeros:.1f}%), {n_false_structural:,} false structural zeros")
         
 def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, all_pi=None, all_raw_counts=None, n_examples=5, model_type="ZINB", save_dir=None, prefix=""):
     fig, axes = plt.subplots(n_examples, 1, figsize=(15, 4*n_examples))
@@ -433,6 +614,7 @@ def metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, resid
 
 def plot_zinb_test_results(all_originals, all_reconstructions_mu, 
                            all_theta=None, all_pi=None, all_raw_counts=None,
+                           all_masks=None, denoise_percent=0.0,
                            model_type='ZINBAE', save_dir=None, 
                            n_examples=10, metrics=None, use_conv=False, name="", subdir="testing"):
     """
@@ -515,10 +697,17 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
     # 3. Zero-Inflation Analysis (if π available)
     zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts , 
                             model_type, save_dir, prefix)
-    # 4. Example Reconstructions with ZINB Parameters and Uncertainty
+    # 4. Zero Imputation Analysis (always for ZINB models)
+    zero_imputation_analysis(all_reconstructions_mu, all_pi, all_raw_counts,
+                            model_type, save_dir, prefix)
+    # 5. Masked Values Analysis (only when denoise_percent > 0)
+    if denoise_percent > 0 and all_masks is not None:
+        masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks,
+                              model_type, save_dir, prefix)
+    # 6. Example Reconstructions with ZINB Parameters and Uncertainty
     reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 
                     n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix)
-    # 5. Metrics Summary
+    # 7. Metrics Summary
     if metrics is not None:
         metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, residuals, 
                 all_theta, all_variance, all_pi, model_type=model_type, 

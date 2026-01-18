@@ -4,64 +4,76 @@ from AE.preprocessing.preprocessing import preprocess_data
 from AE.architectures.Autoencoder import AE
 from AE.training.training import train, test
 
-FEATURES = ['Pos', 'Chrom', 'Nucl', 'Centr']
-TRAIN_VAL_TEST_SPLIT = [0.7, 0, 0.3]
-SPLIT_ON = 'Chrom'
-CHUNK_SIZE = 50000
-NORMALIZE = True
+# Preprocessing
+FEATURES = ['Nucl', 'Centr']
 BIN_SIZE = 10
-MOVING_AVERAGE = True
+MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 500
+STEP_SIZE = 0.25
+SAMPLE_FRACTION = 1.0
 
+SPLIT_ON = 'Chrom'
+TRAIN_VAL_TEST_SPLIT = [0.8, 0.1, 0.1]
+
+USE_CONV = True
+CONV_CHANNEL = 64
+POOL_SIZE = 2
+POOLING_OPERATION = 'max'
+KERNEL_SIZE = 5
+PADDING = 'same'
+STRIDE = 1
+
+EPOCHS = 100
 BATCH_SIZE = 64
-NUM_EPOCHS = 100
+NOISE_LEVEL = 0.3
+KL_BETA = 1.0
+PI_THRESHOLD = 0.5
+MASKED_RECON_WEIGHT = 0.0  # gamma: weight for masked reconstruction loss
+OPTIMIZER = 'adam'
 LEARNING_RATE = 1e-3
+DROPOUT_RATE = 0.2
 LAYERS = [512, 256, 128]
-CHROMOSOME_EMBEDDING_DIM = 4
-MODEL = 'AE'  # Options: 'AE' or 'VAE'
+MODEL = 'ZINBAE'
+REGULARIZER = 'none'
+REGULARIZATION_WEIGHT = 1e-4
 
 
-def main():
-    train_data, val_data, test_data, scalers = preprocess_data(
-        features=FEATURES,
-        train_val_test_split=TRAIN_VAL_TEST_SPLIT,
-        split_on=SPLIT_ON,
-        chunk_size=CHUNK_SIZE,
-        normalize=NORMALIZE,
-        bin_size=BIN_SIZE,
-        moving_average=MOVING_AVERAGE,
-        data_point_length=DATA_POINT_LENGTH,
-        step_size=STEP_SIZE
+def main(
+    features=FEATURES, 
+    bin_size=BIN_SIZE, 
+    moving_average=MOVING_AVERAGE,
+    data_point_length=DATA_POINT_LENGTH, 
+    step_size=STEP_SIZE,
+    sample_fraction=SAMPLE_FRACTION, 
+    split_on=SPLIT_ON,
+    train_val_test_split=TRAIN_VAL_TEST_SPLIT,
+    use_conv=USE_CONV, 
+    conv_channel=CONV_CHANNEL, 
+    pool_size=POOL_SIZE,
+    pooling_operation=POOLING_OPERATION, 
+    kernel_size=KERNEL_SIZE,
+    padding=PADDING, 
+    stride=STRIDE,
+    epochs=EPOCHS, 
+    batch_size=BATCH_SIZE, 
+    noise_level=NOISE_LEVEL,
+    kl_beta=KL_BETA,
+    pi_threshold=PI_THRESHOLD,
+    masked_recon_weight=MASKED_RECON_WEIGHT, 
+    optimizer=OPTIMIZER, 
+    learning_rate=LEARNING_RATE,
+    dropout_rate=DROPOUT_RATE, 
+    layers=LAYERS, 
+    model=MODEL,
+    regularizer=REGULARIZER, 
+    regularization_weight=REGULARIZATION_WEIGHT):
+    # Preprocess data
+    train, val, test, scalers, count_stats, clip_stats = preprocess_data(
+        features=features,
+        bin_size=bin_size,
+        moving_average=moving_average,
+        data_point_length=data_point_length,
+        step_size=step_size,
+        split_on=split_on,
+        train_val_test_split=train_val_test_split
     )
-
-    train_loader = AE.get_dataloader(train_data, batch_size=BATCH_SIZE, shuffle=True, chrom=True)
-    val_loader = AE.get_dataloader(val_data, batch_size=BATCH_SIZE, shuffle=False, chrom=True)
-    test_loader = AE.get_dataloader(test_data, batch_size=BATCH_SIZE, shuffle=False, chrom=True)
-
-    if "Chrom" in FEATURES:
-        feature_dim = len(FEATURES) + CHROMOSOME_EMBEDDING_DIM
-    else:
-        feature_dim = len(FEATURES) + 1
-    if MODEL == 'VAE':
-        # Not implemented yet
-        raise NotImplementedError("VAE model is not implemented yet.")
-    else:
-        model = AE(seq_length=DATA_POINT_LENGTH, feature_dim=feature_dim, layers=LAYERS)  # Use the calculated feature_dim
-
-    model = train(
-        model,
-        train_loader,
-        num_epochs=NUM_EPOCHS,
-        learning_rate=LEARNING_RATE,
-        chrom=True
-    )
-    
-    reconstructions, latents = test(
-        model,
-        test_loader,
-        scalers,
-        chrom=True
-    )
-    
-    return reconstructions, latents
