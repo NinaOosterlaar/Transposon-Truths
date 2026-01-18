@@ -13,14 +13,14 @@ import argparse
 from AE.architectures.Autoencoder import AE, VAE
 from AE.architectures.Autoencoder_binary import AE_binary, VAE_binary
 from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
-from AE.training.loss_functions import zinb_nll
+from AE.training.loss_functions import zinb_nll, l1_regularization, reconstruct_masked_values
 from AE.training.training_utils import ChromosomeEmbedding, add_noise, dataloader_from_array, gaussian_kl
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5):
     """
     Train AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -46,6 +46,14 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         Whether to use binary AE/VAE models. Default=False
     denoise_percent : float
         Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
+    regularizer : str
+        Type of regularization: 'none', 'L1', or 'L2'. Default='none'
+    alpha : float
+        Regularization strength. Default=0.0
+    gamma : float
+        Weight for masked reconstruction loss (only used for ZINB models). Default=0.0
+    pi_threshold : float
+        Threshold for zero-inflation probability to consider a value as non-zero. Default=0.5
     """
     model.to(device)
     parameters = list(model.parameters())
@@ -71,16 +79,25 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         else:
             criterion = nn.MSELoss(reduction='mean')  # Mean over all elements
     
-    optimizer = optim.Adam(parameters, lr=learning_rate)
+    # Create optimizer with L2 regularization if specified
+    weight_decay = alpha if regularizer.lower() == 'l2' else 0.0
+    optimizer = optim.Adam(parameters, lr=learning_rate, weight_decay=weight_decay)
     
     epoch_losses = []
     epoch_recon_losses = []  # For ZINBVAE/VAE
     epoch_kl_losses = []      # For ZINBVAE/VAE
+    epoch_reg_losses = []     # For regularization
+    epoch_masked_losses = []  # For masked reconstruction loss
+    
+    # Collect masks during last epoch of training for evaluation
+    training_masks_collected = []
     model.train()
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_recon_loss = 0.0
         epoch_kl_loss = 0.0
+        epoch_reg_loss = 0.0
+        epoch_masked_loss = 0.0
         
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
         for batch in pbar:
@@ -115,6 +132,9 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             
             # Apply denoising: randomly set some non-zero values to zero in the input
             y_noisy, mask = add_noise(y, denoise_percent)
+            # Store masks from last epoch for evaluation on training data
+            if denoise_percent > 0 and epoch == num_epochs - 1:
+                training_masks_collected.append(mask.detach().cpu().numpy())
             y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
@@ -125,6 +145,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             # reset per batch
             recon_loss = None
             kl_loss = None
+            masked_loss = None
 
             # Forward pass
             if is_zinb:
@@ -134,10 +155,18 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                     # KL loss: divide by seq_length to get "per-element" KL
                     kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
                     loss = recon_loss + beta * kl_loss
+                    # Add masked reconstruction loss if gamma > 0
+                    if gamma > 0 and denoise_percent > 0:
+                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                        loss = loss + gamma * masked_loss
                 else:  # ZINBAE
                     mu, theta, pi, z = model(batch_input, size_factors)
                     recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
                     loss = recon_loss
+                    # Add masked reconstruction loss if gamma > 0
+                    if gamma > 0 and denoise_percent > 0:
+                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                        loss = loss + gamma * masked_loss
 
             elif is_vae:
                 recon_batch, z, mu, logvar = model(batch_input)
@@ -153,10 +182,24 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 recon_loss = criterion(recon_batch, y_binary if binary else y)
                 loss = recon_loss
 
+            # Add L1 regularization if specified
+            reg_penalty = 0.0
+            if regularizer.lower() == 'l1' and alpha > 0:
+                l1_penalty = l1_regularization(parameters)
+                reg_penalty = alpha * l1_penalty.item()
+                loss = loss + alpha * l1_penalty
+            elif regularizer.lower() == 'l2' and alpha > 0:
+                # L2 penalty for tracking (already applied via weight_decay in optimizer)
+                l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
+                reg_penalty = alpha * l2_penalty.item()
+
             # bookkeeping (recon_loss and kl_loss are already per-sample averages)
             epoch_recon_loss += recon_loss.item() * y.size(0)
             if kl_loss is not None:
                 epoch_kl_loss += kl_loss.item() * y.size(0)
+            if masked_loss is not None:
+                epoch_masked_loss += masked_loss.item() * y.size(0)
+            epoch_reg_loss += reg_penalty * y.size(0)
             
             loss.backward()
             
@@ -183,54 +226,123 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             
             # Update progress bar with current loss
             if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
-                pbar.set_postfix({'total_loss': f'{loss.item():.4f}', 
-                                 'recon': f'{recon_loss.item():.4f}',
-                                 'kl': f'{kl_loss.item():.4f}'})
+                postfix_dict = {
+                    'total': f'{loss.item():.4f}',
+                    'recon': f'{recon_loss.item():.4f}',
+                    'kl': f'{kl_loss.item():.4f}'
+                }
+                if masked_loss is not None:
+                    postfix_dict['masked'] = f'{masked_loss.item():.4f}'
+                if regularizer.lower() != 'none' and alpha > 0:
+                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
+                pbar.set_postfix(postfix_dict)
+            elif is_zinb:
+                # ZINBAE (no KL loss)
+                postfix_dict = {
+                    'total': f'{loss.item():.4f}',
+                    'nll': f'{recon_loss.item():.4f}'
+                }
+                if masked_loss is not None:
+                    postfix_dict['masked'] = f'{masked_loss.item():.4f}'
+                if regularizer.lower() != 'none' and alpha > 0:
+                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
+                pbar.set_postfix(postfix_dict)
             else:
-                pbar.set_postfix({'loss': f'{loss.item():.4f}'})
+                # AE (no KL, no ZINB)
+                postfix_dict = {'loss': f'{loss.item():.4f}'}
+                if regularizer.lower() != 'none' and alpha > 0:
+                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
+                pbar.set_postfix(postfix_dict)
         
         epoch_loss /= len(dataloader.dataset)
         epoch_losses.append(epoch_loss)
         
-        if is_vae:
+        # Track regularization loss
+        epoch_reg_loss /= len(dataloader.dataset)
+        epoch_reg_losses.append(epoch_reg_loss)
+        
+        # Track masked reconstruction loss
+        epoch_masked_loss /= len(dataloader.dataset)
+        epoch_masked_losses.append(epoch_masked_loss)
+        
+        if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
             epoch_recon_loss /= len(dataloader.dataset)
             epoch_kl_loss /= len(dataloader.dataset)
             epoch_recon_losses.append(epoch_recon_loss)
             epoch_kl_losses.append(epoch_kl_loss)
-            print(f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, "
-                  f"Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}")
+            # Build print message with optional components
+            msg = f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}"
+            if gamma > 0 and denoise_percent > 0:
+                msg += f", Masked: {epoch_masked_loss:.4f}"
+            if regularizer.lower() != 'none' and alpha > 0:
+                msg += f", Reg: {epoch_reg_loss:.6f}"
+            print(msg)
+        elif is_zinb:
+            # ZINBAE (has recon_loss but no KL)
+            epoch_recon_loss /= len(dataloader.dataset)
+            epoch_recon_losses.append(epoch_recon_loss)
+            # Build print message with optional components
+            msg = f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, NLL: {epoch_recon_loss:.4f}"
+            if gamma > 0 and denoise_percent > 0:
+                msg += f", Masked: {epoch_masked_loss:.4f}"
+            if regularizer.lower() != 'none' and alpha > 0:
+                msg += f", Reg: {epoch_reg_loss:.6f}"
+            print(msg)
         else:
-            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+            if regularizer.lower() != 'none' and alpha > 0:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Reg: {epoch_reg_loss:.6f}")
+            else:
+                print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
     
     if plot:
+        # Pass regularization losses if regularization is active
+        reg_losses_to_plot = epoch_reg_losses if (regularizer.lower() != 'none' and alpha > 0) else None
+        # Pass masked losses if gamma > 0
+        masked_losses_to_plot = epoch_masked_losses if (gamma > 0 and denoise_percent > 0) else None
+        
         if binary:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name,
+                                     reg_losses=reg_losses_to_plot)
         elif is_zinb:
             model_type_str = model.model_type
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
             if model.model_type == 'ZINBVAE':
                 plot_zinb_training_loss(epoch_losses, epoch_recon_losses, epoch_kl_losses, 
-                                       model_type=model_type_str, use_conv=use_conv, name=name)
+                                       model_type=model_type_str, use_conv=use_conv, name=name,
+                                       reg_losses=reg_losses_to_plot, masked_losses=masked_losses_to_plot)
             else:
-                plot_zinb_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+                # ZINBAE: pass both total loss and NLL loss
+                plot_zinb_training_loss(epoch_losses, epoch_recon_losses, None,
+                                       model_type=model_type_str, use_conv=use_conv, name=name,
+                                       reg_losses=reg_losses_to_plot, masked_losses=masked_losses_to_plot)
         else:
             model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name)
+            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name,
+                              reg_losses=reg_losses_to_plot)
     
     # Evaluate on training data to get reconstruction plots
     print("\n" + "="*50)
     print("EVALUATING ON TRAINING DATA")
     print("="*50)
+    
+    # Concatenate training masks if collected
+    if denoise_percent > 0 and len(training_masks_collected) > 0:
+        training_masks_array = np.concatenate(training_masks_collected, axis=0)
+    else:
+        training_masks_array = None
+    
     test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
          plot=True, n_examples=5, beta=beta, binary=binary, name=name, 
-         denoise_percent=denoise_percent, eval_mode="training")
+         denoise_percent=denoise_percent, eval_mode="training", threshold=pi_threshold,
+         gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha,
+         training_masks=training_masks_array)
     
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5, gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0, training_masks=None):
     """
     Test AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -256,6 +368,18 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
     eval_mode : str
         Either "testing" or "training" - determines subdirectory for saving plots. Default="testing"
+    threshold : float
+        Threshold for zero-inflation probability. Default=0.5
+    gamma : float
+        Weight for masked reconstruction loss (only used for ZINB models). Default=0.0
+    pi_threshold : float
+        Threshold for zero-inflation probability for masked loss. Default=0.5
+    regularizer : str
+        Type of regularization: 'none', 'L1', or 'L2'. Default='none'
+    alpha : float
+        Regularization strength. Default=0.0
+    training_masks : np.ndarray or None
+        Pre-created masks from training. If provided, skips masking but still generates masking analysis plots. Default=None
     """
     model.to(device)
     model.eval()
@@ -272,9 +396,13 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     all_theta = []  # For ZINB models
     all_pi = []     # For ZINB models
     all_raw_counts = []  # For ZINB models
+    all_mu_raw = []  # For ZINB models - unmasked mu values for plotting
+    all_masks = []  # Store masks for denoising analysis
     total_loss = 0.0
     total_recon_loss = 0.0
     total_kl_loss = 0.0
+    total_masked_loss = 0.0
+    total_reg_loss = 0.0
     
     # Determine model type
     is_zinb = getattr(model, "model_type", None) in {"ZINBAE", "ZINBVAE"}
@@ -319,7 +447,12 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 y_binary = y_binary.to(device)  # (B, seq)
             
             # Apply denoising: randomly set some non-zero values to zero in the input
-            y_noisy, mask = add_noise(y, denoise_percent)
+            # If training_masks provided, DON'T apply denoising (already applied during training)
+            if training_masks is None:
+                y_noisy, mask = add_noise(y, denoise_percent)
+            else:
+                y_noisy = y  # No masking - data should match the training_masks order
+                mask = None  # Will use training_masks later for plots
             y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
@@ -333,6 +466,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
 
             recon_loss = None
             kl_loss = None
+            masked_loss = None
             theta = pi = None  # only used for ZINB
 
             # -------- forward + losses --------
@@ -345,10 +479,18 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                     # KL loss: divide by seq_length to get "per-element" KL
                     kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
                     loss = recon_loss + beta * kl_loss
+                    # Add masked reconstruction loss if gamma > 0
+                    if gamma > 0 and denoise_percent > 0:
+                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                        loss = loss + gamma * masked_loss
                 else:  # ZINBAE
                     mu, theta, pi, z = out
                     recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                     loss = recon_loss
+                    # Add masked reconstruction loss if gamma > 0
+                    if gamma > 0 and denoise_percent > 0:
+                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                        loss = loss + gamma * masked_loss
 
                 # For ZINB, "reconstruction" to store/plot is the mean parameter mu if pi is not too high otherwise set to 0
                 recon_batch = mu * (pi < threshold).float()
@@ -368,6 +510,23 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 recon_loss = criterion(recon_batch, target)
                 loss = recon_loss
 
+            # Add regularization if specified
+            reg_penalty = 0.0
+            if regularizer.lower() == 'l1' and alpha > 0:
+                parameters = list(model.parameters())
+                if chrom and chrom_embedding is not None:
+                    parameters += list(chrom_embedding.parameters())
+                l1_penalty = l1_regularization(parameters)
+                reg_penalty = alpha * l1_penalty.item()
+                loss = loss + alpha * l1_penalty
+            elif regularizer.lower() == 'l2' and alpha > 0:
+                parameters = list(model.parameters())
+                if chrom and chrom_embedding is not None:
+                    parameters += list(chrom_embedding.parameters())
+                l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
+                reg_penalty = alpha * l2_penalty.item()
+                # Note: L2 is typically applied via weight_decay in optimizer, but we compute it here for tracking
+
             # -------- bookkeeping (single place) --------
             total_loss += loss.item() * batch_size
 
@@ -375,6 +534,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 total_recon_loss += recon_loss.item() * batch_size
             if kl_loss is not None:
                 total_kl_loss += kl_loss.item() * batch_size
+            if masked_loss is not None:
+                total_masked_loss += masked_loss.item() * batch_size
+            total_reg_loss += reg_penalty * batch_size
 
             # Store common outputs
             all_reconstructions.append(recon_batch.detach().cpu().numpy())
@@ -386,6 +548,11 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 all_theta.append(theta.detach().cpu().numpy())
                 all_pi.append(pi.detach().cpu().numpy())
                 all_raw_counts.append(y_raw.detach().cpu().numpy())
+                all_mu_raw.append(mu.detach().cpu().numpy())  # Store raw mu (unmasked)
+            
+            # Store mask for denoising analysis (only if created in this run, not if training_masks provided)
+            if training_masks is None and denoise_percent > 0 and mask is not None:
+                all_masks.append(mask.detach().cpu().numpy())
     # ... after loop
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
@@ -396,10 +563,20 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         all_theta = np.concatenate(all_theta, axis=0)
         all_pi = np.concatenate(all_pi, axis=0)
         all_raw_counts = np.concatenate(all_raw_counts, axis=0)
+        all_mu_raw = np.concatenate(all_mu_raw, axis=0)
     else:
         all_theta = None
         all_pi = None
         all_raw_counts = None
+        all_mu_raw = None
+    
+    # Use training_masks if provided, otherwise concatenate newly created masks
+    if training_masks is not None:
+        all_masks = training_masks
+    elif denoise_percent > 0 and len(all_masks) > 0:
+        all_masks = np.concatenate(all_masks, axis=0)
+    else:
+        all_masks = None
     
     # Calculate metrics
     test_loss = total_loss / len(all_originals)
@@ -415,31 +592,46 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     
     # Build metrics dictionary
     if is_zinb:
-        metrics = {'zinb_nll': test_loss, 'mae': mae, 'r2': r2}
+        test_recon_loss = total_recon_loss / len(all_originals)
+        metrics = {'total_loss': test_loss, 'zinb_nll': test_recon_loss, 'mae': mae, 'r2': r2}
     else:
-        metrics = {'mse': test_loss, 'mae': mae, 'r2': r2}
+        metrics = {'total_loss': test_loss, 'mse': test_loss, 'mae': mae, 'r2': r2}
     
     if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
-        test_recon_loss = total_recon_loss / len(all_originals)
         test_kl_loss = total_kl_loss / len(all_originals)
-        metrics['recon_loss'] = test_recon_loss
         metrics['kl_loss'] = test_kl_loss
+    
+    # Add masked loss if computed
+    if gamma > 0 and denoise_percent > 0:
+        test_masked_loss = total_masked_loss / len(all_originals)
+        metrics['masked_loss'] = test_masked_loss
+    
+    # Add regularization loss if computed
+    if regularizer.lower() != 'none' and alpha > 0:
+        test_reg_loss = total_reg_loss / len(all_originals)
+        metrics['reg_loss'] = test_reg_loss
     
     # Print metrics
     print("\n" + "="*50)
     print("TEST RESULTS")
     print("="*50)
+    print(f"Total Loss: {test_loss:.6f}")
     if is_zinb:
-        print(f"Test Loss (ZINB NLL): {test_loss:.6f}")
+        print(f"  - ZINB NLL: {test_recon_loss:.6f}")
     else:
-        print(f"Test Loss (MSE): {test_loss:.6f}")
-    print(f"Mean Absolute Error (MAE): {mae:.6f}")
-    print(f"R² Score: {r2:.6f}")
+        print(f"  - MSE: {test_loss:.6f}")
     
     if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
-        print(f"Reconstruction Loss: {test_recon_loss:.6f}")
-        print(f"KL Divergence: {test_kl_loss:.6f}")
+        print(f"  - KL Divergence: {test_kl_loss:.6f}")
     
+    if gamma > 0 and denoise_percent > 0:
+        print(f"  - Masked Reconstruction: {test_masked_loss:.6f}")
+    
+    if regularizer.lower() != 'none' and alpha > 0:
+        print(f"  - Regularization: {test_reg_loss:.6f}")
+    
+    print(f"Mean Absolute Error (MAE): {mae:.6f}")
+    print(f"R² Score: {r2:.6f}")
     print("="*50 + "\n")
     
     if plot:
@@ -452,8 +644,10 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             # Use special ZINB plotting function
             model_type_str = model.model_type
             use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_zinb_test_results(all_originals, all_reconstructions, 
+            # Pass all_mu_raw (unmasked mu) for plotting pi vs mu relationship
+            plot_zinb_test_results(all_originals, all_mu_raw, 
                                   all_theta=all_theta, all_pi=all_pi, all_raw_counts=all_raw_counts,
+                                  all_masks=all_masks, denoise_percent=denoise_percent,
                                   model_type=model_type_str, n_examples=n_examples, 
                                   metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
         else:
@@ -487,6 +681,11 @@ def parser_args():
     parser.add_argument('--chrom', action='store_true', help='Whether to use chromosome embedding')
     parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs (default: 10)')
     parser.add_argument('--beta', type=float, default=1.0, help='Beta weight for KL divergence in VAE/ZINBVAE (default: 1.0)')
+    parser.add_argument('--regularizer', type=str, choices=['none', 'L1', 'L2'], default='none', help='Regularization type: none, L1, or L2 (default: none)')
+    parser.add_argument('--alpha', type=float, default=1e-4, help='Regularization strength (default: 0.0)')    
+    parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability for regularization (0.0 to 1.0, default: 0.0)')
+    parser.add_argument('--gamma', type=float, default=1.0, help='Weight for masked reconstruction loss in ZINB models (default: 0.0)')
+    parser.add_argument('--pi_threshold', type=float, default=0.5, help='Threshold for zero-inflation probability in ZINB models (default: 0.5)')
     return parser.parse_args()
 
     
@@ -542,10 +741,12 @@ if __name__ == "__main__":
         else:
             ae_model = AE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_ae = train(ae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=results_subdir)
+                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=results_subdir,
+                          regularizer=args.regularizer, alpha=args.alpha)
         ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
                                                           chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                          plot=True, n_examples=5, binary=args.binary, name=results_subdir)
+                                                          plot=True, n_examples=5, binary=args.binary, name=results_subdir,
+                                                          regularizer=args.regularizer, alpha=args.alpha)
     
     if args.model in ['VAE', 'both', 'all']:
         if args.model in ['both', 'all']:
@@ -559,11 +760,13 @@ if __name__ == "__main__":
         else:   
             vae_model = VAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
         trained_vae = train(vae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent)
+                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent,
+                           regularizer=args.regularizer, alpha=args.alpha)
         
         vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
                                                              chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent)
+                                                             plot=True, n_examples=5, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent,
+                                                             regularizer=args.regularizer, alpha=args.alpha)
     
     if args.model in ['ZINBAE', 'all']:
         if args.model == 'all':
@@ -572,13 +775,16 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
-        zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
         trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent)
+                              chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent,
+                              regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold)
         
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                                      plot=True, n_examples=5, name=results_subdir, denoise_percent=args.denoise_percent)
+                                                                      plot=True, n_examples=5, name=results_subdir, denoise_percent=args.denoise_percent,
+                                                                      threshold=args.pi_threshold, gamma=args.gamma, pi_threshold=args.pi_threshold,
+                                                                      regularizer=args.regularizer, alpha=args.alpha)
     
     if args.model in ['ZINBVAE', 'all']:
         if args.model == 'all':
@@ -587,10 +793,13 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)")
         print("="*60)
-        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
+        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
         trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent)
+                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
+                               regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold)
         
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent)
+                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
+                                                                         threshold=args.pi_threshold, gamma=args.gamma, pi_threshold=args.pi_threshold,
+                                                                         regularizer=args.regularizer, alpha=args.alpha)

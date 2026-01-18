@@ -12,7 +12,7 @@ setup_plot_style()
 
 
 def plot_training_loss(losses, model_type='AE', save_path=None, 
-                       save_losses=True, use_conv=False, name=""):
+                       save_losses=True, use_conv=False, name="", reg_losses=None):
     """
     Plot training loss over epochs for continuous models (AE, VAE).
     
@@ -33,22 +33,45 @@ def plot_training_loss(losses, model_type='AE', save_path=None,
         Whether Conv1D was used in model. Default=False
     name : str
         Name prefix for saved files. Default=""
+    reg_losses : list or np.ndarray or None
+        Regularization loss values per epoch. Default=None
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     prefix = generate_prefix(model_type, timestamp, use_conv, name)
     
     base_dir = prepare_output_dirs(save_path, subdir='training', name=name)
-    plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
     
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2)
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss (MSE)')
-    plt.title(f'{model_type}: Training Loss over Epochs')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
+    # Create multi-panel plot if regularization is used
+    if reg_losses is not None:
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        
+        axes[0].plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['black'])
+        axes[0].set_xlabel('Epoch')
+        axes[0].set_ylabel('Loss (MSE)')
+        axes[0].set_title(f'{model_type}: Training Loss over Epochs')
+        axes[0].grid(True, alpha=0.3)
+        
+        axes[1].plot(range(1, len(reg_losses) + 1), reg_losses, marker='s', linewidth=2, color=COLORS['red'])
+        axes[1].set_xlabel('Epoch')
+        axes[1].set_ylabel('Regularization Loss')
+        axes[1].set_title(f'{model_type}: Regularization Loss over Epochs')
+        axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plot_path = os.path.join(base_dir, f'{prefix}_training_losses.png')
+        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2)
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss (MSE)')
+        plt.title(f'{model_type}: Training Loss over Epochs')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
+        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        plt.close()
     
     print(f"Training loss plot saved to {plot_path}")
     
@@ -65,6 +88,14 @@ def plot_training_loss(losses, model_type='AE', save_path=None,
             'losses_per_epoch': [float(loss) for loss in losses]
         }
         
+        if reg_losses is not None:
+            loss_data['has_regularization'] = True
+            loss_data['final_reg_loss'] = float(reg_losses[-1])
+            loss_data['min_reg_loss'] = float(min(reg_losses))
+            loss_data['reg_losses_per_epoch'] = [float(loss) for loss in reg_losses]
+        else:
+            loss_data['has_regularization'] = False
+        
         loss_file = os.path.join(base_dir, f'{prefix}_training_losses.json')
         with open(loss_file, 'w') as f:
             json.dump(loss_data, f, indent=4)
@@ -73,7 +104,7 @@ def plot_training_loss(losses, model_type='AE', save_path=None,
 
 def plot_binary_training_loss(losses, model_type='AE_binary', 
                               save_path=None, 
-                              save_losses=True, use_conv=False, name=""):
+                              save_losses=True, use_conv=False, name="", reg_losses=None):
     """
     Plot training loss over epochs for binary models (AE_binary, VAE_binary).
     
@@ -133,7 +164,7 @@ def plot_binary_training_loss(losses, model_type='AE_binary',
 
 def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None, 
                             model_type='ZINBAE', save_path=None, 
-                            save_losses=True, use_conv=False, name=""):
+                           save_losses=True, use_conv=False, name="", reg_losses=None, masked_losses=None):
     """
     Plot training loss over epochs for ZINB models (ZINBAE, ZINBVAE).
     
@@ -162,6 +193,10 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         Whether Conv1D was used. Default=False
     name : str
         Name prefix for saved files. Default=""
+    reg_losses : list or np.ndarray or None
+        Regularization loss values per epoch. Default=None
+    masked_losses : list or np.ndarray or None
+        Masked reconstruction loss values per epoch. Default=None
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     prefix = generate_prefix(model_type, timestamp, use_conv, name)
@@ -170,8 +205,13 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
     is_zinbvae = recon_losses is not None and kl_losses is not None
     
     if is_zinbvae:
-        # Create 3-panel plot for ZINBVAE
-        fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+        # Create multi-panel plot for ZINBVAE (3-5 panels: total, recon, KL, optionally masked, optionally reg)
+        num_panels = 3
+        if masked_losses is not None:
+            num_panels += 1
+        if reg_losses is not None:
+            num_panels += 1
+        fig, axes = plt.subplots(1, num_panels, figsize=(6*num_panels, 5))
         
         axes[0].plot(range(1, len(losses) + 1), losses, marker='o', 
                     linewidth=2, color=COLORS['pink'], label='Total Loss')
@@ -197,6 +237,26 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         axes[2].grid(True, alpha=0.3)
         axes[2].legend()
         
+        panel_idx = 3
+        if masked_losses is not None:
+            axes[panel_idx].plot(range(1, len(masked_losses) + 1), masked_losses, marker='v', 
+                        linewidth=2, color=COLORS['green'], label='Masked Recon')
+            axes[panel_idx].set_xlabel('Epoch')
+            axes[panel_idx].set_ylabel('Masked Loss')
+            axes[panel_idx].set_title(f'{model_type}: Masked Reconstruction Loss')
+            axes[panel_idx].grid(True, alpha=0.3)
+            axes[panel_idx].legend()
+            panel_idx += 1
+        
+        if reg_losses is not None:
+            axes[panel_idx].plot(range(1, len(reg_losses) + 1), reg_losses, marker='d', 
+                        linewidth=2, color=COLORS['orange'], label='Regularization')
+            axes[panel_idx].set_xlabel('Epoch')
+            axes[panel_idx].set_ylabel('Regularization Loss')
+            axes[panel_idx].set_title(f'{model_type}: Regularization Loss')
+            axes[panel_idx].grid(True, alpha=0.3)
+            axes[panel_idx].legend()
+        
         plt.tight_layout()
         plot_path = os.path.join(base_dir, f'{prefix}_training_losses.png')
         plt.savefig(plot_path, dpi=300, bbox_inches='tight')
@@ -210,6 +270,12 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
                linewidth=2, color=COLORS['blue'], alpha=0.7, label='Recon Loss')
         ax.plot(range(1, len(kl_losses) + 1), kl_losses, marker='^', 
                linewidth=2, color=COLORS['red'], alpha=0.7, label='KL Loss')
+        if masked_losses is not None:
+            ax.plot(range(1, len(masked_losses) + 1), masked_losses, marker='v', 
+                   linewidth=2, color=COLORS['green'], alpha=0.7, label='Masked Loss')
+        if reg_losses is not None:
+            ax.plot(range(1, len(reg_losses) + 1), reg_losses, marker='d', 
+                   linewidth=2, color=COLORS['orange'], alpha=0.7, label='Reg Loss')
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Loss')
         ax.set_title(f'{model_type}: Training Losses over Epochs')
@@ -223,18 +289,131 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
         
         print(f"Training loss plots saved to {base_dir}/")
     else:
-        # Simple plot for ZINBAE
-        plt.figure(figsize=(10, 6))
-        plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['black'])
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss (ZINB NLL)')
-        plt.title(f'{model_type}: Training Loss (ZINB NLL) over Epochs')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
+        # ZINBAE: recon_losses contains NLL, losses contains total (NLL + reg if applicable)
+        # If we have recon_losses, show total vs NLL vs reg
+        # If no recon_losses, it's the old behavior (just total loss)
         
-        plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-        plt.close()
+        if recon_losses is not None:
+            # ZINBAE with separate NLL tracking
+            if reg_losses is not None or masked_losses is not None:
+                # Show 3-4 panels: Total, NLL, optionally Masked, optionally Regularization
+                num_panels = 2  # Total and NLL always present
+                if masked_losses is not None:
+                    num_panels += 1
+                if reg_losses is not None:
+                    num_panels += 1
+                fig, axes = plt.subplots(1, num_panels, figsize=(6*num_panels, 6))
+                
+                axes[0].plot(range(1, len(losses) + 1), losses, marker='o', 
+                            linewidth=2, color=COLORS['pink'], label='Total Loss')
+                axes[0].set_xlabel('Epoch')
+                axes[0].set_ylabel('Total Loss')
+                axes[0].set_title(f'{model_type}: Total Training Loss')
+                axes[0].grid(True, alpha=0.3)
+                axes[0].legend()
+                
+                axes[1].plot(range(1, len(recon_losses) + 1), recon_losses, marker='s', 
+                            linewidth=2, color=COLORS['blue'], label='ZINB NLL')
+                axes[1].set_xlabel('Epoch')
+                axes[1].set_ylabel('ZINB NLL')
+                axes[1].set_title(f'{model_type}: Reconstruction Loss (ZINB NLL)')
+                axes[1].grid(True, alpha=0.3)
+                axes[1].legend()
+                
+                panel_idx = 2
+                if masked_losses is not None:
+                    axes[panel_idx].plot(range(1, len(masked_losses) + 1), masked_losses, marker='v', 
+                                linewidth=2, color=COLORS['green'], label='Masked Recon')
+                    axes[panel_idx].set_xlabel('Epoch')
+                    axes[panel_idx].set_ylabel('Masked Loss')
+                    axes[panel_idx].set_title(f'{model_type}: Masked Reconstruction Loss')
+                    axes[panel_idx].grid(True, alpha=0.3)
+                    axes[panel_idx].legend()
+                    panel_idx += 1
+                
+                if reg_losses is not None:
+                    axes[panel_idx].plot(range(1, len(reg_losses) + 1), reg_losses, marker='d', 
+                                linewidth=2, color=COLORS['orange'], label='Regularization')
+                    axes[panel_idx].set_xlabel('Epoch')
+                    axes[panel_idx].set_ylabel('Regularization Loss')
+                    axes[panel_idx].set_title(f'{model_type}: Regularization Loss')
+                    axes[panel_idx].grid(True, alpha=0.3)
+                    axes[panel_idx].legend()
+                
+                plt.tight_layout()
+                plot_path = os.path.join(base_dir, f'{prefix}_training_losses.png')
+                plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+                plt.close()
+                
+                # Also create a combined plot for ZINBAE
+                fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+                ax.plot(range(1, len(losses) + 1), losses, marker='o', 
+                       linewidth=2, color=COLORS['pink'], label='Total Loss')
+                ax.plot(range(1, len(recon_losses) + 1), recon_losses, marker='s', 
+                       linewidth=2, color=COLORS['blue'], alpha=0.7, label='NLL')
+                if masked_losses is not None:
+                    ax.plot(range(1, len(masked_losses) + 1), masked_losses, marker='v', 
+                           linewidth=2, color=COLORS['green'], alpha=0.7, label='Masked Loss')
+                if reg_losses is not None:
+                    ax.plot(range(1, len(reg_losses) + 1), reg_losses, marker='d', 
+                           linewidth=2, color=COLORS['orange'], alpha=0.7, label='Reg Loss')
+                ax.set_xlabel('Epoch')
+                ax.set_ylabel('Loss')
+                ax.set_title(f'{model_type}: Training Losses over Epochs')
+                ax.grid(True, alpha=0.3)
+                ax.legend()
+                
+                plt.tight_layout()
+                combined_plot_path = os.path.join(base_dir, f'{prefix}_training_losses_combined.png')
+                plt.savefig(combined_plot_path, dpi=300, bbox_inches='tight')
+                plt.close()
+            else:
+                # Show just NLL (no regularization)
+                plt.figure(figsize=(10, 6))
+                plt.plot(range(1, len(recon_losses) + 1), recon_losses, marker='o', 
+                        linewidth=2, color=COLORS['blue'])
+                plt.xlabel('Epoch')
+                plt.ylabel('Loss (ZINB NLL)')
+                plt.title(f'{model_type}: Training Loss (ZINB NLL) over Epochs')
+                plt.grid(True, alpha=0.3)
+                plt.tight_layout()
+                
+                plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
+                plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+                plt.close()
+        else:
+            # Old behavior for backward compatibility (if recon_losses not provided)
+            if reg_losses is not None:
+                fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+                
+                axes[0].plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['black'])
+                axes[0].set_xlabel('Epoch')
+                axes[0].set_ylabel('Loss (ZINB NLL)')
+                axes[0].set_title(f'{model_type}: Training Loss (ZINB NLL) over Epochs')
+                axes[0].grid(True, alpha=0.3)
+                
+                axes[1].plot(range(1, len(reg_losses) + 1), reg_losses, marker='s', linewidth=2, color=COLORS['red'])
+                axes[1].set_xlabel('Epoch')
+                axes[1].set_ylabel('Regularization Loss')
+                axes[1].set_title(f'{model_type}: Regularization Loss over Epochs')
+                axes[1].grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                plot_path = os.path.join(base_dir, f'{prefix}_training_losses.png')
+                plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+                plt.close()
+            else:
+                plt.figure(figsize=(10, 6))
+                plt.plot(range(1, len(losses) + 1), losses, marker='o', linewidth=2, color=COLORS['black'])
+                plt.xlabel('Epoch')
+                plt.ylabel('Loss (ZINB NLL)')
+                plt.title(f'{model_type}: Training Loss (ZINB NLL) over Epochs')
+                plt.grid(True, alpha=0.3)
+                plt.tight_layout()
+                
+                plot_path = os.path.join(base_dir, f'{prefix}_training_loss.png')
+                plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+                plt.close()
         
         print(f"Training loss plot saved to {plot_path}")
     
@@ -258,6 +437,27 @@ def plot_zinb_training_loss(losses, recon_losses=None, kl_losses=None,
             loss_data['min_kl_loss'] = float(min(kl_losses))
             loss_data['recon_losses_per_epoch'] = [float(loss) for loss in recon_losses]
             loss_data['kl_losses_per_epoch'] = [float(loss) for loss in kl_losses]
+        elif recon_losses is not None:
+            # For ZINBAE
+            loss_data['final_recon_loss'] = float(recon_losses[-1])
+            loss_data['min_recon_loss'] = float(min(recon_losses))
+            loss_data['recon_losses_per_epoch'] = [float(loss) for loss in recon_losses]
+        
+        if masked_losses is not None:
+            loss_data['has_masked_loss'] = True
+            loss_data['final_masked_loss'] = float(masked_losses[-1])
+            loss_data['min_masked_loss'] = float(min(masked_losses))
+            loss_data['masked_losses_per_epoch'] = [float(loss) for loss in masked_losses]
+        else:
+            loss_data['has_masked_loss'] = False
+        
+        if reg_losses is not None:
+            loss_data['has_regularization'] = True
+            loss_data['final_reg_loss'] = float(reg_losses[-1])
+            loss_data['min_reg_loss'] = float(min(reg_losses))
+            loss_data['reg_losses_per_epoch'] = [float(loss) for loss in reg_losses]
+        else:
+            loss_data['has_regularization'] = False
         
         loss_file = os.path.join(base_dir, f'{prefix}_training_losses.json')
         with open(loss_file, 'w') as f:
