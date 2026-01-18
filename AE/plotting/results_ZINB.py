@@ -213,7 +213,7 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
         axes[0,0].set_yscale("log")
         axes[0,0].set_ylabel("Density (log)")
         axes[0, 0].set_xlabel('Zero-inflation Probability (π)')
-        axes[0, 0].set_ylabel('Frequency')
+        axes[0, 0].set_ylabel('Density')
         axes[0, 0].set_title(f'{model_type}: π Distribution')
         axes[0, 0].legend()
         axes[0, 0].grid(True, alpha=0.3)
