@@ -5,28 +5,25 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import mean_absolute_error, r2_score
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
-from AE.plotting.results_standard import plot_test_results, plot_binary_test_results
-from AE.plotting.plot_loss import plot_training_loss, plot_binary_training_loss, plot_zinb_training_loss
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from AE.plotting.plot_loss import plot_zinb_training_loss
 from AE.plotting.results_ZINB import plot_zinb_test_results
 import argparse
-from AE.architectures.Autoencoder import AE, VAE
-from AE.architectures.Autoencoder_binary import AE_binary, VAE_binary
 from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
 from AE.training.loss_functions import zinb_nll, l1_regularization, reconstruct_masked_values
-from AE.training.training_utils import ChromosomeEmbedding, add_noise, dataloader_from_array, gaussian_kl
+from AE.training.training_utils import ChromosomeEmbedding, dataloader_from_array, gaussian_kl
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, binary = False, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5):
     """
-    Train AE, VAE, ZINBAE, or ZINBVAE model
+    Train ZINBAE or ZINBVAE model
     
     Parameters:
     -----------
-    model : AE, VAE, ZINBAE, or ZINBVAE
+    model : ZINBAE or ZINBVAE
         The model to train
     dataloader : DataLoader
         Training data
@@ -41,17 +38,16 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     plot : bool
         Whether to plot training loss
     beta : float
-        Weight for KL divergence loss (only used for VAE/ZINBVAE). Default=1.0
-    binary : bool
-        Whether to use binary AE/VAE models. Default=False
+        Weight for KL divergence loss (only used for ZINBVAE). Default=1.0
     denoise_percent : float
         Percentage of non-zero values that were masked in the dataloader (0.0 to 1.0). 
+        Note: Masking is now applied once in dataloader_from_array(), not per epoch. Default=0.0
     regularizer : str
         Type of regularization: 'none', 'L1', or 'L2'. Default='none'
     alpha : float
         Regularization strength. Default=0.0
     gamma : float
-        Weight for masked reconstruction loss (only used for ZINB models). Default=0.0
+        Weight for masked reconstruction loss. Default=0.0
     pi_threshold : float
         Threshold for zero-inflation probability to consider a value as non-zero. Default=0.5
     """
@@ -63,21 +59,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         chrom_embedding.to(device)
         parameters += list(chrom_embedding.parameters())
 
-    # Determine model type
-    is_zinb = getattr(model, "model_type", None) in {"ZINBAE", "ZINBVAE"}
-    is_vae  = getattr(model, "model_type", None) in {"VAE", "VAE_binary", "ZINBVAE"}
-    
-    if is_zinb and binary:
-        raise ValueError("binary=True is not supported for ZINB models in this setup.")
-    
-    # Set criterion (not used for ZINB models)
-    # Use reduction='mean' to average over all elements (batch * seq_length)
-    # We'll also normalize KL by seq_length to make both losses "per-element" losses
-    if not is_zinb:
-        if binary:
-            criterion = nn.BCELoss(reduction='mean')  # Mean over all elements
-        else:
-            criterion = nn.MSELoss(reduction='mean')  # Mean over all elements
+    # Determine model type (ZINBAE or ZINBVAE)
+    is_zinbvae = getattr(model, "model_type", None) == "ZINBVAE"
     
     # Create optimizer with L2 regularization if specified
     weight_decay = alpha if regularizer.lower() == 'l2' else 0.0
@@ -101,34 +84,19 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
         for batch in pbar:
-            # Unpack batch based on flags
-            # Note: mask is always the last element in batch
-            if is_zinb:
-                if chrom:
-                    x, y, c, y_raw, size_factors, mask = batch
-                    c = c.to(device)
-                else:
-                    x, y, y_raw, size_factors, mask = batch
-                y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
-                size_factors = size_factors.to(device)  # (B,) - size factors
+            # Unpack batch for ZINB models
+            # Note: mask is always the last element in batc
+            if chrom:
+                x, y, c, y_raw, size_factors, mask = batch
+                c = c.to(device)
             else:
-                if chrom:
-                    if binary:
-                        x, y, y_binary, c, mask = batch
-                    else:
-                        x, y, c, mask = batch
-                    c = c.to(device)
-                else:
-                    if binary:
-                        x, y, y_binary, mask = batch
-                    else:
-                        x, y, mask = batch
+                x, y, y_raw, size_factors, mask = batch
             
-            x = x.to(device)         # (B, seq, F_other or F_other_without_chr)
+            x = x.to(device)         # (B, seq, F_other)
             y = y.to(device)         # (B, seq) - normalized counts (already masked if denoise_percent > 0)
+            y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
+            size_factors = size_factors.to(device)  # (B,) - size factors
             mask = mask.to(device)   # (B, seq) - boolean mask indicating masked positions
-            if binary:
-                y_binary = y_binary.to(device)  # (B, seq)
             
             optimizer.zero_grad()
             
@@ -149,40 +117,26 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             kl_loss = None
             masked_loss = None
 
-            # Forward pass
-            if is_zinb:
-                if model.model_type == 'ZINBVAE':
-                    mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
-                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
-                    # KL loss: divide by seq_length to get "per-element" KL
-                    kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
-                    loss = recon_loss + beta * kl_loss
-                    # Add masked reconstruction loss if gamma > 0
-                    if gamma > 0 and denoise_percent > 0:
-                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
-                        loss = loss + gamma * masked_loss
-                else:  # ZINBAE
-                    mu, theta, pi, z = model(batch_input, size_factors)
-                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
-                    loss = recon_loss
-                    # Add masked reconstruction loss if gamma > 0
-                    if gamma > 0 and denoise_percent > 0:
-                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
-                        loss = loss + gamma * masked_loss
-
-            elif is_vae:
-                recon_batch, z, mu, logvar = model(batch_input)
-                # Reconstruction loss: mean over all elements (batch * seq_length)
-                recon_loss = criterion(recon_batch, y_binary if binary else y)
-                # KL loss: divide by seq_length to get "per-element" KL, matching recon_loss scale
-                kl_loss = gaussian_kl(mu, logvar) / model.seq_length
+            # Forward pass for ZINB models
+            if is_zinbvae:
+                mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
+                recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
+                # KL loss: divide by seq_length to get "per-element" KL
+                kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
                 loss = recon_loss + beta * kl_loss
-
-            else:  # AE
-                recon_batch, z = model(batch_input)
-                # Reconstruction loss: mean over all elements (batch * seq_length)
-                recon_loss = criterion(recon_batch, y_binary if binary else y)
+                # Add masked reconstruction loss if gamma > 0
+                if gamma > 0 and denoise_percent > 0:
+                    masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                    loss = loss + gamma * masked_loss
+            else:  # ZINBAE
+                mu, theta, pi, z = model(batch_input, size_factors)
+                recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
                 loss = recon_loss
+                # Add masked reconstruction loss if gamma > 0
+                if gamma > 0 and denoise_percent > 0:
+                    masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                    loss = loss + gamma * masked_loss
+                kl_loss = None
 
             # Add L1 regularization if specified
             reg_penalty = 0.0
@@ -205,7 +159,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             
             loss.backward()
             
-            # Gradient clipping to prevent exploding gradients (especially important for VAE/ZINBVAE)
+            # Gradient clipping to prevent exploding gradients
             torch.nn.utils.clip_grad_norm_(parameters, max_norm=5.0)
             
             optimizer.step()
@@ -214,20 +168,19 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             if torch.isnan(loss) or torch.isinf(loss):
                 print(f"\nWARNING: NaN or Inf detected in loss at epoch {epoch+1}!")
                 print(f"Batch info: batch size={y.size(0)}")
-                if is_zinb:
-                    print(f"  mu: min={mu.min():.4f}, max={mu.max():.4f}, mean={mu.mean():.4f}")
-                    print(f"  theta: min={theta.min():.4f}, max={theta.max():.4f}, mean={theta.mean():.4f}")
-                    print(f"  pi: min={pi.min():.4f}, max={pi.max():.4f}, mean={pi.mean():.4f}")
-                    if model.model_type == 'ZINBVAE':
-                        print(f"  mu_z: min={mu_z.min():.4f}, max={mu_z.max():.4f}, mean={mu_z.mean():.4f}")
-                        print(f"  logvar_z: min={logvar_z.min():.4f}, max={logvar_z.max():.4f}, mean={logvar_z.mean():.4f}")
+                print(f"  mu: min={mu.min():.4f}, max={mu.max():.4f}, mean={mu.mean():.4f}")
+                print(f"  theta: min={theta.min():.4f}, max={theta.max():.4f}, mean={theta.mean():.4f}")
+                print(f"  pi: min={pi.min():.4f}, max={pi.max():.4f}, mean={pi.mean():.4f}")
+                if is_zinbvae:
+                    print(f"  mu_z: min={mu_z.min():.4f}, max={mu_z.max():.4f}, mean={mu_z.mean():.4f}")
+                    print(f"  logvar_z: min={logvar_z.min():.4f}, max={logvar_z.max():.4f}, mean={logvar_z.mean():.4f}")
                 # Skip this batch or break
                 continue
             
             epoch_loss += loss.item() * y.size(0)
             
             # Update progress bar with current loss
-            if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
+            if is_zinbvae:
                 postfix_dict = {
                     'total': f'{loss.item():.4f}',
                     'recon': f'{recon_loss.item():.4f}',
@@ -238,21 +191,13 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
                 if regularizer.lower() != 'none' and alpha > 0:
                     postfix_dict['reg'] = f'{reg_penalty:.6f}'
                 pbar.set_postfix(postfix_dict)
-            elif is_zinb:
-                # ZINBAE (no KL loss)
+            else:  # ZINBAE
                 postfix_dict = {
                     'total': f'{loss.item():.4f}',
                     'nll': f'{recon_loss.item():.4f}'
                 }
                 if masked_loss is not None:
                     postfix_dict['masked'] = f'{masked_loss.item():.4f}'
-                if regularizer.lower() != 'none' and alpha > 0:
-                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
-                pbar.set_postfix(postfix_dict)
-            else:
-                # AE (no KL, no ZINB)
-                postfix_dict = {'loss': f'{loss.item():.4f}'}
-                if regularizer.lower() != 'none' and alpha > 0:
                     postfix_dict['reg'] = f'{reg_penalty:.6f}'
                 pbar.set_postfix(postfix_dict)
         
@@ -267,10 +212,12 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         epoch_masked_loss /= len(dataloader.dataset)
         epoch_masked_losses.append(epoch_masked_loss)
         
-        if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
-            epoch_recon_loss /= len(dataloader.dataset)
+        # Track recon and KL losses
+        epoch_recon_loss /= len(dataloader.dataset)
+        epoch_recon_losses.append(epoch_recon_loss)
+        
+        if is_zinbvae:
             epoch_kl_loss /= len(dataloader.dataset)
-            epoch_recon_losses.append(epoch_recon_loss)
             epoch_kl_losses.append(epoch_kl_loss)
             # Build print message with optional components
             msg = f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, Recon: {epoch_recon_loss:.4f}, KL: {epoch_kl_loss:.4f}"
@@ -279,10 +226,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             if regularizer.lower() != 'none' and alpha > 0:
                 msg += f", Reg: {epoch_reg_loss:.6f}"
             print(msg)
-        elif is_zinb:
-            # ZINBAE (has recon_loss but no KL)
-            epoch_recon_loss /= len(dataloader.dataset)
-            epoch_recon_losses.append(epoch_recon_loss)
+        else:  # ZINBAE
             # Build print message with optional components
             msg = f"Epoch [{epoch+1}/{num_epochs}], Total Loss: {epoch_loss:.4f}, NLL: {epoch_recon_loss:.4f}"
             if gamma > 0 and denoise_percent > 0:
@@ -290,11 +234,6 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
             if regularizer.lower() != 'none' and alpha > 0:
                 msg += f", Reg: {epoch_reg_loss:.6f}"
             print(msg)
-        else:
-            if regularizer.lower() != 'none' and alpha > 0:
-                print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Reg: {epoch_reg_loss:.6f}")
-            else:
-                print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
     
     if plot:
         # Pass regularization losses if regularization is active
@@ -302,28 +241,17 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         # Pass masked losses if gamma > 0
         masked_losses_to_plot = epoch_masked_losses if (gamma > 0 and denoise_percent > 0) else None
         
-        if binary:
-            model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
-            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_binary_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name,
-                                     reg_losses=reg_losses_to_plot)
-        elif is_zinb:
-            model_type_str = model.model_type
-            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            if model.model_type == 'ZINBVAE':
-                plot_zinb_training_loss(epoch_losses, epoch_recon_losses, epoch_kl_losses, 
-                                       model_type=model_type_str, use_conv=use_conv, name=name,
-                                       reg_losses=reg_losses_to_plot, masked_losses=masked_losses_to_plot)
-            else:
-                # ZINBAE: pass both total loss and NLL loss
-                plot_zinb_training_loss(epoch_losses, epoch_recon_losses, None,
-                                       model_type=model_type_str, use_conv=use_conv, name=name,
-                                       reg_losses=reg_losses_to_plot, masked_losses=masked_losses_to_plot)
-        else:
-            model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
-            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_training_loss(epoch_losses, model_type=model_type_str, use_conv=use_conv, name=name,
-                              reg_losses=reg_losses_to_plot)
+        model_type_str = model.model_type
+        use_conv = model.use_conv if hasattr(model, 'use_conv') else False
+        
+        if is_zinbvae:
+            plot_zinb_training_loss(epoch_losses, epoch_recon_losses, epoch_kl_losses, 
+                                   model_type=model_type_str, use_conv=use_conv, name=name,
+                                   reg_losses=reg_losses_to_plot, masked_losses=masked_losses_to_plot)
+        else:  # ZINBAE
+            plot_zinb_training_loss(epoch_losses, epoch_recon_losses, None,
+                                   model_type=model_type_str, use_conv=use_conv, name=name,
+                                   reg_losses=reg_losses_to_plot, masked_losses=masked_losses_to_plot)
     
     # Evaluate on training data to get reconstruction plots
     print("\n" + "="*50)
@@ -331,19 +259,19 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     print("="*50)
     
     test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
-         plot=True, n_examples=5, beta=beta, binary=binary, name=name, 
+         plot=True, n_examples=5, beta=beta, name=name, 
          denoise_percent=denoise_percent, eval_mode="training", threshold=pi_threshold,
          gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha)
     
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5, gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5, gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0):
     """
-    Test AE, VAE, ZINBAE, or ZINBVAE model
+    Test ZINBAE or ZINBVAE model
     
     Parameters:
     -----------
-    model : AE, VAE, ZINBAE, or ZINBVAE
+    model : ZINBAE or ZINBVAE
         The model to test
     dataloader : DataLoader
         Test data
@@ -356,9 +284,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     n_examples : int
         Number of example reconstructions to plot
     beta : float
-        Weight for KL divergence loss (only used for VAE/ZINBVAE). Default=1.0
-    binary : bool
-        Whether to use binary AE/VAE models. Default=False
+        Weight for KL divergence loss (only used for ZINBVAE). Default=1.0
     denoise_percent : float
         Percentage of non-zero values that were masked in the dataloader (0.0 to 1.0).
     eval_mode : str
@@ -366,7 +292,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     threshold : float
         Threshold for zero-inflation probability. Default=0.5
     gamma : float
-        Weight for masked reconstruction loss (only used for ZINB models). Default=0.0
+        Weight for masked reconstruction loss. Default=0.0
     pi_threshold : float
         Threshold for zero-inflation probability for masked loss. Default=0.5
     regularizer : str
@@ -383,13 +309,16 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         chrom_embedding.to(device)
         chrom_embedding.eval()
     
+    # Determine model type (ZINBAE or ZINBVAE)
+    is_zinbvae = getattr(model, "model_type", None) == "ZINBVAE"
+    
     all_reconstructions = []
     all_latents = []
     all_originals = []
-    all_theta = []  # For ZINB models
-    all_pi = []     # For ZINB models
-    all_raw_counts = []  # For ZINB models
-    all_mu_raw = []  # For ZINB models - unmasked mu values for plotting
+    all_theta = []
+    all_pi = []
+    all_raw_counts = []
+    all_mu_raw = []  # unmasked mu values for plotting
     all_masks = []  # Store masks for denoising analysis
     total_loss = 0.0
     total_recon_loss = 0.0
@@ -397,49 +326,20 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     total_masked_loss = 0.0
     total_reg_loss = 0.0
     
-    # Determine model type
-    is_zinb = getattr(model, "model_type", None) in {"ZINBAE", "ZINBVAE"}
-    is_vae = getattr(model, "model_type", None) in {"VAE", "VAE_binary", "ZINBVAE"}
-    
-    # Set criterion (not used for ZINB models)
-    # Use reduction='mean' to average over all elements (batch * seq_length)
-    # We'll also normalize KL by seq_length to make both losses "per-element" losses
-    if not is_zinb:
-        if binary:
-            criterion = nn.BCELoss(reduction='mean')  # Mean over all elements
-        else:
-            criterion = nn.MSELoss(reduction='mean')  # Mean over all elements
-    
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Testing"):
-            # Unpack batch based on flags
+            # Unpack batch for ZINB models
             # Note: mask is always the last element in batch
-            if is_zinb:
-                if chrom:
-                    x, y, c, y_raw, size_factors, mask = batch
-                    c = c.to(device)
-                else:
-                    x, y, y_raw, size_factors, mask = batch
-                y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
-                size_factors = size_factors.to(device)  # (B,) - size factors
+            if chrom:
+                x, y, c, y_raw, size_factors, mask = batch
+                c = c.to(device)
             else:
-                if chrom:
-                    if binary:
-                        x, y, y_binary, c, mask = batch
-                    else:
-                        x, y, c, mask = batch
-                    c = c.to(device)
-                else:
-                    if binary:
-                        x, y, y_binary, mask = batch
-                    else:
-                        x, y, mask = batch
+                x, y, y_raw, size_factors, mask = batch
             
-            x = x.to(device)         # (B, seq, F_other or F_other_without_chr)
             y = y.to(device)         # (B, seq) - normalized counts (already masked if denoise_percent > 0)
+            y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
+            size_factors = size_factors.to(device)  # (B,) - size factors
             mask = mask.to(device)   # (B, seq) - boolean mask indicating masked positions
-            if binary:
-                y_binary = y_binary.to(device)  # (B, seq)
             
             # y is already masked (if denoise_percent > 0), use it directly
             y_in = y.unsqueeze(-1)  # Add feature dimension
@@ -449,55 +349,31 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             else:
                 batch_input = torch.cat((y_in, x), dim=2)
 
-
-            target = y_binary if binary else y
             batch_size = y.size(0)
 
-            recon_loss = None
-            kl_loss = None
-            masked_loss = None
-            theta = pi = None  # only used for ZINB
-
-            # -------- forward + losses --------
-            if is_zinb:
-                out = model(batch_input, size_factors)
-
-                if model.model_type == "ZINBVAE":
-                    mu, theta, pi, z, mu_z, logvar_z = out
-                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
-                    # KL loss: divide by seq_length to get "per-element" KL
-                    kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
-                    loss = recon_loss + beta * kl_loss
-                    # Add masked reconstruction loss if gamma > 0
-                    if gamma > 0 and denoise_percent > 0:
-                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
-                        loss = loss + gamma * masked_loss
-                else:  # ZINBAE
-                    mu, theta, pi, z = out
-                    recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
-                    loss = recon_loss
-                    # Add masked reconstruction loss if gamma > 0
-                    if gamma > 0 and denoise_percent > 0:
-                        masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
-                        loss = loss + gamma * masked_loss
-
-                # For ZINB, "reconstruction" to store/plot is the mean parameter mu if pi is not too high otherwise set to 0
-                recon_batch = mu * (pi < threshold).float()
-                
-
-            elif is_vae:
-                recon_batch, z, mu, logvar = model(batch_input)
-                # Reconstruction loss: mean over all elements (batch * seq_length)
-                recon_loss = criterion(recon_batch, target)
+            # Forward pass for ZINB models
+            if is_zinbvae:
+                mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
+                recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                 # KL loss: divide by seq_length to get "per-element" KL
-                kl_loss = gaussian_kl(mu, logvar) / model.seq_length
+                kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
                 loss = recon_loss + beta * kl_loss
-
-            else:  # AE
-                recon_batch, z = model(batch_input)
-                # Reconstruction loss: mean over all elements (batch * seq_length)
-                recon_loss = criterion(recon_batch, target)
+                # Add masked reconstruction loss if gamma > 0
+                if gamma > 0 and denoise_percent > 0:
+                    masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                    loss = loss + gamma * masked_loss
+            else:  # ZINBAE
+                mu, theta, pi, z = model(batch_input, size_factors)
+                recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                 loss = recon_loss
+                # Add masked reconstruction loss if gamma > 0
+                if gamma > 0 and denoise_percent > 0:
+                    masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
+                    loss = loss + gamma * masked_loss
+                kl_loss = None
+
+            # For ZINB, "reconstruction" to store/plot is the mean parameter mu if pi is not too high otherwise set to 0
+            recon_batch = mu * (pi < threshold).float()
 
             # Add regularization if specified
             reg_penalty = 0.0
@@ -533,11 +409,10 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             all_originals.append(y.detach().cpu().numpy())
 
             # Store ZINB-specific outputs
-            if is_zinb:
-                all_theta.append(theta.detach().cpu().numpy())
-                all_pi.append(pi.detach().cpu().numpy())
-                all_raw_counts.append(y_raw.detach().cpu().numpy())
-                all_mu_raw.append(mu.detach().cpu().numpy())  # Store raw mu (unmasked)
+            all_theta.append(theta.detach().cpu().numpy())
+            all_pi.append(pi.detach().cpu().numpy())
+            all_raw_counts.append(y_raw.detach().cpu().numpy())
+            all_mu_raw.append(mu.detach().cpu().numpy())  # Store raw mu (unmasked)
             
             # Store mask from dataloader
             if denoise_percent > 0:
@@ -547,8 +422,8 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     all_latents = np.concatenate(all_latents, axis=0)
     all_originals = np.concatenate(all_originals, axis=0)
     
-    # Concatenate ZINB parameters if collected
-    if is_zinb and len(all_theta) > 0:
+    # Concatenate ZINB parameters
+    if len(all_theta) > 0:
         all_theta = np.concatenate(all_theta, axis=0)
         all_pi = np.concatenate(all_pi, axis=0)
         all_raw_counts = np.concatenate(all_raw_counts, axis=0)
@@ -568,23 +443,15 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     # Calculate metrics
     test_loss = total_loss / len(all_originals)
     
-    # For ZINB models, compare raw counts to raw count predictions
-    # For other models, compare normalized values
-    if is_zinb:
-        mae = mean_absolute_error(all_raw_counts.flatten(), all_reconstructions.flatten())
-        r2 = r2_score(all_raw_counts.flatten(), all_reconstructions.flatten())
-    else:
-        mae = mean_absolute_error(all_originals.flatten(), all_reconstructions.flatten())
-        r2 = r2_score(all_originals.flatten(), all_reconstructions.flatten())
+    # For ZINB models, compare raw counts to predictions
+    mae = mean_absolute_error(all_raw_counts.flatten(), all_reconstructions.flatten())
+    r2 = r2_score(all_raw_counts.flatten(), all_reconstructions.flatten())
     
     # Build metrics dictionary
-    if is_zinb:
-        test_recon_loss = total_recon_loss / len(all_originals)
-        metrics = {'total_loss': test_loss, 'zinb_nll': test_recon_loss, 'mae': mae, 'r2': r2}
-    else:
-        metrics = {'total_loss': test_loss, 'mse': test_loss, 'mae': mae, 'r2': r2}
+    test_recon_loss = total_recon_loss / len(all_originals)
+    metrics = {'total_loss': test_loss, 'zinb_nll': test_recon_loss, 'mae': mae, 'r2': r2}
     
-    if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
+    if is_zinbvae:
         test_kl_loss = total_kl_loss / len(all_originals)
         metrics['kl_loss'] = test_kl_loss
     
@@ -603,12 +470,13 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     print("TEST RESULTS")
     print("="*50)
     print(f"Total Loss: {test_loss:.6f}")
-    if is_zinb:
-        print(f"  - ZINB NLL: {test_recon_loss:.6f}")
-    else:
-        print(f"  - MSE: {test_loss:.6f}")
+    print(f"  - ZINB NLL: {test_recon_loss:.6f}")
+    # print the number of masked values with a pi higher than the threshold and lower than the threshold
+    print(f"Total number of masked values: {all_masks.sum()}")
+    print(f"  - Number of values with pi >= {threshold}: {(all_pi[all_masks] >= threshold).sum()}")
+    print(f"  - Number of values with pi < {threshold}: {(all_pi[all_masks] < threshold).sum()}")
     
-    if is_vae or (is_zinb and model.model_type == 'ZINBVAE'):
+    if is_zinbvae:
         print(f"  - KL Divergence: {test_kl_loss:.6f}")
     
     if gamma > 0 and denoise_percent > 0:
@@ -622,39 +490,26 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     print("="*50 + "\n")
     
     if plot:
-        if binary:
-            model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE_binary'
-            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_binary_test_results(all_originals, all_reconstructions, all_reconstructions,
-                                    model_type=model_type_str, n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
-        elif is_zinb:
-            # Use special ZINB plotting function
-            model_type_str = model.model_type
-            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            # Pass all_mu_raw (unmasked mu) for plotting pi vs mu relationship
-            plot_zinb_test_results(all_originals, all_mu_raw, 
-                                  all_theta=all_theta, all_pi=all_pi, all_raw_counts=all_raw_counts,
-                                  all_masks=all_masks, denoise_percent=denoise_percent,
-                                  model_type=model_type_str, n_examples=n_examples, 
-                                  metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
-        else:
-            model_type_str = model.model_type if hasattr(model, 'model_type') else 'AE'
-            use_conv = model.use_conv if hasattr(model, 'use_conv') else False
-            plot_test_results(all_originals, all_reconstructions, model_type=model_type_str, 
-                            n_examples=n_examples, metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
+        # Use ZINB plotting function
+        model_type_str = model.model_type
+        use_conv = model.use_conv if hasattr(model, 'use_conv') else False
+        # Pass all_mu_raw (unmasked mu) for plotting pi vs mu relationship
+        plot_zinb_test_results(all_originals, all_mu_raw, 
+                              all_theta=all_theta, all_pi=all_pi, all_raw_counts=all_raw_counts,
+                              all_masks=all_masks, denoise_percent=denoise_percent,
+                              model_type=model_type_str, n_examples=n_examples, 
+                              metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
         
     return all_reconstructions, all_latents, metrics
 
 
 
 def parser_args():
-    parser = argparse.ArgumentParser(description='Train and test Autoencoder models (AE, VAE, ZINBAE, ZINBVAE)')
-    parser.add_argument('--model', type=str, choices=['AE', 'VAE', 'ZINBAE', 'ZINBVAE', 'both', 'all'], default='both',
-                        help='Model type to train: AE, VAE, ZINBAE, ZINBVAE, both (AE+VAE), or all (default: both)')
+    parser = argparse.ArgumentParser(description='Train and test ZINB Autoencoder models (ZINBAE, ZINBVAE)')
+    parser.add_argument('--model', type=str, choices=['ZINBAE', 'ZINBVAE', 'both'], default='both',
+                        help='Model type to train: ZINBAE, ZINBVAE, or both (default: both)')
     parser.add_argument('--use_conv', action='store_true',
                         help='Whether to use Conv1D layer in the model')
-    parser.add_argument('--binary', action='store_true',
-                        help='Whether to use binary AE/VAE models')
     parser.add_argument('--filename', type=str, default='',
                         help='Base filename for loading data (default: empty string)')
     parser.add_argument('--results_subdir', type=str, default='',
@@ -686,13 +541,10 @@ if __name__ == "__main__":
     no_test = args.no_test if args.no_test else False 
     chrom = args.chrom if args.chrom else False
     
-    # Determine if we're using ZINB models
-    is_zinb = args.model in ['ZINBAE', 'ZINBVAE', 'all']
-    
     # Load data
     train_input_path = input_path + filename + "train_data.npy"
     print("Loading training data from:", train_input_path)
-    train_dataloader = dataloader_from_array(train_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, sample_fraction=args.sample_fraction, denoise_percentage=args.denoise_percent)
+    train_dataloader = dataloader_from_array(train_input_path, chrom=chrom, batch_size=64, shuffle=True, zinb=True, sample_fraction=args.sample_fraction, denoise_percentage=args.denoise_percent)
     
     # If no_test, use training data for evaluation; otherwise load test data
     if no_test:
@@ -701,7 +553,7 @@ if __name__ == "__main__":
     else:
         test_input_path = input_path + filename + "test_data.npy"
         print("Loading test data from:", test_input_path)
-        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, denoise_percentage=args.denoise_percent)
+        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=True, zinb=True, denoise_percentage=args.denoise_percent)
     
     # Print size of train data
     num_train_samples = len(train_dataloader.dataset)
@@ -717,49 +569,9 @@ if __name__ == "__main__":
     feature_dim += 1  # +1 for y_in (the noisy input)
     feature_dim += chrom_embedding.embedding.embedding_dim if chrom else 0  # +4 for chromosome embedding
     
-    
     # Train and test based on model choice
-    if args.model in ['AE', 'both', 'all']:
+    if args.model in ['ZINBAE', 'both']:
         print("="*60)
-        print("TRAINING AUTOENCODER (AE)")
-        print("="*60)
-        if args.binary:
-            ae_model = AE_binary(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
-        else:
-            ae_model = AE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
-        trained_ae = train(ae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                          chrom=chrom, chrom_embedding=chrom_embedding, plot=True, binary=args.binary, name=results_subdir,
-                          regularizer=args.regularizer, alpha=args.alpha)
-        ae_reconstructions, ae_latents, ae_metrics = test(trained_ae, test_dataloader, 
-                                                          chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                          plot=True, n_examples=5, binary=args.binary, name=results_subdir,
-                                                          regularizer=args.regularizer, alpha=args.alpha)
-    
-    if args.model in ['VAE', 'both', 'all']:
-        if args.model in ['both', 'all']:
-            print("\n" + "="*60)
-        else:
-            print("="*60)
-        print("TRAINING VARIATIONAL AUTOENCODER (VAE)")
-        print("="*60)
-        if args.binary:
-            vae_model = VAE_binary(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
-        else:   
-            vae_model = VAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv)
-        trained_vae = train(vae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
-                           chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent,
-                           regularizer=args.regularizer, alpha=args.alpha)
-        
-        vae_reconstructions, vae_latents, vae_metrics = test(trained_vae, test_dataloader, 
-                                                             chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                             plot=True, n_examples=5, beta=args.beta, binary=args.binary, name=results_subdir, denoise_percent=args.denoise_percent,
-                                                             regularizer=args.regularizer, alpha=args.alpha)
-    
-    if args.model in ['ZINBAE', 'all']:
-        if args.model == 'all':
-            print("\n" + "="*60)
-        else:
-            print("="*60)
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
         zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
@@ -773,8 +585,8 @@ if __name__ == "__main__":
                                                                       threshold=args.pi_threshold, gamma=args.gamma, pi_threshold=args.pi_threshold,
                                                                       regularizer=args.regularizer, alpha=args.alpha)
     
-    if args.model in ['ZINBVAE', 'all']:
-        if args.model == 'all':
+    if args.model in ['ZINBVAE', 'both']:
+        if args.model == 'both':
             print("\n" + "="*60)
         else:
             print("="*60)

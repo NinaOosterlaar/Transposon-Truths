@@ -38,3 +38,4 @@ srun apptainer exec \
     --results_subdir "this_is_pi_loss" \
     --epochs 100 \
     --sample_fraction 1.0 \
+    --denoise_percent 0.3 \

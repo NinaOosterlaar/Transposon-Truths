@@ -320,6 +320,11 @@ def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_m
     masked_actual = raw_flat[masked_positions]
     masked_recon = mu_flat[masked_positions]
     
+    print("Number of masked values:", len(masked_actual))
+    print(masked_actual)
+    print(masked_recon)
+    print(pi_flat[masked_positions] if pi_flat is not None else "No pi data")
+    
     # Compute metrics for masked values
     mae_masked = mean_absolute_error(masked_actual, masked_recon)
     r2_masked = r2_score(masked_actual, masked_recon)
@@ -337,7 +342,7 @@ def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_m
                    'r--', lw=2, label='Perfect reconstruction')
     axes[0, 0].set_xlabel('Actual Value (Raw Counts)')
     axes[0, 0].set_ylabel('Reconstructed μ')
-    axes[0, 0].set_title(f'{model_type}: Masked Values Reconstruction\\n(MAE={mae_masked:.4f}, R²={r2_masked:.4f})')
+    axes[0, 0].set_title(f'{model_type}: Masked Values Reconstruction\n(MAE={mae_masked:.4f}, R²={r2_masked:.4f})')
     axes[0, 0].legend()
     axes[0, 0].grid(True, alpha=0.3)
     

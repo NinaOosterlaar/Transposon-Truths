@@ -89,10 +89,10 @@ def clip_outliers(data, percentile=95, multiplier=1.5):
     
     return data, clip_stats
 
-def standardize_data(train_data, val_data, test_data, features, standardize_value = True):
+def standardize_data(train_data, val_data, test_data, features):
     """Standardize features to have mean 0 and standard deviation 1.
     Fits scalers on training data and applies to all splits.
-    Standardizes 'Value' (log-normalized counts) and other features. Does NOT standardize 'Chrom' (categorical).
+    Does NOT standardize 'Value' (log-normalized counts) or 'Chrom' (categorical).
     
     Args:
         train_data, val_data, test_data: Dictionaries containing {dataset: {chromosome: DataFrame}}.
@@ -104,10 +104,8 @@ def standardize_data(train_data, val_data, test_data, features, standardize_valu
     """
     scalers = {}
     
-    # Features to standardize (exclude only 'Chrom')
+    # Features to standardize (exclude 'Value' and 'Chrom')
     features_to_standardize = []
-    if standardize_value:
-        features_to_standardize.append('Value')  # Always standardize Value
     
     feature_to_column = {
         'Value': 'Value',
@@ -784,7 +782,7 @@ if __name__ == "__main__":
         moving_average=args.moving_average,
         data_point_length=args.data_point_length,
         step_size=step_size,
-        ,clip_outliers_flag=clip_outliers_flag
+        clip_outliers_flag=clip_outliers_flag
     )
 
     # Print some info
