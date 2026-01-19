@@ -45,7 +45,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     binary : bool
         Whether to use binary AE/VAE models. Default=False
     denoise_percent : float
-        Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
+        Percentage of non-zero values that were masked in the dataloader (0.0 to 1.0). 
     regularizer : str
         Type of regularization: 'none', 'L1', or 'L2'. Default='none'
     alpha : float
@@ -89,7 +89,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     epoch_reg_losses = []     # For regularization
     epoch_masked_losses = []  # For masked reconstruction loss
     
-    # Collect masks during last epoch of training for evaluation
+    # Collect masks from dataloader for evaluation
     training_masks_collected = []
     model.train()
     for epoch in range(num_epochs):
@@ -102,40 +102,42 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
         for batch in pbar:
             # Unpack batch based on flags
+            # Note: mask is always the last element in batch
             if is_zinb:
                 if chrom:
-                    x, y, c, y_raw, size_factors = batch
+                    x, y, c, y_raw, size_factors, mask = batch
                     c = c.to(device)
                 else:
-                    x, y, y_raw, size_factors = batch
-                y_raw = y_raw.to(device)  # (B, seq) - raw counts
+                    x, y, y_raw, size_factors, mask = batch
+                y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
                 size_factors = size_factors.to(device)  # (B,) - size factors
             else:
                 if chrom:
                     if binary:
-                        x, y, y_binary, c = batch
+                        x, y, y_binary, c, mask = batch
                     else:
-                        x, y, c = batch
+                        x, y, c, mask = batch
                     c = c.to(device)
                 else:
                     if binary:
-                        x, y, y_binary = batch
+                        x, y, y_binary, mask = batch
                     else:
-                        x, y = batch
+                        x, y, mask = batch
             
             x = x.to(device)         # (B, seq, F_other or F_other_without_chr)
-            y = y.to(device)         # (B, seq) - normalized counts
+            y = y.to(device)         # (B, seq) - normalized counts (already masked if denoise_percent > 0)
+            mask = mask.to(device)   # (B, seq) - boolean mask indicating masked positions
             if binary:
                 y_binary = y_binary.to(device)  # (B, seq)
             
             optimizer.zero_grad()
             
-            # Apply denoising: randomly set some non-zero values to zero in the input
-            y_noisy, mask = add_noise(y, denoise_percent)
-            # Store masks from last epoch for evaluation on training data
-            if denoise_percent > 0 and epoch == num_epochs - 1:
+            # Collect masks (fixed from dataloader, same across all epochs)
+            if denoise_percent > 0 and epoch == 0:  # Only collect once in first epoch
                 training_masks_collected.append(mask.detach().cpu().numpy())
-            y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
+            
+            # y is already masked (if denoise_percent > 0), use it directly
+            y_in = y.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)
@@ -328,21 +330,14 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     print("EVALUATING ON TRAINING DATA")
     print("="*50)
     
-    # Concatenate training masks if collected
-    if denoise_percent > 0 and len(training_masks_collected) > 0:
-        training_masks_array = np.concatenate(training_masks_collected, axis=0)
-    else:
-        training_masks_array = None
-    
     test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
          plot=True, n_examples=5, beta=beta, binary=binary, name=name, 
          denoise_percent=denoise_percent, eval_mode="training", threshold=pi_threshold,
-         gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha,
-         training_masks=training_masks_array)
+         gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha)
     
     return model
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5, gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0, training_masks=None):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, binary=False, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5, gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0):
     """
     Test AE, VAE, ZINBAE, or ZINBVAE model
     
@@ -365,7 +360,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     binary : bool
         Whether to use binary AE/VAE models. Default=False
     denoise_percent : float
-        Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
+        Percentage of non-zero values that were masked in the dataloader (0.0 to 1.0).
     eval_mode : str
         Either "testing" or "training" - determines subdirectory for saving plots. Default="testing"
     threshold : float
@@ -378,8 +373,6 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         Type of regularization: 'none', 'L1', or 'L2'. Default='none'
     alpha : float
         Regularization strength. Default=0.0
-    training_masks : np.ndarray or None
-        Pre-created masks from training. If provided, skips masking but still generates masking analysis plots. Default=None
     """
     model.to(device)
     model.eval()
@@ -420,40 +413,36 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Testing"):
             # Unpack batch based on flags
+            # Note: mask is always the last element in batch
             if is_zinb:
                 if chrom:
-                    x, y, c, y_raw, size_factors = batch
+                    x, y, c, y_raw, size_factors, mask = batch
                     c = c.to(device)
                 else:
-                    x, y, y_raw, size_factors = batch
-                y_raw = y_raw.to(device)  # (B, seq) - raw counts
+                    x, y, y_raw, size_factors, mask = batch
+                y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
                 size_factors = size_factors.to(device)  # (B,) - size factors
             else:
                 if chrom:
                     if binary:
-                        x, y, y_binary, c = batch
+                        x, y, y_binary, c, mask = batch
                     else:
-                        x, y, c = batch
+                        x, y, c, mask = batch
                     c = c.to(device)
                 else:
                     if binary:
-                        x, y, y_binary = batch
+                        x, y, y_binary, mask = batch
                     else:
-                        x, y = batch
+                        x, y, mask = batch
             
             x = x.to(device)         # (B, seq, F_other or F_other_without_chr)
-            y = y.to(device)         # (B, seq) - normalized counts
+            y = y.to(device)         # (B, seq) - normalized counts (already masked if denoise_percent > 0)
+            mask = mask.to(device)   # (B, seq) - boolean mask indicating masked positions
             if binary:
                 y_binary = y_binary.to(device)  # (B, seq)
             
-            # Apply denoising: randomly set some non-zero values to zero in the input
-            # If training_masks provided, DON'T apply denoising (already applied during training)
-            if training_masks is None:
-                y_noisy, mask = add_noise(y, denoise_percent)
-            else:
-                y_noisy = y  # No masking - data should match the training_masks order
-                mask = None  # Will use training_masks later for plots
-            y_in = y_noisy.unsqueeze(-1)  # Add feature dimension
+            # y is already masked (if denoise_percent > 0), use it directly
+            y_in = y.unsqueeze(-1)  # Add feature dimension
             if chrom:
                 c_emb = chrom_embedding(c)
                 batch_input = torch.cat((y_in, x, c_emb), dim=2)
@@ -550,8 +539,8 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 all_raw_counts.append(y_raw.detach().cpu().numpy())
                 all_mu_raw.append(mu.detach().cpu().numpy())  # Store raw mu (unmasked)
             
-            # Store mask for denoising analysis (only if created in this run, not if training_masks provided)
-            if training_masks is None and denoise_percent > 0 and mask is not None:
+            # Store mask from dataloader
+            if denoise_percent > 0:
                 all_masks.append(mask.detach().cpu().numpy())
     # ... after loop
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
@@ -570,10 +559,8 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         all_raw_counts = None
         all_mu_raw = None
     
-    # Use training_masks if provided, otherwise concatenate newly created masks
-    if training_masks is not None:
-        all_masks = training_masks
-    elif denoise_percent > 0 and len(all_masks) > 0:
+    # Concatenate masks from dataloader
+    if denoise_percent > 0 and len(all_masks) > 0:
         all_masks = np.concatenate(all_masks, axis=0)
     else:
         all_masks = None
@@ -705,7 +692,7 @@ if __name__ == "__main__":
     # Load data
     train_input_path = input_path + filename + "train_data.npy"
     print("Loading training data from:", train_input_path)
-    train_dataloader = dataloader_from_array(train_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, sample_fraction=args.sample_fraction)
+    train_dataloader = dataloader_from_array(train_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, sample_fraction=args.sample_fraction, denoise_percentage=args.denoise_percent)
     
     # If no_test, use training data for evaluation; otherwise load test data
     if no_test:
@@ -714,7 +701,7 @@ if __name__ == "__main__":
     else:
         test_input_path = input_path + filename + "test_data.npy"
         print("Loading test data from:", test_input_path)
-        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb)
+        test_dataloader = dataloader_from_array(test_input_path, chrom=chrom, batch_size=64, shuffle=True, binary=args.binary, zinb=is_zinb, denoise_percentage=args.denoise_percent)
     
     # Print size of train data
     num_train_samples = len(train_dataloader.dataset)

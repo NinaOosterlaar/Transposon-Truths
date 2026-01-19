@@ -10,7 +10,7 @@ def add_noise(y, denoise_percent):
     Parameters:
     -----------
     y : torch.Tensor
-        Input tensor (B, seq)
+        Input tensor (N, seq) where N is number of samples
     denoise_percent : float
         Percentage of non-zero values to set to zero (0.0 to 1.0)
     
@@ -27,10 +27,10 @@ def add_noise(y, denoise_percent):
     y_noisy = y.clone()
     mask = torch.zeros_like(y, dtype=torch.bool)
 
-    B = y_noisy.size(0)
+    N = y_noisy.size(0)  # Number of samples
 
-    for b in range(B):
-        nz = torch.nonzero(y_noisy[b] != 0, as_tuple=True)[0]
+    for n in range(N):
+        nz = torch.nonzero(y_noisy[n] != 0, as_tuple=True)[0]
         num_non_zero = nz.numel()
         if num_non_zero == 0:
             continue
@@ -42,9 +42,9 @@ def add_noise(y, denoise_percent):
         perm = torch.randperm(num_non_zero, device=y_noisy.device)[:num_to_zero]
         seq_idx = nz[perm]
 
-        y_noisy[b, seq_idx] = 0
-        mask[b, seq_idx] = True
-        # print(y[b, seq_idx], y_noisy[b, seq_idx])
+        y_noisy[n, seq_idx] = 0
+        mask[n, seq_idx] = True
+        # print(y[n, seq_idx], y_noisy[n, seq_idx])
     return y_noisy, mask
 
 
@@ -96,8 +96,9 @@ def gaussian_kl(mu, logvar, reduction='mean', normalize_by_dims=None):
     else:
         raise ValueError(f"Invalid reduction: {reduction}")
 
-def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary=False, zinb=False, sample_fraction=1.0):
+def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary=False, zinb=False, sample_fraction=1.0, denoise_percentage=0.0):
     """
+    IMPORTANT: This code currently only performs masking correctly for ZINB mode.
     Create a DataLoader from a numpy array.
     
     Parameters:
@@ -105,8 +106,14 @@ def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary
     sample_fraction : float
         Fraction of data to randomly sample (0.0 to 1.0). Default=1.0 (use all data).
         If < 1.0, will randomly select that fraction of samples once (same subset for all epochs).
+    denoise_percentage : float
+        Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
+        If > 0, creates fixed masks that are applied once and returned with the data.
     """
     data_array = np.load(input)
+    
+    if denoise_percentage > 0.0 and zinb is False:
+        raise NotImplementedError("Denoising masking is only correctly implemented for ZINB mode currently.")
     
     # Random sampling if requested
     if sample_fraction < 1.0:
@@ -118,6 +125,15 @@ def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary
         print(f"Randomly sampled {num_to_sample}/{num_samples} samples ({sample_fraction*100:.1f}%)")
     
     counts = data_array[:, :, 0]  # Normalized counts (Value)
+    
+    # Apply denoising masking once if requested
+    if denoise_percentage > 0.0:
+        counts_noisy, mask = add_noise(torch.tensor(counts, dtype=torch.float32), denoise_percentage)
+        counts = counts_noisy.numpy()  # Replace counts with masked version
+        mask_array = mask.numpy()  # Convert mask to numpy for later tensor conversion
+        print(f"Applied denoising with {denoise_percentage*100:.1f}% masking")
+    else:
+        mask_array = np.zeros_like(counts, dtype=bool)  # No masking
     
     if binary:
         # Create binary targets based on counts > 0
@@ -145,7 +161,8 @@ def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary
             features = data_array[:, :, 1:]
     
     x_tensor = torch.tensor(features, dtype=torch.float32)
-    y_tensor = torch.tensor(counts, dtype=torch.float32)
+    y_tensor = torch.tensor(counts, dtype=torch.float32)  # This is y_noisy if denoise_percentage > 0
+    mask_tensor = torch.tensor(mask_array, dtype=torch.bool)
     
     if binary:
         y_binary_tensor = torch.tensor(y_binary, dtype=torch.float32)
@@ -161,10 +178,13 @@ def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary
         tensors.append(c_tensor)
     
     if zinb:
-        y_raw_tensor = torch.tensor(raw_counts, dtype=torch.float32)
+        y_raw_tensor = torch.tensor(raw_counts, dtype=torch.float32)  # Always unmasked (original)
         sf_tensor = torch.tensor(size_factors, dtype=torch.float32)
         tensors.append(y_raw_tensor)
         tensors.append(sf_tensor)
+    
+    # Always append mask tensor (even if all False when denoise_percentage=0)
+    tensors.append(mask_tensor)
     
     dataset = torch.utils.data.TensorDataset(*tensors)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
