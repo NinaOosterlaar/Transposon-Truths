@@ -44,7 +44,7 @@ def add_noise(y, denoise_percent):
 
         y_noisy[b, seq_idx] = 0
         mask[b, seq_idx] = True
-
+        # print(y[b, seq_idx], y_noisy[b, seq_idx])
     return y_noisy, mask
 
 
