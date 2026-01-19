@@ -333,8 +333,10 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             if chrom:
                 x, y, c, y_raw, size_factors, mask = batch
                 c = c.to(device)
+                x = x.to(device)
             else:
                 x, y, y_raw, size_factors, mask = batch
+                x = x.to(device)
             
             y = y.to(device)         # (B, seq) - normalized counts (already masked if denoise_percent > 0)
             y_raw = y_raw.to(device)  # (B, seq) - raw counts (unmasked/original)
