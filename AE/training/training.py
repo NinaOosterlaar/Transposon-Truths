@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chrom_embedding=None, plot=True, beta=1.0, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chrom_embedding=None, plot=True, beta=1.0, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5):
     """
     Train ZINBAE or ZINBVAE model
     
@@ -258,14 +258,14 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=True, chro
     print("EVALUATING ON TRAINING DATA")
     print("="*50)
     
-    test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
-         plot=True, n_examples=5, beta=beta, name=name, 
-         denoise_percent=denoise_percent, eval_mode="training", threshold=pi_threshold,
-         gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha)
+    _, _, train_metrics = test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
+                                plot=True, n_examples=5, beta=beta, name=name, 
+                                denoise_percent=denoise_percent, eval_mode="training", 
+                                gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha)
     
-    return model
+    return model, train_metrics
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, name="", denoise_percent=0.0, eval_mode="testing", threshold=0.5, gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, name="", denoise_percent=0.0, eval_mode="testing", gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0):
     """
     Test ZINBAE or ZINBVAE model
     
@@ -354,6 +354,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             batch_size = y.size(0)
 
             # Forward pass for ZINB models
+            masked_loss = None  # Initialize to avoid UnboundLocalError
             if is_zinbvae:
                 mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
@@ -375,7 +376,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 kl_loss = None
 
             # For ZINB, "reconstruction" to store/plot is the mean parameter mu if pi is not too high otherwise set to 0
-            recon_batch = mu * (pi < threshold).float()
+            recon_batch = mu * (pi < pi_threshold).float()
 
             # Add regularization if specified
             reg_penalty = 0.0
@@ -442,29 +443,32 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     else:
         all_masks = None
     
-    # Calculate metrics
+    # Calculate metrics - normalize all losses upfront (matching training function pattern)
     test_loss = total_loss / len(all_originals)
+    test_recon_loss = total_recon_loss / len(all_originals)
+    test_kl_loss = total_kl_loss / len(all_originals) if is_zinbvae else 0.0
+    test_masked_loss = total_masked_loss / len(all_originals) if (gamma > 0 and denoise_percent > 0) else 0.0
+    test_reg_loss = total_reg_loss / len(all_originals) if (regularizer.lower() != 'none' and alpha > 0) else 0.0
     
     # For ZINB models, compare raw counts to predictions
     mae = mean_absolute_error(all_raw_counts.flatten(), all_reconstructions.flatten())
     r2 = r2_score(all_raw_counts.flatten(), all_reconstructions.flatten())
     
-    # Build metrics dictionary
-    test_recon_loss = total_recon_loss / len(all_originals)
-    metrics = {'total_loss': test_loss, 'zinb_nll': test_recon_loss, 'mae': mae, 'r2': r2}
+    # Build metrics dictionary with all computed losses
+    metrics = {
+        'total_loss': test_loss,
+        'zinb_nll': test_recon_loss,
+        'mae': mae,
+        'r2': r2
+    }
     
     if is_zinbvae:
-        test_kl_loss = total_kl_loss / len(all_originals)
         metrics['kl_loss'] = test_kl_loss
     
-    # Add masked loss if computed
     if gamma > 0 and denoise_percent > 0:
-        test_masked_loss = total_masked_loss / len(all_originals)
         metrics['masked_loss'] = test_masked_loss
     
-    # Add regularization loss if computed
     if regularizer.lower() != 'none' and alpha > 0:
-        test_reg_loss = total_reg_loss / len(all_originals)
         metrics['reg_loss'] = test_reg_loss
     
     # Print metrics
@@ -473,10 +477,12 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     print("="*50)
     print(f"Total Loss: {test_loss:.6f}")
     print(f"  - ZINB NLL: {test_recon_loss:.6f}")
-    # print the number of masked values with a pi higher than the threshold and lower than the threshold
-    print(f"Total number of masked values: {all_masks.sum()}")
-    print(f"  - Number of values with pi >= {threshold}: {(all_pi[all_masks] >= threshold).sum()}")
-    print(f"  - Number of values with pi < {threshold}: {(all_pi[all_masks] < threshold).sum()}")
+    
+    # Only print masked values statistics if denoise_percent > 0
+    if denoise_percent > 0 and all_masks is not None:
+        print(f"Total number of masked values: {all_masks.sum()}")
+        print(f"  - Number of values with pi >= {pi_threshold}: {(all_pi[all_masks] >= pi_threshold).sum()}")
+        print(f"  - Number of values with pi < {pi_threshold}: {(all_pi[all_masks] < pi_threshold).sum()}")
     
     if is_zinbvae:
         print(f"  - KL Divergence: {test_kl_loss:.6f}")
@@ -500,7 +506,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                               all_theta=all_theta, all_pi=all_pi, all_raw_counts=all_raw_counts,
                               all_masks=all_masks, denoise_percent=denoise_percent,
                               model_type=model_type_str, n_examples=n_examples, 
-                              metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode)
+                              metrics=metrics, use_conv=use_conv, name=name, subdir=eval_mode, pi_threshold=pi_threshold)
         
     return all_reconstructions, all_latents, metrics
 
@@ -577,14 +583,15 @@ if __name__ == "__main__":
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
         zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
-        trained_zinbae = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
+        trained_zinbae, zinbae_train_metrics = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent,
                               regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold)
         
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                                      plot=True, n_examples=5, name=results_subdir, denoise_percent=args.denoise_percent,
-                                                                      threshold=args.pi_threshold, gamma=args.gamma, pi_threshold=args.pi_threshold,
+                                                                      plot=True, n_examples=5, name=results_subdir, 
+                                                                      denoise_percent=args.denoise_percent,
+                                                                      gamma=args.gamma, pi_threshold=args.pi_threshold,
                                                                       regularizer=args.regularizer, alpha=args.alpha)
     
     if args.model in ['ZINBVAE', 'both']:
@@ -595,12 +602,13 @@ if __name__ == "__main__":
         print("TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)")
         print("="*60)
         zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
-        trained_zinbvae = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
+        trained_zinbvae, zinbvae_train_metrics = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
                                chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
                                regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold)
         
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=chrom, chrom_embedding=chrom_embedding, 
-                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
-                                                                         threshold=args.pi_threshold, gamma=args.gamma, pi_threshold=args.pi_threshold,
+                                                                         plot=True, n_examples=5, beta=args.beta, name=results_subdir, 
+                                                                         denoise_percent=args.denoise_percent,
+                                                                         gamma=args.gamma, pi_threshold=args.pi_threshold,
                                                                          regularizer=args.regularizer, alpha=args.alpha)

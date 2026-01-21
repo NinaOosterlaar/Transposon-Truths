@@ -450,6 +450,7 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
     Returns:
         np.ndarray: 3D array of shape (num_samples, window_length, num_features)
     """
+    
     # Check if chromosome encoding is needed
     use_chrom = 'Chrom' in features
     
@@ -570,13 +571,14 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
         if use_chrom:
             # Add chromosome column (categorical encoding)
             cols_to_keep.append('Chromosome')
-        
-        print(f"Column order in final array (Dataset/Chrom split): {cols_to_keep}")
+    
         
         # For ZINB mode, add raw counts and size factor columns at the end
         if zinb_mode:
             cols_to_keep.append('Value_Raw')
             cols_to_keep.append('Size_Factor')
+            
+        print(f"Column order in final array (Dataset/Chrom split): {cols_to_keep}")
         
         # Filter columns
         for dataset in transposon_data:
@@ -677,7 +679,7 @@ def preprocess(input_folder,
         count_stats (dict, optional): Statistics from count normalization if normalize_counts=True.
     """
     transposon_data = read_csv_file_with_distances(input_folder)
-    
+   
     # First step: Clip outliers if requested (before any normalization)
     clip_stats = None
     if clip_outliers_flag:

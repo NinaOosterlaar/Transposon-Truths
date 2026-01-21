@@ -321,9 +321,6 @@ def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_m
     masked_recon = mu_flat[masked_positions]
     
     print("Number of masked values:", len(masked_actual))
-    print(masked_actual)
-    print(masked_recon)
-    print(pi_flat[masked_positions] if pi_flat is not None else "No pi data")
     
     # Compute metrics for masked values
     mae_masked = mean_absolute_error(masked_actual, masked_recon)
@@ -465,7 +462,7 @@ def zero_imputation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mod
     
     print(f"Zero imputation: {n_actual_zeros:,} actual zeros, {n_imputed:,} imputed ({100*n_imputed/n_actual_zeros:.1f}%), {n_false_structural:,} false structural zeros")
         
-def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, all_pi=None, all_raw_counts=None, n_examples=5, model_type="ZINB", save_dir=None, prefix=""):
+def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, all_pi=None, all_raw_counts=None, n_examples=5, model_type="ZINB", save_dir=None, prefix="", pi_threshold=0.5):
     fig, axes = plt.subplots(n_examples, 1, figsize=(15, 4*n_examples))
     if n_examples == 1:
         axes = [axes]
@@ -484,7 +481,13 @@ def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, al
         
         ax.plot(positions, actual_data, label=actual_label, 
                linewidth=2, alpha=0.8, color=COLORS['blue'])
-        ax.plot(positions, all_reconstructions_mu[i], label='Predicted μ (Raw Counts)', 
+        
+        # Apply pi threshold: set reconstruction to zero where pi > threshold
+        reconstruction_plot = all_reconstructions_mu[i].copy()
+        if all_pi is not None:
+            reconstruction_plot[all_pi[i] > pi_threshold] = 0
+        
+        ax.plot(positions, reconstruction_plot, label='Predicted μ (Raw Counts)', 
                linewidth=2, alpha=0.8, color=COLORS['red'], linestyle='--')
         
         # Add uncertainty bands if variance available
@@ -621,7 +624,7 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
                            all_theta=None, all_pi=None, all_raw_counts=None,
                            all_masks=None, denoise_percent=0.0,
                            model_type='ZINBAE', save_dir=None, 
-                           n_examples=10, metrics=None, use_conv=False, name="", subdir="testing"):
+                           n_examples=10, metrics=None, use_conv=False, name="", subdir="testing", pi_threshold=0.5):
     """
     Create comprehensive visualizations specifically for ZINB models (ZINBAE/ZINBVAE).
     
@@ -711,7 +714,7 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
                               model_type, save_dir, prefix)
     # 6. Example Reconstructions with ZINB Parameters and Uncertainty
     reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 
-                    n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix)
+                    n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix, pi_threshold=pi_threshold)
     # 7. Metrics Summary
     if metrics is not None:
         metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, residuals, 

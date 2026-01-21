@@ -110,7 +110,11 @@ def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary
         Percentage of non-zero values to randomly set to zero for denoising (0.0 to 1.0). Default=0.0
         If > 0, creates fixed masks that are applied once and returned with the data.
     """
-    data_array = np.load(input)
+    # Load data from file or use array directly
+    if isinstance(input, np.ndarray):
+        data_array = input
+    else:
+        data_array = np.load(input)
     
     if denoise_percentage > 0.0 and zinb is False:
         raise NotImplementedError("Denoising masking is only correctly implemented for ZINB mode currently.")
@@ -134,54 +138,37 @@ def dataloader_from_array(input, chrom=True, batch_size=64, shuffle=True, binary
         print(f"Applied denoising with {denoise_percentage*100:.1f}% masking")
     else:
         mask_array = np.zeros_like(counts, dtype=bool)  # No masking
-    
-    if binary:
-        # Create binary targets based on counts > 0
-        y_binary = (counts > 0).astype(np.float32)
+
     
     # For ZINB mode: extract Value_Raw and Size_Factor from the end of the array
-    if zinb:
-        if chrom:
-            # Structure: [Value, features..., Chrom, Value_Raw, Size_Factor]
-            features = data_array[:, :, 1:-3]  # Exclude Value, Chrom, Value_Raw, Size_Factor
-            chrom_indices = data_array[:, :, -3].astype(np.int64)
-            raw_counts = data_array[:, :, -2]  # Value_Raw
-            size_factors = data_array[:, 0, -1]  # Size_Factor (take first position, all same)
-        else:
-            # Structure: [Value, features..., Value_Raw, Size_Factor]
-            features = data_array[:, :, 1:-2]  # Exclude Value, Value_Raw, Size_Factor
-            raw_counts = data_array[:, :, -2]  # Value_Raw
-            size_factors = data_array[:, 0, -1]  # Size_Factor (take first position, all same)
+    if chrom:
+        # Structure: [Value, features..., Chrom, Value_Raw, Size_Factor]
+        features = data_array[:, :, 1:-3]  # Exclude Value, Chrom, Value_Raw, Size_Factor
+        chrom_indices = data_array[:, :, -3].astype(np.int64)
+        raw_counts = data_array[:, :, -2]  # Value_Raw
+        size_factors = data_array[:, 0, -1]  # Size_Factor (take first position, all same)
     else:
-        # Standard mode (no ZINB)
-        if chrom:
-            features = data_array[:, :, 1:-1]
-            chrom_indices = data_array[:, :, -1].astype(np.int64)
-        else:
-            features = data_array[:, :, 1:]
+        # Structure: [Value, features..., Value_Raw, Size_Factor]
+        features = data_array[:, :, 1:-2]  # Exclude Value, Value_Raw, Size_Factor
+        raw_counts = data_array[:, :, -2]  # Value_Raw
+        size_factors = data_array[:, 0, -1]  # Size_Factor (take first position, all same)
     
     x_tensor = torch.tensor(features, dtype=torch.float32)
     y_tensor = torch.tensor(counts, dtype=torch.float32)  # This is y_noisy if denoise_percentage > 0
     mask_tensor = torch.tensor(mask_array, dtype=torch.bool)
     
-    if binary:
-        y_binary_tensor = torch.tensor(y_binary, dtype=torch.float32)
     
     # Build dataset tensors
     tensors = [x_tensor, y_tensor]
-    
-    if binary:
-        tensors.append(y_binary_tensor)
     
     if chrom:
         c_tensor = torch.tensor(chrom_indices, dtype=torch.long)
         tensors.append(c_tensor)
     
-    if zinb:
-        y_raw_tensor = torch.tensor(raw_counts, dtype=torch.float32)  # Always unmasked (original)
-        sf_tensor = torch.tensor(size_factors, dtype=torch.float32)
-        tensors.append(y_raw_tensor)
-        tensors.append(sf_tensor)
+    y_raw_tensor = torch.tensor(raw_counts, dtype=torch.float32)  # Always unmasked (original)
+    sf_tensor = torch.tensor(size_factors, dtype=torch.float32)
+    tensors.append(y_raw_tensor)
+    tensors.append(sf_tensor)
     
     # Always append mask tensor (even if all False when denoise_percentage=0)
     tensors.append(mask_tensor)
