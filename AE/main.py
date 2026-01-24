@@ -116,6 +116,7 @@ def main_with_datasets(
         denoise_percent=noise_level,
         gamma=masked_recon_weight,
         chrom=chrom,
+        plot=plot,
     )
     # Evaluate model on validation or test set
     eval_dataloader = val_dataloader if eval_on_val else test_dataloader

@@ -259,7 +259,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
     print("="*50)
     
     _, _, train_metrics = test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
-                                plot=True, n_examples=5, beta=beta, name=name, 
+                                plot=plot, n_examples=5, beta=beta, name=name, 
                                 denoise_percent=denoise_percent, eval_mode="training", 
                                 gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha)
     

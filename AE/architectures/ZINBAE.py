@@ -34,7 +34,18 @@ class ZINBAE(nn.Module):
             )
             self.conv_relu = nn.ReLU()
             self.pool = nn.MaxPool1d(kernel_size=pool_size)
-            pooled_seq_length = seq_length // pool_size
+            
+            # Calculate correct sequence length after conv and pooling
+            if padding == 'same':
+                # With padding='same', length is preserved (only works with stride=1)
+                conv_seq_length = seq_length
+            else:
+                # With valid padding (padding=0 or numeric), length reduces
+                if isinstance(padding, str):
+                    padding = 0
+                conv_seq_length = (seq_length + 2 * padding - kernel_size) // stride + 1
+            
+            pooled_seq_length = conv_seq_length // pool_size
             input_dim = pooled_seq_length * conv_channels
         else:
             input_dim = seq_length * feature_dim
