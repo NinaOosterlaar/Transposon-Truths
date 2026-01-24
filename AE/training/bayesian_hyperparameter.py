@@ -21,7 +21,8 @@ MOVING_AVERAGE_OPTIONS = [True, False]
 
 # Convolutional Layer hyperparameters
 USE_CONV_OPTIONS = [True, False]
-# Note: padding will be set dynamically based on stride (PyTorch requires padding != 'same' when stride > 1)
+# Padding is fixed to 0 (valid padding) to avoid dimension mismatch issues
+FIXED_PADDING = 0
 
 # Regularization hyperparameters
 REGULARIZATIONS = ["l1", "l2", "none"]
@@ -47,7 +48,6 @@ search_space = [
     Integer(16, 128, name='conv_channel'),  # CONV_CHANNELS range (powers of 2 will be sampled)
     Integer(2, 8, name='pool_size'),  # POOL_SIZES range
     Categorical([3, 5, 7, 9, 11, 13], name='kernel_size'),  # Odd numbers only for symmetry
-    Integer(1, 3, name='stride'),  # STRIDE range
     
     # Training
     Integer(30, 150, name='epochs'),  # EPOCHS range
@@ -71,6 +71,8 @@ FIXED_PARAMS = {
     'split_on': 'Chrom',
     'train_val_test_split': [0.6, 0.2, 0.2],  # Proper train/val/test split
     'plot': False,
+    'stride': 1,  # Fixed to avoid dimension mismatch issues
+    'padding': 0,  # Fixed to valid padding
 }
 
 # Optimization metric: which loss to minimize from VALIDATION set
@@ -115,7 +117,6 @@ def objective(**params):
         moving_average = all_params['moving_average']
         data_point_length = all_params['data_point_length']
         step_size = all_params['step_size']
-        stride = all_params['stride']
         
         # Decode features string to list
         if features_str == "Centr_Nucl":
@@ -126,15 +127,6 @@ def objective(**params):
             features = ["Nucl"]
         else:
             features = [features_str]  # Fallback
-        
-        # Set padding based on stride (PyTorch doesn't support padding='same' with stride > 1)
-        if stride > 1:
-            padding = 0  # Valid padding
-        else:
-            padding = 'same'  # Same padding when stride == 1
-        
-        # Add padding to params
-        all_params['padding'] = padding
         
         # Construct layers from parametric representation (divisible by 16)
         first_layer_size_factor = all_params['first_layer_size_factor']
@@ -153,8 +145,8 @@ def objective(**params):
         print(f"  moving_average: {moving_average}")
         print(f"  data_point_length: {preprocessing_data_length} (from {data_point_length})")
         print(f"  step_size: {step_size}")
-        print(f"  stride: {stride}, padding: {padding}")
-        print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})\n")
+        print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})")
+        print(f"  stride: {all_params['stride']} (fixed), padding: {all_params['padding']} (fixed)\n")
         
         # Preprocess data with trial-specific parameters
         train_set, val_set, test_set, _, _, _ = preprocess(
@@ -180,13 +172,13 @@ def objective(**params):
             features=features,
             data_point_length=preprocessing_data_length,
             use_conv=all_params['use_conv'],
-            conv_channel=all_params['conv_channel'],
-            pool_size=all_params['pool_size'],
-            kernel_size=all_params['kernel_size'],
-            padding=all_params['padding'],
-            stride=all_params['stride'],
-            epochs=all_params['epochs'],
-            batch_size=all_params['batch_size'],
+            conv_channel=int(all_params['conv_channel']),
+            pool_size=int(all_params['pool_size']),
+            kernel_size=int(all_params['kernel_size']),
+            padding=int(all_params['padding']),
+            stride=int(all_params['stride']),
+            epochs=int(all_params['epochs']),
+            batch_size=int(all_params['batch_size']),
             noise_level=all_params['noise_level'],
             pi_threshold=all_params['pi_threshold'],
             masked_recon_weight=all_params['masked_recon_weight'],
@@ -292,10 +284,12 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     for key, value in best_params.items():
         if isinstance(value, (list, tuple)):
             all_trials_data['best_parameters'][key] = list(value)
-        elif isinstance(value, np.integer):
+        elif isinstance(value, (np.integer, np.int_)):
             all_trials_data['best_parameters'][key] = int(value)
-        elif isinstance(value, np.floating):
+        elif isinstance(value, (np.floating, np.float_)):
             all_trials_data['best_parameters'][key] = float(value)
+        elif isinstance(value, (np.bool_, bool)):
+            all_trials_data['best_parameters'][key] = bool(value)
         else:
             all_trials_data['best_parameters'][key] = value
     
@@ -312,10 +306,12 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
             value = params_list[j]
             if isinstance(value, (list, tuple)):
                 trial_data['parameters'][param_name] = list(value)
-            elif isinstance(value, np.integer):
+            elif isinstance(value, (np.integer, np.int_)):
                 trial_data['parameters'][param_name] = int(value)
-            elif isinstance(value, np.floating):
+            elif isinstance(value, (np.floating, np.float_)):
                 trial_data['parameters'][param_name] = float(value)
+            elif isinstance(value, (np.bool_, bool)):
+                trial_data['parameters'][param_name] = bool(value)
             else:
                 trial_data['parameters'][param_name] = value
         
