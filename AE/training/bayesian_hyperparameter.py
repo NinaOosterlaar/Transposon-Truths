@@ -3,6 +3,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 import numpy as np
 import json
 from datetime import datetime
+import gc
 from skopt import gp_minimize
 from skopt.space import Real, Integer, Categorical
 from skopt.utils import use_named_args
@@ -163,34 +164,39 @@ def objective(**params):
         print(f"Datasets created:")
         print(f"  Train: {train_set.shape}, Val: {val_set.shape if val_set is not None else 'None'}, Test: {test_set.shape if test_set is not None else 'None'}\n")
         
-        # Call main function with the created datasets
-        # eval_on_val=True means it evaluates on validation set (not test)
-        train_metrics, val_metrics = main_with_datasets(
-            train_set=train_set,
-            val_set=val_set,
-            test_set=test_set,
-            features=features,
-            data_point_length=preprocessing_data_length,
-            use_conv=all_params['use_conv'],
-            conv_channel=int(all_params['conv_channel']),
-            pool_size=int(all_params['pool_size']),
-            kernel_size=int(all_params['kernel_size']),
-            padding=int(all_params['padding']),
-            stride=int(all_params['stride']),
-            epochs=int(all_params['epochs']),
-            batch_size=int(all_params['batch_size']),
-            noise_level=all_params['noise_level'],
-            pi_threshold=all_params['pi_threshold'],
-            masked_recon_weight=all_params['masked_recon_weight'],
-            learning_rate=all_params['learning_rate'],
-            dropout_rate=all_params['dropout_rate'],
-            layers=layers,  # Use converted list
-            regularizer=all_params['regularizer'],
-            regularization_weight=all_params['regularization_weight'],
-            sample_fraction=all_params['sample_fraction'],
-            plot=all_params['plot'],
-            eval_on_val=True  # Use validation set for optimization
-        )
+        try:
+            # Call main function with the created datasets
+            # eval_on_val=True means it evaluates on validation set (not test)
+            train_metrics, val_metrics = main_with_datasets(
+                train_set=train_set,
+                val_set=val_set,
+                test_set=test_set,
+                features=features,
+                data_point_length=preprocessing_data_length,
+                use_conv=all_params['use_conv'],
+                conv_channel=int(all_params['conv_channel']),
+                pool_size=int(all_params['pool_size']),
+                kernel_size=int(all_params['kernel_size']),
+                padding=int(all_params['padding']),
+                stride=int(all_params['stride']),
+                epochs=int(all_params['epochs']),
+                batch_size=int(all_params['batch_size']),
+                noise_level=all_params['noise_level'],
+                pi_threshold=all_params['pi_threshold'],
+                masked_recon_weight=all_params['masked_recon_weight'],
+                learning_rate=all_params['learning_rate'],
+                dropout_rate=all_params['dropout_rate'],
+                layers=layers,  # Use converted list
+                regularizer=all_params['regularizer'],
+                regularization_weight=all_params['regularization_weight'],
+                sample_fraction=all_params['sample_fraction'],
+                plot=all_params['plot'],
+                eval_on_val=True  # Use validation set for optimization
+            )
+        finally:
+            # Explicitly delete datasets to free memory after training
+            del train_set, val_set, test_set
+            gc.collect()
         
         # Extract the metric to optimize from VALIDATION metrics
         if OPTIMIZATION_METRIC not in val_metrics:
@@ -294,6 +300,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
             all_trials_data['best_parameters'][key] = value
     
     # Save all trial results from result object
+    # Cache space names to avoid recreating list for each trial
+    space_names = [space.name for space in search_space]
+    
     for i, (params_list, score) in enumerate(zip(result.x_iters, result.func_vals)):
         trial_data = {
             'trial_number': i + 1,
@@ -302,7 +311,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         }
         
         # Convert parameters
-        for j, param_name in enumerate([space.name for space in search_space]):
+        for j, param_name in enumerate(space_names):
             value = params_list[j]
             if isinstance(value, (list, tuple)):
                 trial_data['parameters'][param_name] = list(value)
@@ -321,6 +330,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     all_results_file = os.path.join(RESULTS_DIR, f"all_trials_{timestamp}.json")
     with open(all_results_file, 'w') as f:
         json.dump(all_trials_data, f, indent=4)
+    
+    # Clear large data structure from memory
+    del all_trials_data
     
     print(f"All trial results saved to: {all_results_file}")
     
