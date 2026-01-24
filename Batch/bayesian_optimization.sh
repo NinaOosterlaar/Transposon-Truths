@@ -4,7 +4,7 @@
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=04:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=5
 #SBATCH --mem-per-cpu=128G
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
