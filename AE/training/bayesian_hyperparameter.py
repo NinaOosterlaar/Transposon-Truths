@@ -10,6 +10,10 @@ from skopt.utils import use_named_args
 from skopt import dump, load
 from AE.main import main_with_datasets
 from AE.preprocessing.preprocessing import preprocess
+import argparse
+
+# Force numpy to not use memory mapping for large arrays (prevents bus errors)
+os.environ['NUMPY_MMAP_MODE'] = 'c'  # Copy mode instead of mmap
 
 # ============================================================================
 # BAYESIAN OPTIMIZATION PARAMETER SPACE
@@ -161,6 +165,15 @@ def objective(**params):
             train_val_test_split=all_params['train_val_test_split']
         )
         
+        # CRITICAL: Ensure arrays are in-memory copies, not memory-mapped
+        # This prevents bus errors in parallel execution
+        if train_set is not None and hasattr(train_set, 'flags') and not train_set.flags['OWNDATA']:
+            train_set = np.array(train_set, copy=True)
+        if val_set is not None and hasattr(val_set, 'flags') and not val_set.flags['OWNDATA']:
+            val_set = np.array(val_set, copy=True)
+        if test_set is not None and hasattr(test_set, 'flags') and not test_set.flags['OWNDATA']:
+            test_set = np.array(test_set, copy=True)
+        
         print(f"Datasets created:")
         print(f"  Train: {train_set.shape}, Val: {val_set.shape if val_set is not None else 'None'}, Test: {test_set.shape if test_set is not None else 'None'}\n")
         
@@ -215,6 +228,9 @@ def objective(**params):
         print(f"\n>>> Optimizing {OPTIMIZATION_METRIC} on VALIDATION set: {loss:.6f}")
         print(f">>> Full validation metrics: {val_metrics}\n")
         
+        # Explicitly delete metrics to free memory
+        del train_metrics, val_metrics
+        
         return loss
         
     except Exception as e:
@@ -222,6 +238,23 @@ def objective(**params):
         print(f"Parameters that caused error: {params}\n")
         import traceback
         traceback.print_exc()
+        
+        # Clean up any allocated memory before returning error
+        try:
+            if 'train_set' in locals():
+                del train_set
+            if 'val_set' in locals():
+                del val_set
+            if 'test_set' in locals():
+                del test_set
+            if 'train_metrics' in locals():
+                del train_metrics
+            if 'val_metrics' in locals():
+                del val_metrics
+            gc.collect()
+        except:
+            pass
+        
         # Return a large penalty value instead of crashing
         return 1e6
 
@@ -252,6 +285,13 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     print(f"# Parallel jobs: {n_jobs}")
     print(f"{'#'*80}\n")
     
+    # Set environment variables to prevent each worker from spawning multiple threads
+    # Without this, 10 workers × multiple threads each = memory explosion
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+    os.environ['OPENBLAS_NUM_THREADS'] = '1'
+    os.environ['NUMEXPR_NUM_THREADS'] = '1'
+    
     # Run optimization
     result = gp_minimize(
         func=objective,
@@ -262,6 +302,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         verbose=True,
         n_jobs=n_jobs,
     )
+    
+    # Force cleanup of any remaining resources
+    gc.collect()
     
     # Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -354,7 +397,6 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
 # MAIN EXECUTION
 # ============================================================================
 if __name__ == "__main__":
-    import argparse
     
     parser = argparse.ArgumentParser(description='Bayesian Hyperparameter Optimization')
     parser.add_argument('--n_calls', type=int, default=N_CALLS,

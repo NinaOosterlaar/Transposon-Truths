@@ -19,11 +19,6 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
 
-echo "Starting Bayesian Hyperparameter Optimization"
-echo "CPUs available: $SLURM_CPUS_PER_TASK"
-echo "Memory per CPU: 8G"
-echo "Total memory: $((SLURM_CPUS_PER_TASK * 8))G"
-
 srun apptainer exec \
   --nv \
   --bind "$PROJECT_DIR":/workspace \
