@@ -4,7 +4,7 @@
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=04:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=5
+#SBATCH --cpus-per-task=3
 #SBATCH --mem-per-cpu=128G
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
@@ -33,5 +33,5 @@ srun apptainer exec \
     --n_calls 150 \
     --n_initial_points 20 \
     --random_state 42 \
-    --n_jobs 10
+    --n_jobs 6
 
