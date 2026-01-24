@@ -1,29 +1,3 @@
-"""
-Bayesian Hyperparameter Optimization for ZINBAE Models
-
-Optimizes ALL hyperparameters including preprocessing parameters.
-Datasets are created FRESH for each trial with trial-specific parameters.
-
-INSTALLATION:
-    pip install scikit-optimize
-
-USAGE:
-    python AE/training/bayesian_hyperparameter.py
-    python AE/training/bayesian_hyperparameter.py --n_calls 200
-
-IMPORTANT:
-    - Preprocessing hyperparameters ARE optimized (features, bin_size, etc.)
-    - Datasets created fresh each trial with those specific params
-    - data_point_length adjusted BEFORE preprocessing
-    - Optimizes on validation set
-    - Train/val/test split: [0.6, 0.2, 0.2]
-
-RESULTS SAVED:
-    AE/results/bayesian_optimization/
-    ├── all_trials_<timestamp>.json          # Single file with ALL trial results
-    └── bayesian_opt_result_<timestamp>.pkl  # Full scikit-optimize result object
-"""
-
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
 import numpy as np
@@ -41,20 +15,13 @@ from AE.preprocessing.preprocessing import preprocess
 # ============================================================================
 
 # Preprocessing hyperparameters - CATEGORICAL
-# Note: Use tuples instead of lists for Categorical (lists are unhashable)
-FEATURES_OPTIONS = [("Centr", "Nucl"), ("Centr",), ("Nucl",)]
+# Note: Encode features as strings to avoid skopt Categorical distance calculation issues
+FEATURES_OPTIONS = ["Centr_Nucl", "Centr", "Nucl"]  # Will be decoded to lists later
 MOVING_AVERAGE_OPTIONS = [True, False]
-
-# Model Architecture hyperparameters
-# Note: Use tuples instead of lists for Categorical
-LAYERS_OPTIONS = [
-    (512, 256, 128), (256, 128, 64), (128, 64, 32),
-    (64,), (128,), (128, 64), (256, 128), (1024, 512, 256, 128)
-]
 
 # Convolutional Layer hyperparameters
 USE_CONV_OPTIONS = [True, False]
-PADDING = 'same'  # Fixed - only one option
+# Note: padding will be set dynamically based on stride (PyTorch requires padding != 'same' when stride > 1)
 
 # Regularization hyperparameters
 REGULARIZATIONS = ["l1", "l2", "none"]
@@ -71,8 +38,9 @@ search_space = [
     Real(0.25, 1.0, name='sample_fraction'),  # SAMPLE_FRACTIONS as continuous
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
-    # Model Architecture
-    Categorical(LAYERS_OPTIONS, name='layers'),
+    # Model Architecture (parameterized, layer sizes divisible by 16)
+    Integer(4, 200, name='first_layer_size_factor'),  # Multiplied by 16: 64-3200
+    Integer(1, 6, name='num_layers'),  # Number of layers (each divides by 2)
     
     # Convolutional Layers
     Categorical(USE_CONV_OPTIONS, name='use_conv'),
@@ -102,7 +70,6 @@ FIXED_PARAMS = {
     'input_folder': "Data/test/strain_FD",
     'split_on': 'Chrom',
     'train_val_test_split': [0.6, 0.2, 0.2],  # Proper train/val/test split
-    'padding': 'same',
     'plot': False,
 }
 
@@ -143,18 +110,37 @@ def objective(**params):
     
     try:
         # Extract preprocessing parameters for this trial
-        features = all_params['features']
+        features_str = all_params['features']
         bin_size = all_params['bin_size']
         moving_average = all_params['moving_average']
         data_point_length = all_params['data_point_length']
         step_size = all_params['step_size']
+        stride = all_params['stride']
         
-        # Convert tuples to lists (Categorical returns tuples, but functions expect lists)
-        if isinstance(features, tuple):
-            features = list(features)
-        layers = all_params['layers']
-        if isinstance(layers, tuple):
-            layers = list(layers)
+        # Decode features string to list
+        if features_str == "Centr_Nucl":
+            features = ["Centr", "Nucl"]
+        elif features_str == "Centr":
+            features = ["Centr"]
+        elif features_str == "Nucl":
+            features = ["Nucl"]
+        else:
+            features = [features_str]  # Fallback
+        
+        # Set padding based on stride (PyTorch doesn't support padding='same' with stride > 1)
+        if stride > 1:
+            padding = 0  # Valid padding
+        else:
+            padding = 'same'  # Same padding when stride == 1
+        
+        # Add padding to params
+        all_params['padding'] = padding
+        
+        # Construct layers from parametric representation (divisible by 16)
+        first_layer_size_factor = all_params['first_layer_size_factor']
+        first_layer_size = first_layer_size_factor * 16  # Ensure divisible by 16
+        num_layers = all_params['num_layers']
+        layers = [first_layer_size // (2**i) for i in range(num_layers)]
         
         # Adjust data_point_length BEFORE preprocessing (if not using moving average)
         preprocessing_data_length = data_point_length
@@ -166,7 +152,9 @@ def objective(**params):
         print(f"  bin_size: {bin_size}")
         print(f"  moving_average: {moving_average}")
         print(f"  data_point_length: {preprocessing_data_length} (from {data_point_length})")
-        print(f"  step_size: {step_size}\n")
+        print(f"  step_size: {step_size}")
+        print(f"  stride: {stride}, padding: {padding}")
+        print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})\n")
         
         # Preprocess data with trial-specific parameters
         train_set, val_set, test_set, _, _, _ = preprocess(
