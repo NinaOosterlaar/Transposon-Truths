@@ -6,7 +6,7 @@
 #SBATCH --qos=medium
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
-#SBATCH --mem-per-cpu=128G
+#SBATCH --mem-per-cpu=200G
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
@@ -14,6 +14,7 @@
 #SBATCH --error=slurm_bayesopt_%j.err
 
 set -euo pipefail
+
 
 export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif"
 export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
