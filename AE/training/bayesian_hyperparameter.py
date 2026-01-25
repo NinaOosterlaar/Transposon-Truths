@@ -335,9 +335,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     for key, value in best_params.items():
         if isinstance(value, (list, tuple)):
             all_trials_data['best_parameters'][key] = list(value)
-        elif isinstance(value, (np.integer, np.int_)):
+        elif isinstance(value, np.integer):
             all_trials_data['best_parameters'][key] = int(value)
-        elif isinstance(value, (np.floating, np.float_)):
+        elif isinstance(value, np.floating):
             all_trials_data['best_parameters'][key] = float(value)
         elif isinstance(value, (np.bool_, bool)):
             all_trials_data['best_parameters'][key] = bool(value)
@@ -360,9 +360,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
             value = params_list[j]
             if isinstance(value, (list, tuple)):
                 trial_data['parameters'][param_name] = list(value)
-            elif isinstance(value, (np.integer, np.int_)):
+            elif isinstance(value, np.integer):
                 trial_data['parameters'][param_name] = int(value)
-            elif isinstance(value, (np.floating, np.float_)):
+            elif isinstance(value, np.floating):
                 trial_data['parameters'][param_name] = float(value)
             elif isinstance(value, (np.bool_, bool)):
                 trial_data['parameters'][param_name] = bool(value)
