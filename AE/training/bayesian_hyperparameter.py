@@ -2,6 +2,7 @@ import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) 
 import numpy as np
 import json
+from torch import cuda
 from datetime import datetime
 import gc
 from skopt import gp_minimize
@@ -210,6 +211,7 @@ def objective(**params):
             # Explicitly delete datasets to free memory after training
             del train_set, val_set, test_set
             gc.collect()
+            if cuda.is_available(): cuda.empty_cache()
         
         # Extract the metric to optimize from VALIDATION metrics
         if OPTIMIZATION_METRIC not in val_metrics:
