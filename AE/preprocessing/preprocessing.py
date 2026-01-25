@@ -89,10 +89,10 @@ def clip_outliers(data, percentile=95, multiplier=1.5):
     
     return data, clip_stats
 
-def standardize_data(train_data, val_data, test_data, features, standardize_value = True):
+def standardize_data(train_data, val_data, test_data, features):
     """Standardize features to have mean 0 and standard deviation 1.
     Fits scalers on training data and applies to all splits.
-    Standardizes 'Value' (log-normalized counts) and other features. Does NOT standardize 'Chrom' (categorical).
+    Does NOT standardize 'Value' (log-normalized counts) or 'Chrom' (categorical).
     
     Args:
         train_data, val_data, test_data: Dictionaries containing {dataset: {chromosome: DataFrame}}.
@@ -104,10 +104,8 @@ def standardize_data(train_data, val_data, test_data, features, standardize_valu
     """
     scalers = {}
     
-    # Features to standardize (exclude only 'Chrom')
+    # Features to standardize (exclude 'Value' and 'Chrom')
     features_to_standardize = []
-    if standardize_value:
-        features_to_standardize.append('Value')  # Always standardize Value
     
     feature_to_column = {
         'Value': 'Value',
@@ -452,6 +450,7 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
     Returns:
         np.ndarray: 3D array of shape (num_samples, window_length, num_features)
     """
+    
     # Check if chromosome encoding is needed
     use_chrom = 'Chrom' in features
     
@@ -572,13 +571,14 @@ def process_data(transposon_data, features, bin_size, moving_average, step_size,
         if use_chrom:
             # Add chromosome column (categorical encoding)
             cols_to_keep.append('Chromosome')
-        
-        print(f"Column order in final array (Dataset/Chrom split): {cols_to_keep}")
+    
         
         # For ZINB mode, add raw counts and size factor columns at the end
         if zinb_mode:
             cols_to_keep.append('Value_Raw')
             cols_to_keep.append('Size_Factor')
+            
+        print(f"Column order in final array (Dataset/Chrom split): {cols_to_keep}")
         
         # Filter columns
         for dataset in transposon_data:
@@ -679,7 +679,7 @@ def preprocess(input_folder,
         count_stats (dict, optional): Statistics from count normalization if normalize_counts=True.
     """
     transposon_data = read_csv_file_with_distances(input_folder)
-    
+   
     # First step: Clip outliers if requested (before any normalization)
     clip_stats = None
     if clip_outliers_flag:
@@ -784,7 +784,7 @@ if __name__ == "__main__":
         moving_average=args.moving_average,
         data_point_length=args.data_point_length,
         step_size=step_size,
-        ,clip_outliers_flag=clip_outliers_flag
+        clip_outliers_flag=clip_outliers_flag
     )
 
     # Print some info

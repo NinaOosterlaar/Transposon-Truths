@@ -1,0 +1,116 @@
+Task 1: Training ZINBVAE
+Device: cuda
+Loading training data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_train_data.npy
+Applied denoising with 30.0% masking
+Loading test data from: Data/processed_data/BinSize10_MovingAvgFalse_ZINB_test_data.npy
+Applied denoising with 30.0% masking
+Number of training samples: 14824
+============================================================
+TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)
+============================================================
+Epoch [1/100], Total Loss: 4.9730, Recon: 2.2581, KL: 0.2113, Masked: 2.5036
+Epoch [2/100], Total Loss: 4.3826, Recon: 2.1237, KL: 0.0095, Masked: 2.2494
+Epoch [3/100], Total Loss: 4.3580, Recon: 2.1121, KL: 0.0075, Masked: 2.2383
+Epoch [4/100], Total Loss: 4.2863, Recon: 2.0661, KL: 0.0089, Masked: 2.2114
+Epoch [5/100], Total Loss: 4.2439, Recon: 2.0378, KL: 0.0095, Masked: 2.1965
+Epoch [6/100], Total Loss: 4.2498, Recon: 2.0384, KL: 0.0106, Masked: 2.2007
+Epoch [7/100], Total Loss: 4.2404, Recon: 2.0361, KL: 0.0113, Masked: 2.1930
+Epoch [8/100], Total Loss: 4.2609, Recon: 2.0526, KL: 0.0122, Masked: 2.1962
+Epoch [9/100], Total Loss: 4.2212, Recon: 2.0237, KL: 0.0120, Masked: 2.1855
+Epoch [10/100], Total Loss: 4.2143, Recon: 2.0211, KL: 0.0123, Masked: 2.1810
+Epoch [11/100], Total Loss: 4.2025, Recon: 2.0151, KL: 0.0113, Masked: 2.1762
+Epoch [12/100], Total Loss: 4.1770, Recon: 1.9994, KL: 0.0108, Masked: 2.1668
+Epoch [13/100], Total Loss: 4.1835, Recon: 2.0002, KL: 0.0108, Masked: 2.1726
+Epoch [14/100], Total Loss: 4.1837, Recon: 2.0060, KL: 0.0109, Masked: 2.1668
+Epoch [15/100], Total Loss: 4.1374, Recon: 1.9766, KL: 0.0094, Masked: 2.1514
+Epoch [16/100], Total Loss: 4.1249, Recon: 1.9667, KL: 0.0083, Masked: 2.1499
+Epoch [17/100], Total Loss: 4.1185, Recon: 1.9646, KL: 0.0078, Masked: 2.1461
+Epoch [18/100], Total Loss: 4.1306, Recon: 1.9727, KL: 0.0078, Masked: 2.1500
+Epoch [19/100], Total Loss: 4.1383, Recon: 1.9766, KL: 0.0080, Masked: 2.1538
+Epoch [20/100], Total Loss: 4.1358, Recon: 1.9728, KL: 0.0079, Masked: 2.1551
+Epoch [21/100], Total Loss: 4.1251, Recon: 1.9673, KL: 0.0075, Masked: 2.1503
+Epoch [22/100], Total Loss: 4.1169, Recon: 1.9631, KL: 0.0070, Masked: 2.1468
+Epoch [23/100], Total Loss: 4.1161, Recon: 1.9637, KL: 0.0069, Masked: 2.1456
+Epoch [24/100], Total Loss: 4.1176, Recon: 1.9669, KL: 0.0068, Masked: 2.1440
+Epoch [25/100], Total Loss: 4.1089, Recon: 1.9623, KL: 0.0071, Masked: 2.1395
+Epoch [26/100], Total Loss: 4.1085, Recon: 1.9649, KL: 0.0070, Masked: 2.1366
+Epoch [27/100], Total Loss: 4.1141, Recon: 1.9666, KL: 0.0072, Masked: 2.1403
+Epoch [28/100], Total Loss: 4.1046, Recon: 1.9622, KL: 0.0073, Masked: 2.1351
+Epoch [29/100], Total Loss: 4.1084, Recon: 1.9664, KL: 0.0076, Masked: 2.1344
+Epoch [30/100], Total Loss: 4.1139, Recon: 1.9687, KL: 0.0079, Masked: 2.1373
+Epoch [31/100], Total Loss: 4.1010, Recon: 1.9623, KL: 0.0077, Masked: 2.1310
+Epoch [32/100], Total Loss: 4.0981, Recon: 1.9619, KL: 0.0077, Masked: 2.1285
+Epoch [33/100], Total Loss: 4.1061, Recon: 1.9667, KL: 0.0077, Masked: 2.1316
+Epoch [34/100], Total Loss: 4.0975, Recon: 1.9620, KL: 0.0077, Masked: 2.1278
+Epoch [35/100], Total Loss: 4.0945, Recon: 1.9591, KL: 0.0077, Masked: 2.1278
+Epoch [36/100], Total Loss: 4.0862, Recon: 1.9540, KL: 0.0076, Masked: 2.1246
+Epoch [37/100], Total Loss: 4.0887, Recon: 1.9556, KL: 0.0075, Masked: 2.1256
+Epoch [38/100], Total Loss: 4.0820, Recon: 1.9543, KL: 0.0075, Masked: 2.1201
+Epoch [39/100], Total Loss: 4.0973, Recon: 1.9594, KL: 0.0076, Masked: 2.1303
+Epoch [40/100], Total Loss: 4.0896, Recon: 1.9576, KL: 0.0075, Masked: 2.1245
+Epoch [41/100], Total Loss: 4.0839, Recon: 1.9550, KL: 0.0074, Masked: 2.1214
+Epoch [42/100], Total Loss: 4.0750, Recon: 1.9491, KL: 0.0073, Masked: 2.1186
+Epoch [43/100], Total Loss: 4.0743, Recon: 1.9492, KL: 0.0071, Masked: 2.1180
+Epoch [44/100], Total Loss: 4.0842, Recon: 1.9552, KL: 0.0071, Masked: 2.1220
+Epoch [45/100], Total Loss: 4.0791, Recon: 1.9534, KL: 0.0072, Masked: 2.1186
+Epoch [46/100], Total Loss: 4.0720, Recon: 1.9499, KL: 0.0070, Masked: 2.1150
+Epoch [47/100], Total Loss: 4.0731, Recon: 1.9501, KL: 0.0072, Masked: 2.1158
+Epoch [48/100], Total Loss: 4.0719, Recon: 1.9500, KL: 0.0073, Masked: 2.1145
+Epoch [49/100], Total Loss: 4.0827, Recon: 1.9558, KL: 0.0074, Masked: 2.1195
+Epoch [50/100], Total Loss: 4.0655, Recon: 1.9471, KL: 0.0075, Masked: 2.1109
+Epoch [51/100], Total Loss: 4.0641, Recon: 1.9467, KL: 0.0071, Masked: 2.1102
+Epoch [52/100], Total Loss: 4.0676, Recon: 1.9493, KL: 0.0071, Masked: 2.1112
+Epoch [53/100], Total Loss: 4.0646, Recon: 1.9488, KL: 0.0073, Masked: 2.1084
+Epoch [54/100], Total Loss: 4.0606, Recon: 1.9463, KL: 0.0071, Masked: 2.1071
+Epoch [55/100], Total Loss: 4.0625, Recon: 1.9460, KL: 0.0072, Masked: 2.1093
+Epoch [56/100], Total Loss: 4.0668, Recon: 1.9488, KL: 0.0072, Masked: 2.1109
+Epoch [57/100], Total Loss: 4.0684, Recon: 1.9512, KL: 0.0074, Masked: 2.1098
+Epoch [58/100], Total Loss: 4.0616, Recon: 1.9472, KL: 0.0073, Masked: 2.1071
+Epoch [59/100], Total Loss: 4.0591, Recon: 1.9451, KL: 0.0074, Masked: 2.1066
+Epoch [60/100], Total Loss: 4.0533, Recon: 1.9437, KL: 0.0073, Masked: 2.1023
+Epoch [61/100], Total Loss: 4.0594, Recon: 1.9463, KL: 0.0073, Masked: 2.1058
+Epoch [62/100], Total Loss: 4.0522, Recon: 1.9426, KL: 0.0074, Masked: 2.1023
+Epoch [63/100], Total Loss: 4.0531, Recon: 1.9424, KL: 0.0074, Masked: 2.1033
+Epoch [64/100], Total Loss: 4.0534, Recon: 1.9437, KL: 0.0076, Masked: 2.1021
+Epoch [65/100], Total Loss: 4.0502, Recon: 1.9419, KL: 0.0077, Masked: 2.1006
+Epoch [66/100], Total Loss: 4.0457, Recon: 1.9400, KL: 0.0077, Masked: 2.0980
+Epoch [67/100], Total Loss: 4.0428, Recon: 1.9394, KL: 0.0077, Masked: 2.0957
+Epoch [68/100], Total Loss: 4.0429, Recon: 1.9375, KL: 0.0078, Masked: 2.0976
+Epoch [69/100], Total Loss: 4.0374, Recon: 1.9373, KL: 0.0079, Masked: 2.0922
+Epoch [70/100], Total Loss: 4.0313, Recon: 1.9358, KL: 0.0076, Masked: 2.0879
+Epoch [71/100], Total Loss: 4.0304, Recon: 1.9336, KL: 0.0078, Masked: 2.0890
+Epoch [72/100], Total Loss: 4.0304, Recon: 1.9345, KL: 0.0077, Masked: 2.0882
+Epoch [73/100], Total Loss: 4.0256, Recon: 1.9334, KL: 0.0077, Masked: 2.0844
+Epoch [74/100], Total Loss: 4.0253, Recon: 1.9324, KL: 0.0078, Masked: 2.0851
+Epoch [75/100], Total Loss: 4.0269, Recon: 1.9335, KL: 0.0078, Masked: 2.0856
+Epoch [76/100], Total Loss: 4.0238, Recon: 1.9334, KL: 0.0079, Masked: 2.0825
+Epoch [77/100], Total Loss: 4.0215, Recon: 1.9299, KL: 0.0079, Masked: 2.0838
+Epoch [78/100], Total Loss: 4.0152, Recon: 1.9287, KL: 0.0078, Masked: 2.0787
+Epoch [79/100], Total Loss: 4.0184, Recon: 1.9297, KL: 0.0078, Masked: 2.0808
+Epoch [80/100], Total Loss: 4.0206, Recon: 1.9318, KL: 0.0081, Masked: 2.0807
+Epoch [81/100], Total Loss: 4.0155, Recon: 1.9286, KL: 0.0080, Masked: 2.0788
+Epoch [82/100], Total Loss: 4.0118, Recon: 1.9274, KL: 0.0080, Masked: 2.0764
+Epoch [83/100], Total Loss: 4.0087, Recon: 1.9270, KL: 0.0081, Masked: 2.0737
+Epoch [84/100], Total Loss: 4.0045, Recon: 1.9244, KL: 0.0079, Masked: 2.0721
+Epoch [85/100], Total Loss: 4.0038, Recon: 1.9245, KL: 0.0081, Masked: 2.0713
+Epoch [86/100], Total Loss: 4.0049, Recon: 1.9247, KL: 0.0081, Masked: 2.0721
+Epoch [87/100], Total Loss: 4.0005, Recon: 1.9225, KL: 0.0082, Masked: 2.0698
+Epoch [88/100], Total Loss: 3.9995, Recon: 1.9239, KL: 0.0081, Masked: 2.0676
+Epoch [89/100], Total Loss: 3.9974, Recon: 1.9215, KL: 0.0083, Masked: 2.0676
+Epoch [90/100], Total Loss: 4.0019, Recon: 1.9219, KL: 0.0081, Masked: 2.0719
+Epoch [91/100], Total Loss: 3.9951, Recon: 1.9206, KL: 0.0081, Masked: 2.0664
+Epoch [92/100], Total Loss: 3.9936, Recon: 1.9195, KL: 0.0080, Masked: 2.0661
+Epoch [93/100], Total Loss: 3.9923, Recon: 1.9207, KL: 0.0083, Masked: 2.0633
+Epoch [94/100], Total Loss: 3.9894, Recon: 1.9193, KL: 0.0084, Masked: 2.0618
+Epoch [95/100], Total Loss: 3.9889, Recon: 1.9177, KL: 0.0083, Masked: 2.0628
+Epoch [96/100], Total Loss: 3.9867, Recon: 1.9178, KL: 0.0082, Masked: 2.0608
+Epoch [97/100], Total Loss: 3.9834, Recon: 1.9171, KL: 0.0083, Masked: 2.0581
+Epoch [98/100], Total Loss: 3.9833, Recon: 1.9162, KL: 0.0082, Masked: 2.0588
+Epoch [99/100], Total Loss: 3.9808, Recon: 1.9160, KL: 0.0082, Masked: 2.0565
+Epoch [100/100], Total Loss: 3.9818, Recon: 1.9165, KL: 0.0082, Masked: 2.0570
+Training loss plots saved to /workspace/AE/results/training/this_is_pi_loss/
+Training losses saved to /workspace/AE/results/training/this_is_pi_loss/this_is_pi_loss_ZINBVAE_20260119_132537_conv_training_losses.json
+
+==================================================
+EVALUATING ON TRAINING DATA
+==================================================

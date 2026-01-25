@@ -73,3 +73,6 @@ print("\nStandard Deviation values by sample:")
 print("-" * 60)
 for idx, row in df.iterrows():
     print(f"{row['Sample']:20s}: {row['Std_Dev']:.6f}")
+    
+    
+

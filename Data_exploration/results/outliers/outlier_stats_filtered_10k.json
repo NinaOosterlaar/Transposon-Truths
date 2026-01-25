@@ -1,0 +1,5595 @@
+{
+    "yTW001_6": {
+        "ChrX": {
+            "threshold": 2680.741599999572,
+            "outliers": [
+                {
+                    "position": 526929,
+                    "value": 11937
+                },
+                {
+                    "position": 597287,
+                    "value": 106650
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 7919.237399956823,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 14903
+                },
+                {
+                    "position": 117049,
+                    "value": 26571
+                },
+                {
+                    "position": 343225,
+                    "value": 19340
+                },
+                {
+                    "position": 504896,
+                    "value": 12065
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2584.8767999997362,
+            "outliers": [
+                {
+                    "position": 278597,
+                    "value": 66982
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 15698.65119996434,
+            "outliers": [
+                {
+                    "position": 565585,
+                    "value": 119774
+                },
+                {
+                    "position": 565591,
+                    "value": 286934
+                },
+                {
+                    "position": 565592,
+                    "value": 388114
+                },
+                {
+                    "position": 565596,
+                    "value": 29147676
+                },
+                {
+                    "position": 566408,
+                    "value": 21451
+                },
+                {
+                    "position": 566590,
+                    "value": 25899
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 3674.9207999998907,
+            "outliers": [
+                {
+                    "position": 457324,
+                    "value": 11700
+                },
+                {
+                    "position": 466461,
+                    "value": 11844
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 863.4835999994102,
+            "outliers": [
+                {
+                    "position": 337419,
+                    "value": 24157
+                }
+            ]
+        }
+    },
+    "yTW001_4": {
+        "ChrX": {
+            "threshold": 2733.3911999995908,
+            "outliers": [
+                {
+                    "position": 526931,
+                    "value": 10928
+                },
+                {
+                    "position": 597287,
+                    "value": 128993
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 6275.127999996184,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 17287
+                },
+                {
+                    "position": 117049,
+                    "value": 29116
+                },
+                {
+                    "position": 343225,
+                    "value": 36417
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 3623.716999998156,
+            "outliers": [
+                {
+                    "position": 278593,
+                    "value": 46552
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 15333.119999998715,
+            "outliers": [
+                {
+                    "position": 565579,
+                    "value": 15488
+                },
+                {
+                    "position": 565590,
+                    "value": 326905
+                },
+                {
+                    "position": 565592,
+                    "value": 336983
+                },
+                {
+                    "position": 565596,
+                    "value": 26536380
+                },
+                {
+                    "position": 566408,
+                    "value": 23386
+                },
+                {
+                    "position": 566590,
+                    "value": 22859
+                }
+            ]
+        }
+    },
+    "FD9_1": {
+        "ChrX": {
+            "threshold": 2130.03199999989,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 101121
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 3071.698999999542,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 20762
+                },
+                {
+                    "position": 117049,
+                    "value": 30100
+                },
+                {
+                    "position": 343225,
+                    "value": 15473
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2631.4335999999894,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 41687
+                },
+                {
+                    "position": 278600,
+                    "value": 10608
+                },
+                {
+                    "position": 278616,
+                    "value": 12435
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 963.6303999999072,
+            "outliers": [
+                {
+                    "position": 176573,
+                    "value": 32748
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 11467.886399989919,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 18741
+                },
+                {
+                    "position": 565392,
+                    "value": 15057
+                },
+                {
+                    "position": 565584,
+                    "value": 69363
+                },
+                {
+                    "position": 565591,
+                    "value": 264268
+                },
+                {
+                    "position": 565592,
+                    "value": 354849
+                },
+                {
+                    "position": 565596,
+                    "value": 29602603
+                },
+                {
+                    "position": 565598,
+                    "value": 20586
+                },
+                {
+                    "position": 565992,
+                    "value": 14803
+                },
+                {
+                    "position": 566408,
+                    "value": 13344
+                },
+                {
+                    "position": 566590,
+                    "value": 36642
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 1274.3899999999558,
+            "outliers": [
+                {
+                    "position": 11959,
+                    "value": 10474
+                }
+            ]
+        }
+    },
+    "FD7_2": {
+        "ChrX": {
+            "threshold": 1886.9719999998924,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 37603
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 1882.1578999996855,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 11893
+                },
+                {
+                    "position": 117049,
+                    "value": 18500
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2413.4368999959333,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 26821
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 9254.5027999679,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 13121
+                },
+                {
+                    "position": 565392,
+                    "value": 12303
+                },
+                {
+                    "position": 565584,
+                    "value": 81635
+                },
+                {
+                    "position": 565591,
+                    "value": 219806
+                },
+                {
+                    "position": 565596,
+                    "value": 26701705
+                },
+                {
+                    "position": 565598,
+                    "value": 13581
+                },
+                {
+                    "position": 565992,
+                    "value": 10922
+                },
+                {
+                    "position": 566589,
+                    "value": 25469
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 1984.072899999912,
+            "outliers": [
+                {
+                    "position": 573274,
+                    "value": 10674
+                }
+            ]
+        }
+    },
+    "FD12": {
+        "ChrIV": {
+            "threshold": 671.5540999999503,
+            "outliers": [
+                {
+                    "position": 1278441,
+                    "value": 13687
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 1658.5543999943184,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 36976
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 2714.661399998615,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 15809
+                },
+                {
+                    "position": 117049,
+                    "value": 24035
+                },
+                {
+                    "position": 399236,
+                    "value": 10782
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 921.2499999997381,
+            "outliers": [
+                {
+                    "position": 16762,
+                    "value": 15223
+                },
+                {
+                    "position": 482264,
+                    "value": 17987
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 1953.1249999975844,
+            "outliers": [
+                {
+                    "position": 47994,
+                    "value": 18270
+                },
+                {
+                    "position": 278592,
+                    "value": 34180
+                },
+                {
+                    "position": 278610,
+                    "value": 14726
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 885.4300999999832,
+            "outliers": [
+                {
+                    "position": 253287,
+                    "value": 13366
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 782.2255999997142,
+            "outliers": [
+                {
+                    "position": 158039,
+                    "value": 12238
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 866.4637999997649,
+            "outliers": [
+                {
+                    "position": 334987,
+                    "value": 10984
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 7905.369599997997,
+            "outliers": [
+                {
+                    "position": 443297,
+                    "value": 14088
+                },
+                {
+                    "position": 565392,
+                    "value": 12009
+                },
+                {
+                    "position": 565589,
+                    "value": 285713
+                },
+                {
+                    "position": 565592,
+                    "value": 310091
+                },
+                {
+                    "position": 565596,
+                    "value": 27424263
+                },
+                {
+                    "position": 565598,
+                    "value": 12864
+                },
+                {
+                    "position": 565992,
+                    "value": 10429
+                },
+                {
+                    "position": 566408,
+                    "value": 10805
+                },
+                {
+                    "position": 566590,
+                    "value": 36592
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 4388.778899999146,
+            "outliers": [
+                {
+                    "position": 470774,
+                    "value": 22906
+                },
+                {
+                    "position": 484006,
+                    "value": 22261
+                },
+                {
+                    "position": 487658,
+                    "value": 22727
+                }
+            ]
+        }
+    },
+    "FD7_1": {
+        "ChrX": {
+            "threshold": 2077.88279999941,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 40705
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 1967.8963999988337,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 13046
+                },
+                {
+                    "position": 117049,
+                    "value": 20206
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2512.865599996825,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 29865
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 6028.580499989199,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 14718
+                },
+                {
+                    "position": 565392,
+                    "value": 12857
+                },
+                {
+                    "position": 565589,
+                    "value": 330889
+                },
+                {
+                    "position": 565596,
+                    "value": 28025652
+                },
+                {
+                    "position": 565598,
+                    "value": 13524
+                },
+                {
+                    "position": 565992,
+                    "value": 11891
+                },
+                {
+                    "position": 566408,
+                    "value": 10646
+                },
+                {
+                    "position": 566585,
+                    "value": 32567
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 2144.3147999999346,
+            "outliers": [
+                {
+                    "position": 573274,
+                    "value": 11399
+                }
+            ]
+        }
+    },
+    "FD7_6": {
+        "ChrIV": {
+            "threshold": 949.3499999982596,
+            "outliers": [
+                {
+                    "position": 1011775,
+                    "value": 10096
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 2659.7792999997037,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 48260
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 2662.074099999598,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 18353
+                },
+                {
+                    "position": 117049,
+                    "value": 23090
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2804.192799997254,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 34634
+                },
+                {
+                    "position": 278616,
+                    "value": 10395
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 930.399999999674,
+            "outliers": [
+                {
+                    "position": 129592,
+                    "value": 11113
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 9545.760999971098,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 14773
+                },
+                {
+                    "position": 565392,
+                    "value": 16048
+                },
+                {
+                    "position": 565589,
+                    "value": 403157
+                },
+                {
+                    "position": 565592,
+                    "value": 381588
+                },
+                {
+                    "position": 565596,
+                    "value": 32709078
+                },
+                {
+                    "position": 565598,
+                    "value": 16916
+                },
+                {
+                    "position": 565992,
+                    "value": 12279
+                },
+                {
+                    "position": 566408,
+                    "value": 12025
+                },
+                {
+                    "position": 566590,
+                    "value": 32108
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 2855.6880999992864,
+            "outliers": [
+                {
+                    "position": 573274,
+                    "value": 14894
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 1108.1031999998377,
+            "outliers": [
+                {
+                    "position": 412510,
+                    "value": 10069
+                }
+            ]
+        }
+    },
+    "FD7_3": {
+        "ChrX": {
+            "threshold": 2065.2566999992996,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 44026
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 2261.0184999986304,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 13644
+                },
+                {
+                    "position": 117049,
+                    "value": 19418
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2586.5141999964835,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 30084
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 9851.883299944704,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 14858
+                },
+                {
+                    "position": 565392,
+                    "value": 13454
+                },
+                {
+                    "position": 565590,
+                    "value": 329089
+                },
+                {
+                    "position": 565592,
+                    "value": 370285
+                },
+                {
+                    "position": 565596,
+                    "value": 32122239
+                },
+                {
+                    "position": 565598,
+                    "value": 15824
+                },
+                {
+                    "position": 565992,
+                    "value": 11472
+                },
+                {
+                    "position": 566408,
+                    "value": 10845
+                },
+                {
+                    "position": 566588,
+                    "value": 29685
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 2116.7026999996597,
+            "outliers": [
+                {
+                    "position": 573274,
+                    "value": 11942
+                }
+            ]
+        }
+    },
+    "FD7_4": {
+        "ChrX": {
+            "threshold": 2312.873399998687,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 41045
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 2353.1948999999295,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 16964
+                },
+                {
+                    "position": 117049,
+                    "value": 20500
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2615.4903999958187,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 30877
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 882.1653999993869,
+            "outliers": [
+                {
+                    "position": 129592,
+                    "value": 10163
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 10906.88249999813,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 13039
+                },
+                {
+                    "position": 565392,
+                    "value": 14345
+                },
+                {
+                    "position": 565584,
+                    "value": 63796
+                },
+                {
+                    "position": 565591,
+                    "value": 262039
+                },
+                {
+                    "position": 565592,
+                    "value": 336529
+                },
+                {
+                    "position": 565596,
+                    "value": 29409666
+                },
+                {
+                    "position": 565598,
+                    "value": 15447
+                },
+                {
+                    "position": 566408,
+                    "value": 10965
+                },
+                {
+                    "position": 566585,
+                    "value": 35587
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 2587.2440999998944,
+            "outliers": [
+                {
+                    "position": 573274,
+                    "value": 13043
+                }
+            ]
+        }
+    },
+    "FD9_2": {
+        "ChrX": {
+            "threshold": 1671.967199999839,
+            "outliers": [
+                {
+                    "position": 526931,
+                    "value": 10523
+                },
+                {
+                    "position": 597287,
+                    "value": 78911
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 2648.1393999965658,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 18594
+                },
+                {
+                    "position": 117049,
+                    "value": 24974
+                },
+                {
+                    "position": 343225,
+                    "value": 11610
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2090.720399999991,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 34830
+                },
+                {
+                    "position": 278616,
+                    "value": 10431
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 778.388999999981,
+            "outliers": [
+                {
+                    "position": 176573,
+                    "value": 28366
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 10554.283599983857,
+            "outliers": [
+                {
+                    "position": 564295,
+                    "value": 14855
+                },
+                {
+                    "position": 565392,
+                    "value": 12291
+                },
+                {
+                    "position": 565585,
+                    "value": 58342
+                },
+                {
+                    "position": 565591,
+                    "value": 218542
+                },
+                {
+                    "position": 565592,
+                    "value": 314070
+                },
+                {
+                    "position": 565596,
+                    "value": 26278020
+                },
+                {
+                    "position": 565598,
+                    "value": 18037
+                },
+                {
+                    "position": 565992,
+                    "value": 11973
+                },
+                {
+                    "position": 566408,
+                    "value": 11152
+                },
+                {
+                    "position": 566591,
+                    "value": 28055
+                }
+            ]
+        }
+    },
+    "FD11": {
+        "ChrX": {
+            "threshold": 1591.7188999995487,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 101706
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 3778.5386999920884,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 14798
+                },
+                {
+                    "position": 117049,
+                    "value": 29465
+                },
+                {
+                    "position": 343225,
+                    "value": 13060
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 4089.9386999999697,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 36398
+                },
+                {
+                    "position": 278613,
+                    "value": 14540
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 1116.5917999980593,
+            "outliers": [
+                {
+                    "position": 604246,
+                    "value": 12571
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 1130.6647999999113,
+            "outliers": [
+                {
+                    "position": 24349,
+                    "value": 10691
+                },
+                {
+                    "position": 820123,
+                    "value": 44761
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 11059.824699977442,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 19482
+                },
+                {
+                    "position": 565392,
+                    "value": 14026
+                },
+                {
+                    "position": 565585,
+                    "value": 72813
+                },
+                {
+                    "position": 565591,
+                    "value": 207548
+                },
+                {
+                    "position": 565596,
+                    "value": 25204369
+                },
+                {
+                    "position": 565992,
+                    "value": 19089
+                },
+                {
+                    "position": 566408,
+                    "value": 15577
+                },
+                {
+                    "position": 566590,
+                    "value": 33875
+                },
+                {
+                    "position": 662251,
+                    "value": 16988
+                }
+            ]
+        }
+    },
+    "FD7_5": {
+        "ChrIV": {
+            "threshold": 1037.3423999996448,
+            "outliers": [
+                {
+                    "position": 1011775,
+                    "value": 11202
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 3061.1374999996333,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 53402
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 3156.3657999969146,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 21110
+                },
+                {
+                    "position": 117049,
+                    "value": 26593
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2871.3491999992984,
+            "outliers": [
+                {
+                    "position": 278593,
+                    "value": 45180
+                },
+                {
+                    "position": 278616,
+                    "value": 10959
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 1306.2293999984322,
+            "outliers": [
+                {
+                    "position": 129592,
+                    "value": 12989
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 13843.759199997294,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 16958
+                },
+                {
+                    "position": 565392,
+                    "value": 18435
+                },
+                {
+                    "position": 565584,
+                    "value": 84192
+                },
+                {
+                    "position": 565591,
+                    "value": 356235
+                },
+                {
+                    "position": 565592,
+                    "value": 418585
+                },
+                {
+                    "position": 565596,
+                    "value": 35703804
+                },
+                {
+                    "position": 565598,
+                    "value": 18303
+                },
+                {
+                    "position": 565992,
+                    "value": 14024
+                },
+                {
+                    "position": 566591,
+                    "value": 32914
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 614.0313999995706,
+            "outliers": [
+                {
+                    "position": 521352,
+                    "value": 11221
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 3172.3593999972363,
+            "outliers": [
+                {
+                    "position": 573274,
+                    "value": 16776
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 1274.7543999999689,
+            "outliers": [
+                {
+                    "position": 412510,
+                    "value": 11700
+                }
+            ]
+        }
+    },
+    "FD9_3": {
+        "ChrX": {
+            "threshold": 1909.367999999813,
+            "outliers": [
+                {
+                    "position": 526932,
+                    "value": 13101
+                },
+                {
+                    "position": 597287,
+                    "value": 102554
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 2984.011199999921,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 20939
+                },
+                {
+                    "position": 117049,
+                    "value": 29765
+                },
+                {
+                    "position": 343225,
+                    "value": 14273
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 2208.377199998591,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 39225
+                },
+                {
+                    "position": 278609,
+                    "value": 21712
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 838.4009999999689,
+            "outliers": [
+                {
+                    "position": 176573,
+                    "value": 34188
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 10209.888899996644,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 18745
+                },
+                {
+                    "position": 565392,
+                    "value": 15043
+                },
+                {
+                    "position": 565584,
+                    "value": 57855
+                },
+                {
+                    "position": 565591,
+                    "value": 231497
+                },
+                {
+                    "position": 565592,
+                    "value": 372968
+                },
+                {
+                    "position": 565596,
+                    "value": 31642781
+                },
+                {
+                    "position": 565598,
+                    "value": 21517
+                },
+                {
+                    "position": 565992,
+                    "value": 13480
+                },
+                {
+                    "position": 566342,
+                    "value": 10221
+                },
+                {
+                    "position": 566408,
+                    "value": 13384
+                },
+                {
+                    "position": 566590,
+                    "value": 34877
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 1302.5065999982326,
+            "outliers": [
+                {
+                    "position": 11959,
+                    "value": 10246
+                }
+            ]
+        }
+    },
+    "yEK23c_10": {
+        "ChrIV": {
+            "threshold": 8190.896399999285,
+            "outliers": [
+                {
+                    "position": 359007,
+                    "value": 10072
+                },
+                {
+                    "position": 631226,
+                    "value": 17038
+                },
+                {
+                    "position": 658127,
+                    "value": 23644
+                },
+                {
+                    "position": 1182128,
+                    "value": 32319
+                },
+                {
+                    "position": 1377898,
+                    "value": 10024
+                },
+                {
+                    "position": 1384927,
+                    "value": 15066
+                },
+                {
+                    "position": 1469261,
+                    "value": 11490
+                },
+                {
+                    "position": 1489183,
+                    "value": 10072
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 8357.594399988491,
+            "outliers": [
+                {
+                    "position": 42520,
+                    "value": 32355
+                },
+                {
+                    "position": 91932,
+                    "value": 12459
+                },
+                {
+                    "position": 180895,
+                    "value": 12396
+                },
+                {
+                    "position": 455268,
+                    "value": 13110
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 14169.460999991134,
+            "outliers": [
+                {
+                    "position": 15348,
+                    "value": 31421
+                },
+                {
+                    "position": 115947,
+                    "value": 15230
+                },
+                {
+                    "position": 117049,
+                    "value": 22674
+                },
+                {
+                    "position": 211345,
+                    "value": 18354
+                },
+                {
+                    "position": 397987,
+                    "value": 18408
+                },
+                {
+                    "position": 562285,
+                    "value": 37586
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 5297.635199998505,
+            "outliers": [
+                {
+                    "position": 37870,
+                    "value": 13909
+                },
+                {
+                    "position": 259172,
+                    "value": 13597
+                },
+                {
+                    "position": 502832,
+                    "value": 10524
+                },
+                {
+                    "position": 758581,
+                    "value": 14977
+                },
+                {
+                    "position": 777476,
+                    "value": 13549
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 8774.320399992888,
+            "outliers": [
+                {
+                    "position": 146909,
+                    "value": 11059
+                },
+                {
+                    "position": 217967,
+                    "value": 12313
+                },
+                {
+                    "position": 278592,
+                    "value": 40021
+                },
+                {
+                    "position": 278611,
+                    "value": 15062
+                },
+                {
+                    "position": 642682,
+                    "value": 12827
+                },
+                {
+                    "position": 668455,
+                    "value": 12887
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 9019.654199992285,
+            "outliers": [
+                {
+                    "position": 33556,
+                    "value": 10677
+                },
+                {
+                    "position": 160328,
+                    "value": 18447
+                },
+                {
+                    "position": 384862,
+                    "value": 11044
+                },
+                {
+                    "position": 439671,
+                    "value": 42326
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 6052.502799998409,
+            "outliers": [
+                {
+                    "position": 205462,
+                    "value": 14497
+                },
+                {
+                    "position": 299565,
+                    "value": 10827
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 5846.699599998261,
+            "outliers": [
+                {
+                    "position": 217659,
+                    "value": 17412
+                },
+                {
+                    "position": 325280,
+                    "value": 49912
+                },
+                {
+                    "position": 366669,
+                    "value": 14655
+                },
+                {
+                    "position": 595708,
+                    "value": 14379
+                },
+                {
+                    "position": 756674,
+                    "value": 19396
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 4294.751199999941,
+            "outliers": [
+                {
+                    "position": 209284,
+                    "value": 12869
+                },
+                {
+                    "position": 777416,
+                    "value": 45578
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 17784.490399981907,
+            "outliers": [
+                {
+                    "position": 163699,
+                    "value": 29399
+                },
+                {
+                    "position": 170351,
+                    "value": 27852
+                },
+                {
+                    "position": 565585,
+                    "value": 45709
+                },
+                {
+                    "position": 565591,
+                    "value": 116517
+                },
+                {
+                    "position": 565592,
+                    "value": 204446
+                },
+                {
+                    "position": 565596,
+                    "value": 22860889
+                },
+                {
+                    "position": 565992,
+                    "value": 18317
+                },
+                {
+                    "position": 566408,
+                    "value": 26978
+                },
+                {
+                    "position": 837029,
+                    "value": 25066
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 12357.29269998573,
+            "outliers": [
+                {
+                    "position": 398103,
+                    "value": 19671
+                },
+                {
+                    "position": 405580,
+                    "value": 17663
+                },
+                {
+                    "position": 472693,
+                    "value": 15022
+                },
+                {
+                    "position": 534030,
+                    "value": 16563
+                },
+                {
+                    "position": 651500,
+                    "value": 12905
+                },
+                {
+                    "position": 731064,
+                    "value": 25312
+                },
+                {
+                    "position": 742109,
+                    "value": 15573
+                },
+                {
+                    "position": 809881,
+                    "value": 16695
+                },
+                {
+                    "position": 1084246,
+                    "value": 17649
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 13533.939999997117,
+            "outliers": [
+                {
+                    "position": 176511,
+                    "value": 14518
+                },
+                {
+                    "position": 205077,
+                    "value": 24049
+                },
+                {
+                    "position": 241197,
+                    "value": 21990
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 13165.72899999992,
+            "outliers": [
+                {
+                    "position": 235012,
+                    "value": 16445
+                },
+                {
+                    "position": 454610,
+                    "value": 13185
+                },
+                {
+                    "position": 456502,
+                    "value": 13658
+                },
+                {
+                    "position": 459781,
+                    "value": 16860
+                },
+                {
+                    "position": 460376,
+                    "value": 14200
+                },
+                {
+                    "position": 465639,
+                    "value": 13766
+                },
+                {
+                    "position": 468918,
+                    "value": 16949
+                },
+                {
+                    "position": 700166,
+                    "value": 15177
+                },
+                {
+                    "position": 971557,
+                    "value": 14320
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 9969.386399997791,
+            "outliers": [
+                {
+                    "position": 110613,
+                    "value": 10796
+                },
+                {
+                    "position": 117082,
+                    "value": 11837
+                },
+                {
+                    "position": 167812,
+                    "value": 22042
+                },
+                {
+                    "position": 174278,
+                    "value": 10431
+                },
+                {
+                    "position": 296704,
+                    "value": 10002
+                },
+                {
+                    "position": 554668,
+                    "value": 27471
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 12548.069199996935,
+            "outliers": [
+                {
+                    "position": 18174,
+                    "value": 12627
+                },
+                {
+                    "position": 69038,
+                    "value": 17028
+                },
+                {
+                    "position": 69094,
+                    "value": 13868
+                },
+                {
+                    "position": 216273,
+                    "value": 28552
+                },
+                {
+                    "position": 522582,
+                    "value": 22542
+                },
+                {
+                    "position": 666134,
+                    "value": 17982
+                }
+            ]
+        }
+    },
+    "yEK23b_1": {
+        "ChrIV": {
+            "threshold": 9786.364999980928,
+            "outliers": [
+                {
+                    "position": 172639,
+                    "value": 24367
+                },
+                {
+                    "position": 180672,
+                    "value": 22045
+                },
+                {
+                    "position": 216049,
+                    "value": 16140
+                },
+                {
+                    "position": 323989,
+                    "value": 10429
+                },
+                {
+                    "position": 556891,
+                    "value": 13919
+                },
+                {
+                    "position": 596715,
+                    "value": 14019
+                },
+                {
+                    "position": 741535,
+                    "value": 18994
+                },
+                {
+                    "position": 894043,
+                    "value": 12526
+                },
+                {
+                    "position": 1012213,
+                    "value": 16115
+                },
+                {
+                    "position": 1386000,
+                    "value": 12286
+                },
+                {
+                    "position": 1515452,
+                    "value": 10679
+                }
+            ]
+        },
+        "ChrI": {
+            "threshold": 6613.486399997404,
+            "outliers": [
+                {
+                    "position": 198,
+                    "value": 76053
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 9059.923599998147,
+            "outliers": [
+                {
+                    "position": 7538,
+                    "value": 10928
+                },
+                {
+                    "position": 392213,
+                    "value": 10612
+                },
+                {
+                    "position": 526813,
+                    "value": 11120
+                },
+                {
+                    "position": 526923,
+                    "value": 10689
+                },
+                {
+                    "position": 745191,
+                    "value": 10045
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 8999.803199999034,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 13015
+                },
+                {
+                    "position": 117049,
+                    "value": 17713
+                },
+                {
+                    "position": 242023,
+                    "value": 15402
+                },
+                {
+                    "position": 312659,
+                    "value": 28178
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 7210.00459999661,
+            "outliers": [
+                {
+                    "position": 129774,
+                    "value": 11445
+                },
+                {
+                    "position": 432254,
+                    "value": 15290
+                },
+                {
+                    "position": 506502,
+                    "value": 10920
+                },
+                {
+                    "position": 581437,
+                    "value": 10716
+                },
+                {
+                    "position": 704716,
+                    "value": 22328
+                },
+                {
+                    "position": 822350,
+                    "value": 11040
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 6708.391999998596,
+            "outliers": [
+                {
+                    "position": 136097,
+                    "value": 21857
+                },
+                {
+                    "position": 136468,
+                    "value": 19777
+                },
+                {
+                    "position": 258076,
+                    "value": 11555
+                },
+                {
+                    "position": 278598,
+                    "value": 51810
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 7511.9103999977815,
+            "outliers": [
+                {
+                    "position": 7555,
+                    "value": 11155
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 10043.732799985184,
+            "outliers": [
+                {
+                    "position": 481,
+                    "value": 10628
+                },
+                {
+                    "position": 300313,
+                    "value": 12408
+                },
+                {
+                    "position": 303706,
+                    "value": 32759
+                },
+                {
+                    "position": 316020,
+                    "value": 11299
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 5476.5051999992575,
+            "outliers": [
+                {
+                    "position": 115732,
+                    "value": 14207
+                },
+                {
+                    "position": 593039,
+                    "value": 13857
+                },
+                {
+                    "position": 741830,
+                    "value": 10252
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 5809.926599985614,
+            "outliers": [
+                {
+                    "position": 16148,
+                    "value": 11395
+                },
+                {
+                    "position": 281995,
+                    "value": 10816
+                },
+                {
+                    "position": 408352,
+                    "value": 11263
+                },
+                {
+                    "position": 795688,
+                    "value": 10661
+                },
+                {
+                    "position": 915578,
+                    "value": 12995
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 19705.822899990366,
+            "outliers": [
+                {
+                    "position": 70250,
+                    "value": 25409
+                },
+                {
+                    "position": 564294,
+                    "value": 21508
+                },
+                {
+                    "position": 565585,
+                    "value": 76835
+                },
+                {
+                    "position": 565591,
+                    "value": 215983
+                },
+                {
+                    "position": 565592,
+                    "value": 366765
+                },
+                {
+                    "position": 565596,
+                    "value": 24336915
+                },
+                {
+                    "position": 566385,
+                    "value": 27260
+                },
+                {
+                    "position": 566408,
+                    "value": 24286
+                },
+                {
+                    "position": 566591,
+                    "value": 28530
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 9088.381799993687,
+            "outliers": [
+                {
+                    "position": 197129,
+                    "value": 10885
+                },
+                {
+                    "position": 357398,
+                    "value": 15484
+                },
+                {
+                    "position": 385074,
+                    "value": 14097
+                },
+                {
+                    "position": 483344,
+                    "value": 28389
+                },
+                {
+                    "position": 852142,
+                    "value": 11636
+                },
+                {
+                    "position": 913278,
+                    "value": 14528
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 11888.841799998423,
+            "outliers": [
+                {
+                    "position": 321172,
+                    "value": 12424
+                },
+                {
+                    "position": 370364,
+                    "value": 19454
+                },
+                {
+                    "position": 454445,
+                    "value": 14082
+                },
+                {
+                    "position": 454514,
+                    "value": 12201
+                },
+                {
+                    "position": 454954,
+                    "value": 13348
+                },
+                {
+                    "position": 463582,
+                    "value": 14693
+                },
+                {
+                    "position": 463651,
+                    "value": 12086
+                },
+                {
+                    "position": 464091,
+                    "value": 13329
+                },
+                {
+                    "position": 804317,
+                    "value": 21316
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 9077.087999986368,
+            "outliers": [
+                {
+                    "position": 376157,
+                    "value": 10014
+                },
+                {
+                    "position": 410842,
+                    "value": 12474
+                },
+                {
+                    "position": 459152,
+                    "value": 10625
+                }
+            ]
+        }
+    },
+    "yEK23a_23": {
+        "ChrIV": {
+            "threshold": 10786.365799995547,
+            "outliers": [
+                {
+                    "position": 73521,
+                    "value": 15846
+                },
+                {
+                    "position": 239876,
+                    "value": 17950
+                },
+                {
+                    "position": 378343,
+                    "value": 49139
+                },
+                {
+                    "position": 691110,
+                    "value": 13455
+                },
+                {
+                    "position": 974097,
+                    "value": 15938
+                },
+                {
+                    "position": 1447455,
+                    "value": 20138
+                },
+                {
+                    "position": 1454732,
+                    "value": 11669
+                }
+            ]
+        },
+        "ChrI": {
+            "threshold": 7152.3329999946,
+            "outliers": [
+                {
+                    "position": 6366,
+                    "value": 10976
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 19013.197399957055,
+            "outliers": [
+                {
+                    "position": 28646,
+                    "value": 28808
+                },
+                {
+                    "position": 136259,
+                    "value": 31200
+                },
+                {
+                    "position": 159663,
+                    "value": 66504
+                },
+                {
+                    "position": 455040,
+                    "value": 20501
+                },
+                {
+                    "position": 518949,
+                    "value": 24179
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 15144.931999993802,
+            "outliers": [
+                {
+                    "position": 115953,
+                    "value": 18333
+                },
+                {
+                    "position": 116285,
+                    "value": 16733
+                },
+                {
+                    "position": 116995,
+                    "value": 21539
+                },
+                {
+                    "position": 160380,
+                    "value": 15806
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 10794.129999992925,
+            "outliers": [
+                {
+                    "position": 8710,
+                    "value": 15301
+                },
+                {
+                    "position": 129769,
+                    "value": 12645
+                },
+                {
+                    "position": 309819,
+                    "value": 24520
+                },
+                {
+                    "position": 370871,
+                    "value": 13890
+                },
+                {
+                    "position": 645553,
+                    "value": 11701
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 13925.993399997926,
+            "outliers": [
+                {
+                    "position": 146044,
+                    "value": 14333
+                },
+                {
+                    "position": 267280,
+                    "value": 14443
+                },
+                {
+                    "position": 278602,
+                    "value": 29396
+                },
+                {
+                    "position": 702446,
+                    "value": 15695
+                },
+                {
+                    "position": 795441,
+                    "value": 22144
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 7561.024299996974,
+            "outliers": [
+                {
+                    "position": 78143,
+                    "value": 10655
+                },
+                {
+                    "position": 411660,
+                    "value": 10966
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 17112.267999991753,
+            "outliers": [
+                {
+                    "position": 115739,
+                    "value": 20317
+                },
+                {
+                    "position": 357854,
+                    "value": 20154
+                },
+                {
+                    "position": 411944,
+                    "value": 17369
+                },
+                {
+                    "position": 438219,
+                    "value": 28346
+                },
+                {
+                    "position": 529890,
+                    "value": 27349
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 8392.25799999229,
+            "outliers": [
+                {
+                    "position": 101782,
+                    "value": 11651
+                },
+                {
+                    "position": 261886,
+                    "value": 96069
+                },
+                {
+                    "position": 626786,
+                    "value": 67478
+                },
+                {
+                    "position": 647001,
+                    "value": 13549
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 33889.89759999601,
+            "outliers": [
+                {
+                    "position": 233643,
+                    "value": 34333
+                },
+                {
+                    "position": 565591,
+                    "value": 77877
+                },
+                {
+                    "position": 565592,
+                    "value": 190300
+                },
+                {
+                    "position": 565596,
+                    "value": 21358017
+                },
+                {
+                    "position": 565800,
+                    "value": 55345
+                },
+                {
+                    "position": 566408,
+                    "value": 51739
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 20921.270999995497,
+            "outliers": [
+                {
+                    "position": 97349,
+                    "value": 27808
+                },
+                {
+                    "position": 262373,
+                    "value": 35756
+                },
+                {
+                    "position": 547355,
+                    "value": 80347
+                },
+                {
+                    "position": 584305,
+                    "value": 46006
+                },
+                {
+                    "position": 667887,
+                    "value": 21826
+                },
+                {
+                    "position": 1083940,
+                    "value": 42254
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 8718.577899995667,
+            "outliers": [
+                {
+                    "position": 63907,
+                    "value": 10429
+                },
+                {
+                    "position": 146997,
+                    "value": 16312
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 35088.78059999831,
+            "outliers": [
+                {
+                    "position": 370430,
+                    "value": 71027
+                },
+                {
+                    "position": 371943,
+                    "value": 144611
+                },
+                {
+                    "position": 454521,
+                    "value": 36671
+                },
+                {
+                    "position": 455745,
+                    "value": 35118
+                },
+                {
+                    "position": 460167,
+                    "value": 44565
+                },
+                {
+                    "position": 463658,
+                    "value": 36608
+                },
+                {
+                    "position": 1010429,
+                    "value": 82544
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 14370.436299997353,
+            "outliers": [
+                {
+                    "position": 101881,
+                    "value": 17602
+                },
+                {
+                    "position": 103992,
+                    "value": 16281
+                },
+                {
+                    "position": 328116,
+                    "value": 16835
+                },
+                {
+                    "position": 518684,
+                    "value": 22151
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 11053.972799985786,
+            "outliers": [
+                {
+                    "position": 96349,
+                    "value": 12159
+                },
+                {
+                    "position": 258391,
+                    "value": 31253
+                },
+                {
+                    "position": 389322,
+                    "value": 14197
+                },
+                {
+                    "position": 646427,
+                    "value": 20055
+                }
+            ]
+        }
+    },
+    "yEK23a_27": {
+        "ChrIV": {
+            "threshold": 3500.8818999990617,
+            "outliers": [
+                {
+                    "position": 388376,
+                    "value": 12672
+                },
+                {
+                    "position": 1369530,
+                    "value": 11484
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 5291.967499998114,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 15570
+                },
+                {
+                    "position": 117049,
+                    "value": 24355
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 3687.7429999998712,
+            "outliers": [
+                {
+                    "position": 829156,
+                    "value": 17335
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 3808.757599998178,
+            "outliers": [
+                {
+                    "position": 278597,
+                    "value": 62048
+                },
+                {
+                    "position": 430040,
+                    "value": 15204
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 2863.525999994774,
+            "outliers": [
+                {
+                    "position": 151819,
+                    "value": 13844
+                },
+                {
+                    "position": 240636,
+                    "value": 11342
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 6091.849499992852,
+            "outliers": [
+                {
+                    "position": 441210,
+                    "value": 11545
+                },
+                {
+                    "position": 576193,
+                    "value": 10132
+                },
+                {
+                    "position": 695385,
+                    "value": 18056
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 2261.187599999772,
+            "outliers": [
+                {
+                    "position": 489227,
+                    "value": 10394
+                },
+                {
+                    "position": 759630,
+                    "value": 14030
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 11941.342799999344,
+            "outliers": [
+                {
+                    "position": 312681,
+                    "value": 18908
+                },
+                {
+                    "position": 564294,
+                    "value": 15078
+                },
+                {
+                    "position": 565586,
+                    "value": 157571
+                },
+                {
+                    "position": 565591,
+                    "value": 208479
+                },
+                {
+                    "position": 565592,
+                    "value": 422512
+                },
+                {
+                    "position": 565596,
+                    "value": 26226533
+                },
+                {
+                    "position": 565598,
+                    "value": 19341
+                },
+                {
+                    "position": 565992,
+                    "value": 11976
+                },
+                {
+                    "position": 566408,
+                    "value": 22885
+                },
+                {
+                    "position": 566584,
+                    "value": 54088
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 4206.135999999009,
+            "outliers": [
+                {
+                    "position": 371118,
+                    "value": 15033
+                },
+                {
+                    "position": 555133,
+                    "value": 11090
+                },
+                {
+                    "position": 808791,
+                    "value": 10446
+                },
+                {
+                    "position": 1060226,
+                    "value": 11548
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 2074.2861999997403,
+            "outliers": [
+                {
+                    "position": 270083,
+                    "value": 15089
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 12980.841599997453,
+            "outliers": [
+                {
+                    "position": 453297,
+                    "value": 14840
+                },
+                {
+                    "position": 454562,
+                    "value": 27723
+                },
+                {
+                    "position": 458980,
+                    "value": 13165
+                },
+                {
+                    "position": 460502,
+                    "value": 14581
+                },
+                {
+                    "position": 460638,
+                    "value": 13921
+                },
+                {
+                    "position": 462434,
+                    "value": 14743
+                },
+                {
+                    "position": 463699,
+                    "value": 28017
+                },
+                {
+                    "position": 468117,
+                    "value": 13114
+                },
+                {
+                    "position": 795720,
+                    "value": 20705
+                },
+                {
+                    "position": 830885,
+                    "value": 16479
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 5656.674999999392,
+            "outliers": [
+                {
+                    "position": 328099,
+                    "value": 15559
+                },
+                {
+                    "position": 510373,
+                    "value": 18755
+                }
+            ]
+        }
+    },
+    "yEK23b_2": {
+        "ChrIV": {
+            "threshold": 5002.541399999085,
+            "outliers": [
+                {
+                    "position": 59782,
+                    "value": 12934
+                },
+                {
+                    "position": 836044,
+                    "value": 11429
+                },
+                {
+                    "position": 1436890,
+                    "value": 14109
+                },
+                {
+                    "position": 1459558,
+                    "value": 12058
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 4323.935399999929,
+            "outliers": [
+                {
+                    "position": 579231,
+                    "value": 14072
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 9499.666399999987,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 12841
+                },
+                {
+                    "position": 116048,
+                    "value": 12942
+                },
+                {
+                    "position": 116113,
+                    "value": 10178
+                },
+                {
+                    "position": 117049,
+                    "value": 17479
+                },
+                {
+                    "position": 295038,
+                    "value": 11131
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 4328.087999997893,
+            "outliers": [
+                {
+                    "position": 278593,
+                    "value": 39240
+                },
+                {
+                    "position": 278614,
+                    "value": 10016
+                },
+                {
+                    "position": 697879,
+                    "value": 12695
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 3004.718799999042,
+            "outliers": [
+                {
+                    "position": 134113,
+                    "value": 22694
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 3879.1313999993436,
+            "outliers": [
+                {
+                    "position": 51100,
+                    "value": 30729
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 5008.359999998793,
+            "outliers": [
+                {
+                    "position": 216384,
+                    "value": 10602
+                },
+                {
+                    "position": 547460,
+                    "value": 10364
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 4518.80409999314,
+            "outliers": [
+                {
+                    "position": 14948,
+                    "value": 12362
+                },
+                {
+                    "position": 225419,
+                    "value": 11539
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 16303.556499991173,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 19748
+                },
+                {
+                    "position": 565580,
+                    "value": 34605
+                },
+                {
+                    "position": 565585,
+                    "value": 86126
+                },
+                {
+                    "position": 565591,
+                    "value": 192575
+                },
+                {
+                    "position": 565592,
+                    "value": 320606
+                },
+                {
+                    "position": 565596,
+                    "value": 20490086
+                },
+                {
+                    "position": 566408,
+                    "value": 19698
+                },
+                {
+                    "position": 566591,
+                    "value": 26921
+                },
+                {
+                    "position": 988347,
+                    "value": 30922
+                },
+                {
+                    "position": 989352,
+                    "value": 16360
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 4396.861999999965,
+            "outliers": [
+                {
+                    "position": 398022,
+                    "value": 10044
+                },
+                {
+                    "position": 547638,
+                    "value": 15435
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 9532.128999998706,
+            "outliers": [
+                {
+                    "position": 451864,
+                    "value": 10034
+                },
+                {
+                    "position": 452560,
+                    "value": 12203
+                },
+                {
+                    "position": 454562,
+                    "value": 29215
+                },
+                {
+                    "position": 454597,
+                    "value": 11875
+                },
+                {
+                    "position": 461697,
+                    "value": 12337
+                },
+                {
+                    "position": 463699,
+                    "value": 29156
+                },
+                {
+                    "position": 463734,
+                    "value": 11921
+                },
+                {
+                    "position": 554294,
+                    "value": 12036
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 5892.0133999932295,
+            "outliers": [
+                {
+                    "position": 5154,
+                    "value": 12984
+                },
+                {
+                    "position": 296836,
+                    "value": 16093
+                },
+                {
+                    "position": 380136,
+                    "value": 10594
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 4590.4364999995305,
+            "outliers": [
+                {
+                    "position": 340816,
+                    "value": 15716
+                },
+                {
+                    "position": 664113,
+                    "value": 12786
+                }
+            ]
+        }
+    },
+    "yEK23a_32": {
+        "ChrIV": {
+            "threshold": 6735.786799995811,
+            "outliers": [
+                {
+                    "position": 103515,
+                    "value": 10196
+                },
+                {
+                    "position": 640593,
+                    "value": 10501
+                },
+                {
+                    "position": 1224709,
+                    "value": 11987
+                },
+                {
+                    "position": 1459910,
+                    "value": 11632
+                },
+                {
+                    "position": 1479673,
+                    "value": 16873
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 5557.497399999527,
+            "outliers": [
+                {
+                    "position": 314553,
+                    "value": 10717
+                },
+                {
+                    "position": 316555,
+                    "value": 26704
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 8554.425199992082,
+            "outliers": [
+                {
+                    "position": 42528,
+                    "value": 10286
+                },
+                {
+                    "position": 42860,
+                    "value": 13901
+                },
+                {
+                    "position": 115947,
+                    "value": 13095
+                },
+                {
+                    "position": 117049,
+                    "value": 12360
+                },
+                {
+                    "position": 546762,
+                    "value": 16228
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 3429.2719999951078,
+            "outliers": [
+                {
+                    "position": 520251,
+                    "value": 20332
+                },
+                {
+                    "position": 581462,
+                    "value": 19051
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 3356.6714999963806,
+            "outliers": [
+                {
+                    "position": 278599,
+                    "value": 39105
+                },
+                {
+                    "position": 728773,
+                    "value": 10812
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 6550.738199997926,
+            "outliers": [
+                {
+                    "position": 53987,
+                    "value": 12100
+                },
+                {
+                    "position": 414362,
+                    "value": 12042
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 3791.1007999988506,
+            "outliers": [
+                {
+                    "position": 50865,
+                    "value": 16750
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 3626.5971999966278,
+            "outliers": [
+                {
+                    "position": 680908,
+                    "value": 14141
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 2935.1983999982476,
+            "outliers": [
+                {
+                    "position": 95570,
+                    "value": 12066
+                },
+                {
+                    "position": 547609,
+                    "value": 29985
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 10535.432899997584,
+            "outliers": [
+                {
+                    "position": 565585,
+                    "value": 58961
+                },
+                {
+                    "position": 565589,
+                    "value": 12482
+                },
+                {
+                    "position": 565591,
+                    "value": 196367
+                },
+                {
+                    "position": 565592,
+                    "value": 288891
+                },
+                {
+                    "position": 565596,
+                    "value": 29202939
+                },
+                {
+                    "position": 565598,
+                    "value": 17768
+                },
+                {
+                    "position": 566408,
+                    "value": 15838
+                },
+                {
+                    "position": 988422,
+                    "value": 12883
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 5515.704299985242,
+            "outliers": [
+                {
+                    "position": 158075,
+                    "value": 10922
+                },
+                {
+                    "position": 547646,
+                    "value": 22004
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 4878.160499997724,
+            "outliers": [
+                {
+                    "position": 4565,
+                    "value": 16748
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 10121.86709999948,
+            "outliers": [
+                {
+                    "position": 29026,
+                    "value": 35495
+                },
+                {
+                    "position": 452562,
+                    "value": 10169
+                },
+                {
+                    "position": 454542,
+                    "value": 11377
+                },
+                {
+                    "position": 458665,
+                    "value": 28684
+                },
+                {
+                    "position": 463679,
+                    "value": 11210
+                },
+                {
+                    "position": 467802,
+                    "value": 28426
+                },
+                {
+                    "position": 903137,
+                    "value": 13791
+                },
+                {
+                    "position": 1012873,
+                    "value": 12759
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 6799.653499994762,
+            "outliers": [
+                {
+                    "position": 463333,
+                    "value": 34461
+                }
+            ]
+        }
+    },
+    "yLIC137_7": {
+        "ChrX": {
+            "threshold": 3865.9305999937496,
+            "outliers": [
+                {
+                    "position": 597287,
+                    "value": 13171
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 1916.717399999914,
+            "outliers": [
+                {
+                    "position": 117049,
+                    "value": 11627
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 3282.2999999972308,
+            "outliers": [
+                {
+                    "position": 278596,
+                    "value": 37654
+                },
+                {
+                    "position": 700506,
+                    "value": 24147
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 2097.0487999993493,
+            "outliers": [
+                {
+                    "position": 138846,
+                    "value": 16260
+                },
+                {
+                    "position": 352131,
+                    "value": 11207
+                },
+                {
+                    "position": 436026,
+                    "value": 13284
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 1605.8324999978358,
+            "outliers": [
+                {
+                    "position": 258822,
+                    "value": 11453
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 9515.249999991473,
+            "outliers": [
+                {
+                    "position": 565586,
+                    "value": 79926
+                },
+                {
+                    "position": 565591,
+                    "value": 259760
+                },
+                {
+                    "position": 565592,
+                    "value": 421586
+                },
+                {
+                    "position": 565596,
+                    "value": 42385699
+                },
+                {
+                    "position": 566408,
+                    "value": 10028
+                },
+                {
+                    "position": 566584,
+                    "value": 21596
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 1085.5066999989212,
+            "outliers": [
+                {
+                    "position": 69000,
+                    "value": 25834
+                }
+            ]
+        }
+    },
+    "yLIC137_8": {
+        "ChrX": {
+            "threshold": 2712.4879999972472,
+            "outliers": [
+                {
+                    "position": 423048,
+                    "value": 13836
+                },
+                {
+                    "position": 597287,
+                    "value": 12959
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 4606.559799981274,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 11027
+                },
+                {
+                    "position": 117049,
+                    "value": 18455
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 3232.7116999987484,
+            "outliers": [
+                {
+                    "position": 202248,
+                    "value": 15515
+                },
+                {
+                    "position": 278592,
+                    "value": 25688
+                },
+                {
+                    "position": 278611,
+                    "value": 13471
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 3224.414799988881,
+            "outliers": [
+                {
+                    "position": 431711,
+                    "value": 11686
+                },
+                {
+                    "position": 924134,
+                    "value": 12648
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 9649.123199965383,
+            "outliers": [
+                {
+                    "position": 565585,
+                    "value": 75320
+                },
+                {
+                    "position": 565591,
+                    "value": 287156
+                },
+                {
+                    "position": 565592,
+                    "value": 456988
+                },
+                {
+                    "position": 565596,
+                    "value": 40355002
+                },
+                {
+                    "position": 566408,
+                    "value": 12768
+                },
+                {
+                    "position": 566583,
+                    "value": 19960
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 6016.2203999968915,
+            "outliers": [
+                {
+                    "position": 456629,
+                    "value": 10488
+                },
+                {
+                    "position": 465766,
+                    "value": 10842
+                }
+            ]
+        }
+    },
+    "yWT04a_14": {
+        "ChrIV": {
+            "threshold": 27028.139999978994,
+            "outliers": [
+                {
+                    "position": 344150,
+                    "value": 36242
+                },
+                {
+                    "position": 789332,
+                    "value": 1641256
+                },
+                {
+                    "position": 1129421,
+                    "value": 75323
+                },
+                {
+                    "position": 1317952,
+                    "value": 32655
+                }
+            ]
+        },
+        "ChrI": {
+            "threshold": 14609.310399991984,
+            "outliers": [
+                {
+                    "position": 113501,
+                    "value": 28900
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 27429.91859999694,
+            "outliers": [
+                {
+                    "position": 255400,
+                    "value": 27645
+                },
+                {
+                    "position": 655544,
+                    "value": 95580
+                },
+                {
+                    "position": 703829,
+                    "value": 32043
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 19413.954199870732,
+            "outliers": [
+                {
+                    "position": 98239,
+                    "value": 51835
+                },
+                {
+                    "position": 251821,
+                    "value": 50816
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 41824.50139991901,
+            "outliers": [
+                {
+                    "position": 86216,
+                    "value": 67280
+                },
+                {
+                    "position": 458700,
+                    "value": 193084
+                },
+                {
+                    "position": 790267,
+                    "value": 770160
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 33738.20159999299,
+            "outliers": [
+                {
+                    "position": 63519,
+                    "value": 853813
+                },
+                {
+                    "position": 407474,
+                    "value": 38279
+                },
+                {
+                    "position": 799302,
+                    "value": 34330
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 33268.05339999351,
+            "outliers": [
+                {
+                    "position": 336331,
+                    "value": 34736
+                },
+                {
+                    "position": 384446,
+                    "value": 139427
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 37219.31139997044,
+            "outliers": [
+                {
+                    "position": 169952,
+                    "value": 63147
+                },
+                {
+                    "position": 300097,
+                    "value": 42317
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 7510.997999998697,
+            "outliers": [
+                {
+                    "position": 715635,
+                    "value": 1728556
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 10040.474999996073,
+            "outliers": [
+                {
+                    "position": 309458,
+                    "value": 10895
+                },
+                {
+                    "position": 554885,
+                    "value": 12396
+                },
+                {
+                    "position": 840821,
+                    "value": 468862
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 24698.17639999514,
+            "outliers": [
+                {
+                    "position": 160594,
+                    "value": 156966
+                },
+                {
+                    "position": 305138,
+                    "value": 27704
+                },
+                {
+                    "position": 565596,
+                    "value": 12807533
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 7455.085599910322,
+            "outliers": [
+                {
+                    "position": 552798,
+                    "value": 26455
+                },
+                {
+                    "position": 918760,
+                    "value": 46960
+                },
+                {
+                    "position": 1031647,
+                    "value": 1229805
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 136605.79799972975,
+            "outliers": [
+                {
+                    "position": 425080,
+                    "value": 155594
+                },
+                {
+                    "position": 458726,
+                    "value": 211651
+                },
+                {
+                    "position": 467863,
+                    "value": 211354
+                },
+                {
+                    "position": 1065155,
+                    "value": 198801
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 21523.791999989313,
+            "outliers": [
+                {
+                    "position": 497312,
+                    "value": 72483
+                },
+                {
+                    "position": 557356,
+                    "value": 31256
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 8147.48479997908,
+            "outliers": [
+                {
+                    "position": 381735,
+                    "value": 1594973
+                },
+                {
+                    "position": 463563,
+                    "value": 21086
+                }
+            ]
+        }
+    },
+    "yWT04a_23": {
+        "ChrIV": {
+            "threshold": 11801.284099995697,
+            "outliers": [
+                {
+                    "position": 3226,
+                    "value": 232617
+                },
+                {
+                    "position": 835439,
+                    "value": 29237
+                },
+                {
+                    "position": 1036807,
+                    "value": 260633
+                },
+                {
+                    "position": 1349719,
+                    "value": 15037
+                },
+                {
+                    "position": 1349930,
+                    "value": 12167
+                }
+            ]
+        },
+        "ChrI": {
+            "threshold": 4563.783999999461,
+            "outliers": [
+                {
+                    "position": 6931,
+                    "value": 51605
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 12167.11919987922,
+            "outliers": [
+                {
+                    "position": 337291,
+                    "value": 1299553
+                },
+                {
+                    "position": 455831,
+                    "value": 34912
+                },
+                {
+                    "position": 742576,
+                    "value": 233553
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 5391.581699997125,
+            "outliers": [
+                {
+                    "position": 116056,
+                    "value": 229477
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 7162.452799996361,
+            "outliers": [
+                {
+                    "position": 278596,
+                    "value": 16204
+                },
+                {
+                    "position": 622525,
+                    "value": 22907
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 15825.501599994983,
+            "outliers": [
+                {
+                    "position": 179253,
+                    "value": 1045911
+                },
+                {
+                    "position": 279568,
+                    "value": 17937
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 26309.462999998053,
+            "outliers": [
+                {
+                    "position": 254847,
+                    "value": 27947
+                },
+                {
+                    "position": 256621,
+                    "value": 26907
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 6994.7487999968,
+            "outliers": [
+                {
+                    "position": 585227,
+                    "value": 10073
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 5335.802499998808,
+            "outliers": [
+                {
+                    "position": 263421,
+                    "value": 14041
+                },
+                {
+                    "position": 531293,
+                    "value": 185346
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 25543.16179999488,
+            "outliers": [
+                {
+                    "position": 160599,
+                    "value": 210632
+                },
+                {
+                    "position": 565584,
+                    "value": 45892
+                },
+                {
+                    "position": 565591,
+                    "value": 312122
+                },
+                {
+                    "position": 565596,
+                    "value": 16037166
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 4804.75599999039,
+            "outliers": [
+                {
+                    "position": 651315,
+                    "value": 81277
+                },
+                {
+                    "position": 677247,
+                    "value": 238120
+                },
+                {
+                    "position": 1084227,
+                    "value": 33069
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 24163.64639997948,
+            "outliers": [
+                {
+                    "position": 42696,
+                    "value": 587011
+                },
+                {
+                    "position": 192539,
+                    "value": 29335
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 29959.638399871816,
+            "outliers": [
+                {
+                    "position": 369738,
+                    "value": 35614
+                },
+                {
+                    "position": 369961,
+                    "value": 71642
+                },
+                {
+                    "position": 393931,
+                    "value": 3513626
+                },
+                {
+                    "position": 460053,
+                    "value": 119468
+                },
+                {
+                    "position": 460567,
+                    "value": 134068
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 1733.3621999995557,
+            "outliers": [
+                {
+                    "position": 465416,
+                    "value": 75978
+                }
+            ]
+        }
+    },
+    "yWT03a_16": {
+        "ChrII": {
+            "threshold": 9136.85149999883,
+            "outliers": [
+                {
+                    "position": 622524,
+                    "value": 206146
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 32165.2079999693,
+            "outliers": [
+                {
+                    "position": 383946,
+                    "value": 71066
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 60746.335000000756,
+            "outliers": [
+                {
+                    "position": 278194,
+                    "value": 105564
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 951.8407999836563,
+            "outliers": [
+                {
+                    "position": 594543,
+                    "value": 21498
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 799516.3404984076,
+            "outliers": [
+                {
+                    "position": 160596,
+                    "value": 1394013
+                },
+                {
+                    "position": 565596,
+                    "value": 15307921
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 6712.081599999932,
+            "outliers": [
+                {
+                    "position": 230853,
+                    "value": 17058
+                }
+            ]
+        }
+    },
+    "yWT03a_21": {
+        "ChrX": {
+            "threshold": 33705.265499967165,
+            "outliers": [
+                {
+                    "position": 25062,
+                    "value": 50891
+                },
+                {
+                    "position": 628627,
+                    "value": 176738
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 1778.0063999990234,
+            "outliers": [
+                {
+                    "position": 156719,
+                    "value": 58564
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 932.5426999999527,
+            "outliers": [
+                {
+                    "position": 29446,
+                    "value": 11271
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 42046.848199917324,
+            "outliers": [
+                {
+                    "position": 622525,
+                    "value": 155438
+                },
+                {
+                    "position": 668968,
+                    "value": 60763
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 12319.932499915829,
+            "outliers": [
+                {
+                    "position": 370562,
+                    "value": 68533
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 708.3640999998588,
+            "outliers": [
+                {
+                    "position": 479289,
+                    "value": 16886
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 139671.40719929687,
+            "outliers": [
+                {
+                    "position": 160598,
+                    "value": 363259
+                },
+                {
+                    "position": 565596,
+                    "value": 13541658
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 14170.363999933237,
+            "outliers": [
+                {
+                    "position": 831572,
+                    "value": 106168
+                },
+                {
+                    "position": 1070184,
+                    "value": 73383
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 41816.99959997036,
+            "outliers": [
+                {
+                    "position": 222493,
+                    "value": 54414
+                },
+                {
+                    "position": 457390,
+                    "value": 67890
+                },
+                {
+                    "position": 466527,
+                    "value": 68976
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 312.49399999999514,
+            "outliers": [
+                {
+                    "position": 137581,
+                    "value": 16265
+                }
+            ]
+        }
+    },
+    "yEK19c_9": {
+        "ChrIV": {
+            "threshold": 3248.5811999986763,
+            "outliers": [
+                {
+                    "position": 286952,
+                    "value": 13403
+                },
+                {
+                    "position": 290444,
+                    "value": 10104
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 4172.246999998868,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 11689
+                },
+                {
+                    "position": 117049,
+                    "value": 20290
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 3725.732499999169,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 34021
+                },
+                {
+                    "position": 278610,
+                    "value": 23211
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 11812.070499999681,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 15537
+                },
+                {
+                    "position": 565584,
+                    "value": 185583
+                },
+                {
+                    "position": 565588,
+                    "value": 16701
+                },
+                {
+                    "position": 565591,
+                    "value": 356917
+                },
+                {
+                    "position": 565592,
+                    "value": 579977
+                },
+                {
+                    "position": 565596,
+                    "value": 31678355
+                },
+                {
+                    "position": 565598,
+                    "value": 24879
+                },
+                {
+                    "position": 566343,
+                    "value": 11863
+                },
+                {
+                    "position": 566590,
+                    "value": 34205
+                }
+            ]
+        }
+    },
+    "yEK19a_7": {
+        "ChrV": {
+            "threshold": 2668.5109999988927,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 16800
+                },
+                {
+                    "position": 117049,
+                    "value": 24268
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 1600.3183999992325,
+            "outliers": [
+                {
+                    "position": 278598,
+                    "value": 45420
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 676.5580999999947,
+            "outliers": [
+                {
+                    "position": 348657,
+                    "value": 26077
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 12706.277999973216,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 17456
+                },
+                {
+                    "position": 565584,
+                    "value": 150814
+                },
+                {
+                    "position": 565589,
+                    "value": 40295
+                },
+                {
+                    "position": 565591,
+                    "value": 292340
+                },
+                {
+                    "position": 565592,
+                    "value": 476887
+                },
+                {
+                    "position": 565596,
+                    "value": 25547311
+                },
+                {
+                    "position": 565598,
+                    "value": 20336
+                },
+                {
+                    "position": 566408,
+                    "value": 14892
+                },
+                {
+                    "position": 566589,
+                    "value": 35387
+                }
+            ]
+        }
+    },
+    "yEK19c_7": {
+        "ChrV": {
+            "threshold": 3313.217799998165,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 16780
+                },
+                {
+                    "position": 117049,
+                    "value": 25228
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 2210.1639999966137,
+            "outliers": [
+                {
+                    "position": 425968,
+                    "value": 10500
+                },
+                {
+                    "position": 520169,
+                    "value": 17746
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 1810.6551999998628,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 30258
+                },
+                {
+                    "position": 278610,
+                    "value": 11598
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 2921.8322999962256,
+            "outliers": [
+                {
+                    "position": 309512,
+                    "value": 11379
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 1525.7399999967602,
+            "outliers": [
+                {
+                    "position": 340328,
+                    "value": 11056
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 9707.27279999663,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 18911
+                },
+                {
+                    "position": 565392,
+                    "value": 10157
+                },
+                {
+                    "position": 565584,
+                    "value": 149320
+                },
+                {
+                    "position": 565591,
+                    "value": 292746
+                },
+                {
+                    "position": 565596,
+                    "value": 23336263
+                },
+                {
+                    "position": 565598,
+                    "value": 15393
+                },
+                {
+                    "position": 565992,
+                    "value": 11223
+                },
+                {
+                    "position": 566408,
+                    "value": 11474
+                },
+                {
+                    "position": 566591,
+                    "value": 30514
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 1990.3447999991768,
+            "outliers": [
+                {
+                    "position": 152575,
+                    "value": 12674
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 3463.913599998923,
+            "outliers": [
+                {
+                    "position": 958662,
+                    "value": 11810
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 3994.52159999765,
+            "outliers": [
+                {
+                    "position": 297232,
+                    "value": 14205
+                }
+            ]
+        }
+    },
+    "yEK19a_6": {
+        "ChrV": {
+            "threshold": 2904.5427999955064,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 15017
+                },
+                {
+                    "position": 117049,
+                    "value": 24631
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 1670.5089999983174,
+            "outliers": [
+                {
+                    "position": 278593,
+                    "value": 29145
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 11085.713599990762,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 16173
+                },
+                {
+                    "position": 565392,
+                    "value": 12509
+                },
+                {
+                    "position": 565584,
+                    "value": 152143
+                },
+                {
+                    "position": 565588,
+                    "value": 19434
+                },
+                {
+                    "position": 565591,
+                    "value": 254856
+                },
+                {
+                    "position": 565596,
+                    "value": 25775283
+                },
+                {
+                    "position": 565598,
+                    "value": 20248
+                },
+                {
+                    "position": 566408,
+                    "value": 11237
+                },
+                {
+                    "position": 566584,
+                    "value": 35685
+                }
+            ]
+        }
+    },
+    "yEK19a_8": {
+        "ChrV": {
+            "threshold": 2332.425899995338,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 11965
+                },
+                {
+                    "position": 117049,
+                    "value": 20279
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 1802.9479999993782,
+            "outliers": [
+                {
+                    "position": 278598,
+                    "value": 50340
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 12252.809599999513,
+            "outliers": [
+                {
+                    "position": 564294,
+                    "value": 14373
+                },
+                {
+                    "position": 565392,
+                    "value": 12257
+                },
+                {
+                    "position": 565585,
+                    "value": 140499
+                },
+                {
+                    "position": 565589,
+                    "value": 38484
+                },
+                {
+                    "position": 565591,
+                    "value": 179549
+                },
+                {
+                    "position": 565592,
+                    "value": 502378
+                },
+                {
+                    "position": 565596,
+                    "value": 25106090
+                },
+                {
+                    "position": 565598,
+                    "value": 19983
+                },
+                {
+                    "position": 565992,
+                    "value": 12453
+                },
+                {
+                    "position": 566591,
+                    "value": 32627
+                }
+            ]
+        }
+    },
+    "yEK19b_12": {
+        "ChrIV": {
+            "threshold": 4472.20019999973,
+            "outliers": [
+                {
+                    "position": 1011897,
+                    "value": 10954
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 4618.476799997734,
+            "outliers": [
+                {
+                    "position": 526932,
+                    "value": 12072
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 5189.452499999665,
+            "outliers": [
+                {
+                    "position": 115947,
+                    "value": 17160
+                },
+                {
+                    "position": 117049,
+                    "value": 27273
+                },
+                {
+                    "position": 160824,
+                    "value": 16499
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 4498.131899998145,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 26361
+                },
+                {
+                    "position": 278615,
+                    "value": 10990
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 4023.6809999992547,
+            "outliers": [
+                {
+                    "position": 289144,
+                    "value": 13275
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 10070.245199999015,
+            "outliers": [
+                {
+                    "position": 430012,
+                    "value": 11028
+                },
+                {
+                    "position": 564295,
+                    "value": 15400
+                },
+                {
+                    "position": 565584,
+                    "value": 132605
+                },
+                {
+                    "position": 565591,
+                    "value": 270674
+                },
+                {
+                    "position": 565592,
+                    "value": 417839
+                },
+                {
+                    "position": 565596,
+                    "value": 25446430
+                },
+                {
+                    "position": 565598,
+                    "value": 16689
+                },
+                {
+                    "position": 565992,
+                    "value": 10107
+                },
+                {
+                    "position": 566285,
+                    "value": 12588
+                },
+                {
+                    "position": 566408,
+                    "value": 17181
+                },
+                {
+                    "position": 566591,
+                    "value": 35672
+                }
+            ]
+        }
+    },
+    "dnrp1-1-b": {
+        "ChrIV": {
+            "threshold": 24274.757199985557,
+            "outliers": [
+                {
+                    "position": 449426,
+                    "value": 45785
+                },
+                {
+                    "position": 449437,
+                    "value": 25433
+                },
+                {
+                    "position": 494676,
+                    "value": 28576
+                },
+                {
+                    "position": 616412,
+                    "value": 25797
+                },
+                {
+                    "position": 642192,
+                    "value": 24795
+                },
+                {
+                    "position": 909747,
+                    "value": 29376
+                }
+            ]
+        },
+        "ChrI": {
+            "threshold": 16875.335199987512,
+            "outliers": [
+                {
+                    "position": 143561,
+                    "value": 36331
+                },
+                {
+                    "position": 181213,
+                    "value": 18490
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 14052.012999997685,
+            "outliers": [
+                {
+                    "position": 184323,
+                    "value": 20278
+                },
+                {
+                    "position": 195664,
+                    "value": 14858
+                },
+                {
+                    "position": 308614,
+                    "value": 27872
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 22142.559999993813,
+            "outliers": [
+                {
+                    "position": 116046,
+                    "value": 29697
+                },
+                {
+                    "position": 117049,
+                    "value": 24788
+                },
+                {
+                    "position": 208748,
+                    "value": 40439
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 19852.155799988977,
+            "outliers": [
+                {
+                    "position": 216668,
+                    "value": 22784
+                },
+                {
+                    "position": 435849,
+                    "value": 38261
+                },
+                {
+                    "position": 582152,
+                    "value": 23600
+                },
+                {
+                    "position": 704769,
+                    "value": 26770
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 13437.383999997088,
+            "outliers": [
+                {
+                    "position": 108033,
+                    "value": 15744
+                },
+                {
+                    "position": 254572,
+                    "value": 29185
+                },
+                {
+                    "position": 278593,
+                    "value": 20859
+                },
+                {
+                    "position": 371222,
+                    "value": 13440
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 11098.400399996302,
+            "outliers": [
+                {
+                    "position": 200375,
+                    "value": 23433
+                },
+                {
+                    "position": 289049,
+                    "value": 12575
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 17125.89439999158,
+            "outliers": [
+                {
+                    "position": 14759,
+                    "value": 23183
+                },
+                {
+                    "position": 258669,
+                    "value": 30690
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 22214.061599988578,
+            "outliers": [
+                {
+                    "position": 216663,
+                    "value": 33521
+                },
+                {
+                    "position": 271451,
+                    "value": 26669
+                },
+                {
+                    "position": 636877,
+                    "value": 28570
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 10562.794799999618,
+            "outliers": [
+                {
+                    "position": 268605,
+                    "value": 21624
+                },
+                {
+                    "position": 401242,
+                    "value": 10599
+                },
+                {
+                    "position": 658229,
+                    "value": 13580
+                },
+                {
+                    "position": 915350,
+                    "value": 29588
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 16063.382899996912,
+            "outliers": [
+                {
+                    "position": 565545,
+                    "value": 41161
+                },
+                {
+                    "position": 566408,
+                    "value": 17356
+                },
+                {
+                    "position": 566589,
+                    "value": 52979
+                },
+                {
+                    "position": 1034349,
+                    "value": 20471
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 11507.699599996937,
+            "outliers": [
+                {
+                    "position": 82369,
+                    "value": 12151
+                },
+                {
+                    "position": 559087,
+                    "value": 12107
+                },
+                {
+                    "position": 620169,
+                    "value": 25817
+                },
+                {
+                    "position": 739267,
+                    "value": 12962
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 11766.981299998402,
+            "outliers": [
+                {
+                    "position": 5896,
+                    "value": 18400
+                },
+                {
+                    "position": 183254,
+                    "value": 12306
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 23070.66339999914,
+            "outliers": [
+                {
+                    "position": 451760,
+                    "value": 25341
+                },
+                {
+                    "position": 460196,
+                    "value": 23269
+                },
+                {
+                    "position": 460357,
+                    "value": 28285
+                },
+                {
+                    "position": 460379,
+                    "value": 24387
+                },
+                {
+                    "position": 460897,
+                    "value": 25677
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 8507.633799999916,
+            "outliers": [
+                {
+                    "position": 21650,
+                    "value": 16473
+                },
+                {
+                    "position": 143668,
+                    "value": 14494
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 15918.85889998651,
+            "outliers": [
+                {
+                    "position": 72037,
+                    "value": 17217
+                },
+                {
+                    "position": 137909,
+                    "value": 31669
+                },
+                {
+                    "position": 429009,
+                    "value": 44747
+                }
+            ]
+        }
+    },
+    "dnrp1-1-a": {
+        "ChrIV": {
+            "threshold": 22176.964999985554,
+            "outliers": [
+                {
+                    "position": 449426,
+                    "value": 38475
+                },
+                {
+                    "position": 449437,
+                    "value": 26263
+                },
+                {
+                    "position": 494676,
+                    "value": 22881
+                },
+                {
+                    "position": 616412,
+                    "value": 26471
+                },
+                {
+                    "position": 642192,
+                    "value": 23564
+                },
+                {
+                    "position": 909747,
+                    "value": 26206
+                }
+            ]
+        },
+        "ChrI": {
+            "threshold": 15154.926399992775,
+            "outliers": [
+                {
+                    "position": 143561,
+                    "value": 32539
+                },
+                {
+                    "position": 181213,
+                    "value": 16591
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 13875.179999999324,
+            "outliers": [
+                {
+                    "position": 184323,
+                    "value": 20342
+                },
+                {
+                    "position": 260863,
+                    "value": 14056
+                },
+                {
+                    "position": 308614,
+                    "value": 27762
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 18982.143199991784,
+            "outliers": [
+                {
+                    "position": 116046,
+                    "value": 21275
+                },
+                {
+                    "position": 117049,
+                    "value": 22609
+                },
+                {
+                    "position": 208748,
+                    "value": 35354
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 17463.258899998807,
+            "outliers": [
+                {
+                    "position": 216668,
+                    "value": 20099
+                },
+                {
+                    "position": 435849,
+                    "value": 37810
+                },
+                {
+                    "position": 582152,
+                    "value": 18963
+                },
+                {
+                    "position": 704769,
+                    "value": 25246
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 12906.084799997043,
+            "outliers": [
+                {
+                    "position": 108033,
+                    "value": 12943
+                },
+                {
+                    "position": 254572,
+                    "value": 28321
+                },
+                {
+                    "position": 278593,
+                    "value": 22023
+                },
+                {
+                    "position": 371222,
+                    "value": 13149
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 9795.772599999746,
+            "outliers": [
+                {
+                    "position": 200375,
+                    "value": 18537
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 15981.37299997224,
+            "outliers": [
+                {
+                    "position": 14759,
+                    "value": 22489
+                },
+                {
+                    "position": 258669,
+                    "value": 32612
+                }
+            ]
+        },
+        "ChrXIV": {
+            "threshold": 21506.49119997557,
+            "outliers": [
+                {
+                    "position": 216663,
+                    "value": 26865
+                },
+                {
+                    "position": 271451,
+                    "value": 29339
+                },
+                {
+                    "position": 636877,
+                    "value": 26774
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 11249.833999985043,
+            "outliers": [
+                {
+                    "position": 268605,
+                    "value": 18646
+                },
+                {
+                    "position": 581335,
+                    "value": 12601
+                },
+                {
+                    "position": 658229,
+                    "value": 12354
+                },
+                {
+                    "position": 915350,
+                    "value": 32718
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 14565.810499999832,
+            "outliers": [
+                {
+                    "position": 565544,
+                    "value": 38054
+                },
+                {
+                    "position": 566588,
+                    "value": 55288
+                },
+                {
+                    "position": 657422,
+                    "value": 14618
+                },
+                {
+                    "position": 1034349,
+                    "value": 20319
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 9370.914399990637,
+            "outliers": [
+                {
+                    "position": 82369,
+                    "value": 12280
+                },
+                {
+                    "position": 559087,
+                    "value": 11154
+                },
+                {
+                    "position": 620169,
+                    "value": 21845
+                },
+                {
+                    "position": 739267,
+                    "value": 11510
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 10469.193499997687,
+            "outliers": [
+                {
+                    "position": 5896,
+                    "value": 14449
+                },
+                {
+                    "position": 183254,
+                    "value": 11246
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 21725.982299999378,
+            "outliers": [
+                {
+                    "position": 451760,
+                    "value": 23230
+                },
+                {
+                    "position": 460357,
+                    "value": 26717
+                },
+                {
+                    "position": 460379,
+                    "value": 23775
+                },
+                {
+                    "position": 460709,
+                    "value": 21820
+                },
+                {
+                    "position": 460897,
+                    "value": 23101
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 7624.894399999561,
+            "outliers": [
+                {
+                    "position": 21650,
+                    "value": 14782
+                },
+                {
+                    "position": 143668,
+                    "value": 12390
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 13412.0450999963,
+            "outliers": [
+                {
+                    "position": 72037,
+                    "value": 14223
+                },
+                {
+                    "position": 137909,
+                    "value": 27429
+                },
+                {
+                    "position": 429009,
+                    "value": 43812
+                }
+            ]
+        }
+    },
+    "dnrp1-2-a": {
+        "ChrIV": {
+            "threshold": 9119.027099997584,
+            "outliers": [
+                {
+                    "position": 68839,
+                    "value": 11556
+                },
+                {
+                    "position": 192441,
+                    "value": 11575
+                },
+                {
+                    "position": 249226,
+                    "value": 12355
+                },
+                {
+                    "position": 465094,
+                    "value": 10473
+                },
+                {
+                    "position": 1054499,
+                    "value": 17263
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 11355.171999999424,
+            "outliers": [
+                {
+                    "position": 137125,
+                    "value": 18240
+                },
+                {
+                    "position": 419608,
+                    "value": 11379
+                },
+                {
+                    "position": 526929,
+                    "value": 14328
+                },
+                {
+                    "position": 615347,
+                    "value": 23076
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 12893.742999984388,
+            "outliers": [
+                {
+                    "position": 117049,
+                    "value": 27968
+                },
+                {
+                    "position": 124685,
+                    "value": 15790
+                },
+                {
+                    "position": 177023,
+                    "value": 21548
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 5634.071999996901,
+            "outliers": [
+                {
+                    "position": 304150,
+                    "value": 17703
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 15198.426399979042,
+            "outliers": [
+                {
+                    "position": 28407,
+                    "value": 16789
+                },
+                {
+                    "position": 278600,
+                    "value": 47513
+                },
+                {
+                    "position": 278987,
+                    "value": 29549
+                },
+                {
+                    "position": 614728,
+                    "value": 16868
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 16056.69099999093,
+            "outliers": [
+                {
+                    "position": 258657,
+                    "value": 16171
+                },
+                {
+                    "position": 268280,
+                    "value": 28593
+                },
+                {
+                    "position": 325876,
+                    "value": 17169
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 3920.1321999984193,
+            "outliers": [
+                {
+                    "position": 127973,
+                    "value": 18328
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 15528.100499994558,
+            "outliers": [
+                {
+                    "position": 181037,
+                    "value": 17433
+                },
+                {
+                    "position": 306081,
+                    "value": 19009
+                },
+                {
+                    "position": 406611,
+                    "value": 19899
+                },
+                {
+                    "position": 675844,
+                    "value": 20505
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 17629.959499996126,
+            "outliers": [
+                {
+                    "position": 4705,
+                    "value": 29258
+                },
+                {
+                    "position": 18182,
+                    "value": 28169
+                },
+                {
+                    "position": 565543,
+                    "value": 43653
+                },
+                {
+                    "position": 566566,
+                    "value": 17856
+                },
+                {
+                    "position": 566590,
+                    "value": 54213
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 10509.396299982982,
+            "outliers": [
+                {
+                    "position": 58930,
+                    "value": 17438
+                },
+                {
+                    "position": 63342,
+                    "value": 32878
+                },
+                {
+                    "position": 191199,
+                    "value": 12128
+                },
+                {
+                    "position": 485355,
+                    "value": 17299
+                },
+                {
+                    "position": 508405,
+                    "value": 19730
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 8992.508899982502,
+            "outliers": [
+                {
+                    "position": 30657,
+                    "value": 13216
+                },
+                {
+                    "position": 210445,
+                    "value": 12992
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 10819.635999999213,
+            "outliers": [
+                {
+                    "position": 239155,
+                    "value": 16524
+                },
+                {
+                    "position": 455448,
+                    "value": 10890
+                },
+                {
+                    "position": 457396,
+                    "value": 10902
+                },
+                {
+                    "position": 464585,
+                    "value": 10834
+                },
+                {
+                    "position": 796507,
+                    "value": 11700
+                },
+                {
+                    "position": 878903,
+                    "value": 12848
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 13797.165099980553,
+            "outliers": [
+                {
+                    "position": 204340,
+                    "value": 30114
+                },
+                {
+                    "position": 267294,
+                    "value": 18737
+                },
+                {
+                    "position": 361759,
+                    "value": 26907
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 13955.172999999231,
+            "outliers": [
+                {
+                    "position": 22010,
+                    "value": 14255
+                },
+                {
+                    "position": 99728,
+                    "value": 17448
+                },
+                {
+                    "position": 165182,
+                    "value": 19063
+                }
+            ]
+        }
+    },
+    "dnrp1-2-b": {
+        "ChrIV": {
+            "threshold": 9940.673999998558,
+            "outliers": [
+                {
+                    "position": 68839,
+                    "value": 11517
+                },
+                {
+                    "position": 192441,
+                    "value": 10071
+                },
+                {
+                    "position": 249226,
+                    "value": 15130
+                },
+                {
+                    "position": 1054499,
+                    "value": 20674
+                },
+                {
+                    "position": 1189169,
+                    "value": 10245
+                },
+                {
+                    "position": 1490521,
+                    "value": 11220
+                }
+            ]
+        },
+        "ChrX": {
+            "threshold": 12362.289599995798,
+            "outliers": [
+                {
+                    "position": 137125,
+                    "value": 19560
+                },
+                {
+                    "position": 419608,
+                    "value": 12530
+                },
+                {
+                    "position": 526929,
+                    "value": 14258
+                },
+                {
+                    "position": 615347,
+                    "value": 29532
+                }
+            ]
+        },
+        "ChrV": {
+            "threshold": 12126.818699992884,
+            "outliers": [
+                {
+                    "position": 117049,
+                    "value": 28209
+                },
+                {
+                    "position": 124685,
+                    "value": 14751
+                },
+                {
+                    "position": 177023,
+                    "value": 20677
+                }
+            ]
+        },
+        "ChrXVI": {
+            "threshold": 6598.793299997909,
+            "outliers": [
+                {
+                    "position": 304150,
+                    "value": 17509
+                }
+            ]
+        },
+        "ChrII": {
+            "threshold": 18123.589199999697,
+            "outliers": [
+                {
+                    "position": 278592,
+                    "value": 23249
+                },
+                {
+                    "position": 278608,
+                    "value": 23459
+                },
+                {
+                    "position": 278987,
+                    "value": 29621
+                },
+                {
+                    "position": 614728,
+                    "value": 18447
+                }
+            ]
+        },
+        "ChrIX": {
+            "threshold": 14568.573799998856,
+            "outliers": [
+                {
+                    "position": 258657,
+                    "value": 14672
+                },
+                {
+                    "position": 268280,
+                    "value": 28691
+                },
+                {
+                    "position": 325876,
+                    "value": 19019
+                }
+            ]
+        },
+        "ChrIII": {
+            "threshold": 4024.241199998716,
+            "outliers": [
+                {
+                    "position": 127973,
+                    "value": 20552
+                }
+            ]
+        },
+        "ChrXIII": {
+            "threshold": 16163.821199977014,
+            "outliers": [
+                {
+                    "position": 181037,
+                    "value": 19824
+                },
+                {
+                    "position": 306081,
+                    "value": 19981
+                },
+                {
+                    "position": 406611,
+                    "value": 18755
+                },
+                {
+                    "position": 675844,
+                    "value": 24421
+                }
+            ]
+        },
+        "ChrXV": {
+            "threshold": 19232.165499996554,
+            "outliers": [
+                {
+                    "position": 4705,
+                    "value": 29827
+                },
+                {
+                    "position": 18182,
+                    "value": 28744
+                },
+                {
+                    "position": 565544,
+                    "value": 42423
+                },
+                {
+                    "position": 566565,
+                    "value": 19775
+                },
+                {
+                    "position": 566590,
+                    "value": 55031
+                }
+            ]
+        },
+        "ChrVII": {
+            "threshold": 10554.444799984805,
+            "outliers": [
+                {
+                    "position": 58930,
+                    "value": 20650
+                },
+                {
+                    "position": 63342,
+                    "value": 38640
+                },
+                {
+                    "position": 191199,
+                    "value": 12032
+                },
+                {
+                    "position": 485355,
+                    "value": 19247
+                },
+                {
+                    "position": 508405,
+                    "value": 21169
+                }
+            ]
+        },
+        "ChrVI": {
+            "threshold": 9387.112799990002,
+            "outliers": [
+                {
+                    "position": 30657,
+                    "value": 12870
+                },
+                {
+                    "position": 210445,
+                    "value": 14282
+                }
+            ]
+        },
+        "ChrXII": {
+            "threshold": 11189.560799998508,
+            "outliers": [
+                {
+                    "position": 239155,
+                    "value": 15890
+                },
+                {
+                    "position": 451762,
+                    "value": 11208
+                },
+                {
+                    "position": 457396,
+                    "value": 12218
+                },
+                {
+                    "position": 460497,
+                    "value": 11203
+                },
+                {
+                    "position": 796507,
+                    "value": 11787
+                },
+                {
+                    "position": 878903,
+                    "value": 16357
+                }
+            ]
+        },
+        "ChrVIII": {
+            "threshold": 14969.312399990162,
+            "outliers": [
+                {
+                    "position": 204340,
+                    "value": 32816
+                },
+                {
+                    "position": 267294,
+                    "value": 21054
+                },
+                {
+                    "position": 361759,
+                    "value": 27831
+                }
+            ]
+        },
+        "ChrXI": {
+            "threshold": 14586.832199996701,
+            "outliers": [
+                {
+                    "position": 99728,
+                    "value": 18716
+                },
+                {
+                    "position": 165182,
+                    "value": 22894
+                },
+                {
+                    "position": 625464,
+                    "value": 15135
+                }
+            ]
+        }
+    }
+}
