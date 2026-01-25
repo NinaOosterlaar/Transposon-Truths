@@ -1,8 +1,9 @@
---extra-index-url https://download.pytorch.org/whl/cu123
 torch
 numpy
 matplotlib
 pandas
 scikit-learn
 seaborn
+scikit-optimize
+
 

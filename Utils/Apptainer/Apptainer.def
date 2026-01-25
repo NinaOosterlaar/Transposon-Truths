@@ -7,6 +7,7 @@ From: pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime
 
     # Handy tools
     apt-get update
+    apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false update
     apt-get install -y tree time vim ncdu speedtest-cli build-essential
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
@@ -16,7 +17,7 @@ From: pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime
         matplotlib \
         pandas \
         scikit-learn \
-        seaborn \
         sgd-rest --upgrade \
         statsmodels \
-        bayesian-optimization
+        seaborn \
+        scikit-optimize
