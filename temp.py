@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 # Read the basic statistics file
 file_path = "Data_exploration/results/basic_statistics.txt"
 df = pd.read_csv(file_path, sep='\t')
@@ -12,7 +13,7 @@ densities = df['Density'].values
 mean_non_zero_counts = df['Mean_Non_Zero_Count'].values
 std_devs = df['Std_Dev'].values
 
-# Calculate mean and standard deviation for density
+# Calculate mean and standard deviation fors density
 mean_density = np.mean(densities)
 std_density = np.std(densities, ddof=1)  # Using sample standard deviation (ddof=1)
 
