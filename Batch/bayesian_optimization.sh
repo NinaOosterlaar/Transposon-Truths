@@ -2,8 +2,8 @@
 #SBATCH --job-name=BayesOpt
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=24:00:00
-#SBATCH --qos=medium
+#SBATCH --time=48:00:00
+#SBATCH --qos=long
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=300G
@@ -27,7 +27,7 @@ srun apptainer exec \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
   python AE/training/bayesian_hyperparameter.py \
-    --n_calls 150 \
+    --n_calls 5000 \
     --n_initial_points 20 \
     --random_state 42 \
     --n_jobs 1

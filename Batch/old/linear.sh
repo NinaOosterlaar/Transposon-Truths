@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-module use /opt/insy/modulefiles  # If not already
+module use /opt/insy/modulefiles  
 module load miniconda
 
 source ~/.bashrc
