@@ -73,7 +73,7 @@ search_space = [
 
 # Fixed parameters (not optimized)
 FIXED_PARAMS = {
-    'input_folder': "Data/test/strain_FD",
+    'input_folder': "Data/combined_strains",
     'split_on': 'Chrom',
     'train_val_test_split': [0.6, 0.2, 0.2],  # Proper train/val/test split
     'plot': False,
