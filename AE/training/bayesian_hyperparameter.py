@@ -82,7 +82,10 @@ FIXED_PARAMS = {
 }
 
 # Optimization metric: which loss to minimize from VALIDATION set
-OPTIMIZATION_METRIC = 'zinb_nll'
+# 'zinb_nll': Only ZINB reconstruction loss (no masked loss)
+# 'total_loss': Includes zinb_nll + weighted masked_loss + regularization (optimizer can game this!)
+# 'combined': zinb_nll + masked_loss (unweighted, no regularization - best option)
+OPTIMIZATION_METRIC = 'combined'
 
 # Budget for optimization
 N_CALLS = 50  # Number of Bayesian optimization iterations 
@@ -221,7 +224,16 @@ def objective(**params):
                 cuda.synchronize()  # Wait for all GPU operations to complete
         
         # Extract the metric to optimize from VALIDATION metrics
-        if OPTIMIZATION_METRIC not in val_metrics:
+        if OPTIMIZATION_METRIC == 'combined':
+            # Custom: zinb_nll + masked_loss (both unweighted, no regularization)
+            # This prevents optimizer from gaming the weight or regularization parameters
+            loss = val_metrics.get('zinb_nll', 0.0)
+            if 'masked_loss' in val_metrics:
+                loss += val_metrics['masked_loss']
+                print(f"Using combined metric: zinb_nll ({val_metrics['zinb_nll']:.6f}) + masked_loss ({val_metrics['masked_loss']:.6f}) = {loss:.6f}")
+            else:
+                print(f"Using combined metric: zinb_nll only = {loss:.6f}")
+        elif OPTIMIZATION_METRIC not in val_metrics:
             print(f"Warning: Metric '{OPTIMIZATION_METRIC}' not found in val_metrics.")
             print(f"Available metrics: {list(val_metrics.keys())}")
             # Fallback to total_loss or first available metric
@@ -300,7 +312,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     print(f"{'#'*80}\n")
     
     # Set environment variables to prevent each worker from spawning multiple threads
-    # Without this, 10 workers × multiple threads each = memory explosion
+    # Without this, 10 workers × multicple threads each = memory explosion
     os.environ['OMP_NUM_THREADS'] = '1'
     os.environ['MKL_NUM_THREADS'] = '1'
     os.environ['OPENBLAS_NUM_THREADS'] = '1'
