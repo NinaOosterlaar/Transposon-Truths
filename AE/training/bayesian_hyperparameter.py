@@ -99,6 +99,11 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # ============================================================================
 @use_named_args(search_space)
 def objective(**params):
+    # Clean up GPU memory before starting new trial
+    gc.collect()
+    if cuda.is_available():
+        cuda.empty_cache()
+        cuda.synchronize()
     """
     Objective function for Bayesian optimization.
     Creates datasets with trial-specific preprocessing hyperparameters,
@@ -211,7 +216,9 @@ def objective(**params):
             # Explicitly delete datasets to free memory after training
             del train_set, val_set, test_set
             gc.collect()
-            if cuda.is_available(): cuda.empty_cache()
+            if cuda.is_available():
+                cuda.empty_cache()
+                cuda.synchronize()  # Wait for all GPU operations to complete
         
         # Extract the metric to optimize from VALIDATION metrics
         if OPTIMIZATION_METRIC not in val_metrics:
@@ -232,6 +239,9 @@ def objective(**params):
         
         # Explicitly delete metrics to free memory
         del train_metrics, val_metrics
+        gc.collect()
+        if cuda.is_available():
+            cuda.empty_cache()
         
         return loss
         
@@ -254,6 +264,8 @@ def objective(**params):
             if 'val_metrics' in locals():
                 del val_metrics
             gc.collect()
+            if cuda.is_available():
+                cuda.empty_cache()
         except:
             pass
         
@@ -293,6 +305,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     os.environ['MKL_NUM_THREADS'] = '1'
     os.environ['OPENBLAS_NUM_THREADS'] = '1'
     os.environ['NUMEXPR_NUM_THREADS'] = '1'
+    
+    # Disable tqdm progress bars to reduce output clutter
+    os.environ['TQDM_DISABLE'] = '1'
     
     # Run optimization
     result = gp_minimize(
