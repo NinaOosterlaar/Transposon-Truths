@@ -133,7 +133,7 @@ class ZINBAE(nn.Module):
         log_mu = mu_hat_logits + log_sf
         log_mu = torch.clamp(log_mu, min=-20, max=20)
         # mu = torch.exp(log_mu) 
-        mu=torch.exp(log_mu) 
+        mu=torch.exp(log_mu) + 1
         # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity 
         
         theta_logits = self.theta_layer(D)
