@@ -85,7 +85,7 @@ FIXED_PARAMS = {
 # 'zinb_nll': Only ZINB reconstruction loss (no masked loss)
 # 'total_loss': Includes zinb_nll + weighted masked_loss + regularization (optimizer can game this!)
 # 'combined': zinb_nll + masked_loss (unweighted, no regularization - best option)
-OPTIMIZATION_METRIC = 'combined'
+OPTIMIZATION_METRIC = 'combined'  # Default, can be overridden by command line arg
 
 # Budget for optimization
 N_CALLS = 50  # Number of Bayesian optimization iterations 
@@ -100,196 +100,201 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # ============================================================================
 # OBJECTIVE FUNCTION
 # ============================================================================
-@use_named_args(search_space)
-def objective(**params):
-    # Clean up GPU memory before starting new trial
-    gc.collect()
-    if cuda.is_available():
-        cuda.empty_cache()
-        cuda.synchronize()
-    """
-    Objective function for Bayesian optimization.
-    Creates datasets with trial-specific preprocessing hyperparameters,
-    trains model, and returns validation loss.
-    
-    Returns:
-        float: Validation loss metric to minimize (specified by OPTIMIZATION_METRIC)
-    """
-    # Merge with fixed parameters
-    all_params = {**FIXED_PARAMS, **params}
-    
-    print(f"\n{'='*80}")
-    print(f"Trial with parameters:")
-    for key, value in params.items():
-        print(f"  {key}: {value}")
-    print(f"{'='*80}\n")
-    
-    try:
-        # Extract preprocessing parameters for this trial
-        features_str = all_params['features']
-        bin_size = all_params['bin_size']
-        moving_average = all_params['moving_average']
-        data_point_length = all_params['data_point_length']
-        step_size = all_params['step_size']
-        
-        # Decode features string to list
-        if features_str == "Centr_Nucl":
-            features = ["Centr", "Nucl"]
-        elif features_str == "Centr":
-            features = ["Centr"]
-        elif features_str == "Nucl":
-            features = ["Nucl"]
-        else:
-            features = [features_str]  # Fallback
-        
-        # Construct layers from parametric representation (divisible by 16)
-        first_layer_size_factor = all_params['first_layer_size_factor']
-        first_layer_size = first_layer_size_factor * 16  # Ensure divisible by 16
-        num_layers = all_params['num_layers']
-        layers = [first_layer_size // (2**i) for i in range(num_layers)]
-        
-        # Adjust data_point_length BEFORE preprocessing (if not using moving average)
-        preprocessing_data_length = data_point_length
-        if not moving_average:
-            preprocessing_data_length = data_point_length // bin_size
-        
-        print(f"Creating datasets with:")
-        print(f"  features: {features}")
-        print(f"  bin_size: {bin_size}")
-        print(f"  moving_average: {moving_average}")
-        print(f"  data_point_length: {preprocessing_data_length} (from {data_point_length})")
-        print(f"  step_size: {step_size}")
-        print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})")
-        print(f"  stride: {all_params['stride']} (fixed), padding: {all_params['padding']} (fixed)\n")
-        
-        # Preprocess data with trial-specific parameters
-        train_set, val_set, test_set, _, _, _ = preprocess(
-            input_folder=all_params['input_folder'],
-            features=features,
-            bin_size=bin_size,
-            moving_average=moving_average,
-            data_point_length=preprocessing_data_length,
-            step_size=step_size,
-            split_on=all_params['split_on'],
-            train_val_test_split=all_params['train_val_test_split']
-        )
-        
-        # CRITICAL: Ensure arrays are in-memory copies, not memory-mapped
-        # This prevents bus errors in parallel execution
-        if train_set is not None and hasattr(train_set, 'flags') and not train_set.flags['OWNDATA']:
-            train_set = np.array(train_set, copy=True)
-        if val_set is not None and hasattr(val_set, 'flags') and not val_set.flags['OWNDATA']:
-            val_set = np.array(val_set, copy=True)
-        if test_set is not None and hasattr(test_set, 'flags') and not test_set.flags['OWNDATA']:
-            test_set = np.array(test_set, copy=True)
-        
-        print(f"Datasets created:")
-        print(f"  Train: {train_set.shape}, Val: {val_set.shape if val_set is not None else 'None'}, Test: {test_set.shape if test_set is not None else 'None'}\n")
-        
-        try:
-            # Call main function with the created datasets
-            # eval_on_val=True means it evaluates on validation set (not test)
-            train_metrics, val_metrics = main_with_datasets(
-                train_set=train_set,
-                val_set=val_set,
-                test_set=test_set,
-                features=features,
-                data_point_length=preprocessing_data_length,
-                use_conv=all_params['use_conv'],
-                conv_channel=int(all_params['conv_channel']),
-                pool_size=int(all_params['pool_size']),
-                kernel_size=int(all_params['kernel_size']),
-                padding=int(all_params['padding']),
-                stride=int(all_params['stride']),
-                epochs=int(all_params['epochs']),
-                batch_size=int(all_params['batch_size']),
-                noise_level=all_params['noise_level'],
-                pi_threshold=all_params['pi_threshold'],
-                masked_recon_weight=all_params['masked_recon_weight'],
-                learning_rate=all_params['learning_rate'],
-                dropout_rate=all_params['dropout_rate'],
-                layers=layers,  # Use converted list
-                regularizer=all_params['regularizer'],
-                regularization_weight=all_params['regularization_weight'],
-                sample_fraction=all_params['sample_fraction'],
-                plot=all_params['plot'],
-                eval_on_val=True  # Use validation set for optimization
-            )
-        finally:
-            # Explicitly delete datasets to free memory after training
-            del train_set, val_set, test_set
-            gc.collect()
-            if cuda.is_available():
-                cuda.empty_cache()
-                cuda.synchronize()  # Wait for all GPU operations to complete
-        
-        # Extract the metric to optimize from VALIDATION metrics
-        if OPTIMIZATION_METRIC == 'combined':
-            # Custom: zinb_nll + masked_loss (both unweighted, no regularization)
-            # This prevents optimizer from gaming the weight or regularization parameters
-            loss = val_metrics.get('zinb_nll', 0.0)
-            if 'masked_loss' in val_metrics:
-                loss += val_metrics['masked_loss']
-                print(f"Using combined metric: zinb_nll ({val_metrics['zinb_nll']:.6f}) + masked_loss ({val_metrics['masked_loss']:.6f}) = {loss:.6f}")
-            else:
-                print(f"Using combined metric: zinb_nll only = {loss:.6f}")
-        elif OPTIMIZATION_METRIC not in val_metrics:
-            print(f"Warning: Metric '{OPTIMIZATION_METRIC}' not found in val_metrics.")
-            print(f"Available metrics: {list(val_metrics.keys())}")
-            # Fallback to total_loss or first available metric
-            if 'total_loss' in val_metrics:
-                loss = val_metrics['total_loss']
-                print(f"Using 'total_loss' instead: {loss:.6f}")
-            else:
-                loss = float(list(val_metrics.values())[0])
-                print(f"Using first metric '{list(val_metrics.keys())[0]}': {loss:.6f}")
-        else:
-            loss = val_metrics[OPTIMIZATION_METRIC]
-        
-        print(f"\n>>> Optimizing {OPTIMIZATION_METRIC} on VALIDATION set: {loss:.6f}")
-        print(f">>> Full validation metrics: {val_metrics}\n")
-        
-        # Explicitly delete metrics to free memory
-        del train_metrics, val_metrics
+def create_objective_function(optimization_metric):
+    """Create objective function with specified optimization metric."""
+    @use_named_args(search_space)
+    def objective(**params):
+        # Clean up GPU memory before starting new trial
         gc.collect()
         if cuda.is_available():
             cuda.empty_cache()
+            cuda.synchronize()
+        """
+        Objective function for Bayesian optimization.
+        Creates datasets with trial-specific preprocessing hyperparameters,
+        trains model, and returns validation loss.
         
-        return loss
+        Returns:
+            float: Validation loss metric to minimize (specified by optimization_metric)
+        """
+        # Merge with fixed parameters
+        all_params = {**FIXED_PARAMS, **params}
         
-    except Exception as e:
-        print(f"\nERROR during training: {str(e)}")
-        print(f"Parameters that caused error: {params}\n")
-        import traceback
-        traceback.print_exc()
+        print(f"\n{'='*80}")
+        print(f"Trial with parameters:")
+        for key, value in params.items():
+            print(f"  {key}: {value}")
+        print(f"{'='*80}\n")
         
-        # Clean up any allocated memory before returning error
         try:
-            if 'train_set' in locals():
-                del train_set
-            if 'val_set' in locals():
-                del val_set
-            if 'test_set' in locals():
-                del test_set
-            if 'train_metrics' in locals():
-                del train_metrics
-            if 'val_metrics' in locals():
-                del val_metrics
+            # Extract preprocessing parameters for this trial
+            features_str = all_params['features']
+            bin_size = all_params['bin_size']
+            moving_average = all_params['moving_average']
+            data_point_length = all_params['data_point_length']
+            step_size = all_params['step_size']
+            
+            # Decode features string to list
+            if features_str == "Centr_Nucl":
+                features = ["Centr", "Nucl"]
+            elif features_str == "Centr":
+                features = ["Centr"]
+            elif features_str == "Nucl":
+                features = ["Nucl"]
+            else:
+                features = [features_str]  # Fallback
+            
+            # Construct layers from parametric representation (divisible by 16)
+            first_layer_size_factor = all_params['first_layer_size_factor']
+            first_layer_size = first_layer_size_factor * 16  # Ensure divisible by 16
+            num_layers = all_params['num_layers']
+            layers = [first_layer_size // (2**i) for i in range(num_layers)]
+            
+            # Adjust data_point_length BEFORE preprocessing (if not using moving average)
+            preprocessing_data_length = data_point_length
+            if not moving_average:
+                preprocessing_data_length = data_point_length // bin_size
+            
+            print(f"Creating datasets with:")
+            print(f"  features: {features}")
+            print(f"  bin_size: {bin_size}")
+            print(f"  moving_average: {moving_average}")
+            print(f"  data_point_length: {preprocessing_data_length} (from {data_point_length})")
+            print(f"  step_size: {step_size}")
+            print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})")
+            print(f"  stride: {all_params['stride']} (fixed), padding: {all_params['padding']} (fixed)\n")
+            
+            # Preprocess data with trial-specific parameters
+            train_set, val_set, test_set, _, _, _ = preprocess(
+                input_folder=all_params['input_folder'],
+                features=features,
+                bin_size=bin_size,
+                moving_average=moving_average,
+                data_point_length=preprocessing_data_length,
+                step_size=step_size,
+                split_on=all_params['split_on'],
+                train_val_test_split=all_params['train_val_test_split']
+            )
+            
+            # CRITICAL: Ensure arrays are in-memory copies, not memory-mapped
+            # This prevents bus errors in parallel execution
+            if train_set is not None and hasattr(train_set, 'flags') and not train_set.flags['OWNDATA']:
+                train_set = np.array(train_set, copy=True)
+            if val_set is not None and hasattr(val_set, 'flags') and not val_set.flags['OWNDATA']:
+                val_set = np.array(val_set, copy=True)
+            if test_set is not None and hasattr(test_set, 'flags') and not test_set.flags['OWNDATA']:
+                test_set = np.array(test_set, copy=True)
+            
+            print(f"Datasets created:")
+            print(f"  Train: {train_set.shape}, Val: {val_set.shape if val_set is not None else 'None'}, Test: {test_set.shape if test_set is not None else 'None'}\n")
+            
+            try:
+                # Call main function with the created datasets
+                # eval_on_val=True means it evaluates on validation set (not test)
+                train_metrics, val_metrics = main_with_datasets(
+                    train_set=train_set,
+                    val_set=val_set,
+                    test_set=test_set,
+                    features=features,
+                    data_point_length=preprocessing_data_length,
+                    use_conv=all_params['use_conv'],
+                    conv_channel=int(all_params['conv_channel']),
+                    pool_size=int(all_params['pool_size']),
+                    kernel_size=int(all_params['kernel_size']),
+                    padding=int(all_params['padding']),
+                    stride=int(all_params['stride']),
+                    epochs=int(all_params['epochs']),
+                    batch_size=int(all_params['batch_size']),
+                    noise_level=all_params['noise_level'],
+                    pi_threshold=all_params['pi_threshold'],
+                    masked_recon_weight=all_params['masked_recon_weight'],
+                    learning_rate=all_params['learning_rate'],
+                    dropout_rate=all_params['dropout_rate'],
+                    layers=layers,  # Use converted list
+                    regularizer=all_params['regularizer'],
+                    regularization_weight=all_params['regularization_weight'],
+                    sample_fraction=all_params['sample_fraction'],
+                    plot=all_params['plot'],
+                    eval_on_val=True  # Use validation set for optimization
+                )
+            finally:
+                # Explicitly delete datasets to free memory after training
+                del train_set, val_set, test_set
+                gc.collect()
+                if cuda.is_available():
+                    cuda.empty_cache()
+                    cuda.synchronize()  # Wait for all GPU operations to complete
+            
+            # Extract the metric to optimize from VALIDATION metrics
+            if optimization_metric == 'combined':
+                # Custom: zinb_nll + masked_loss (both unweighted, no regularization)
+                # This prevents optimizer from gaming the weight or regularization parameters
+                loss = val_metrics.get('zinb_nll', 0.0)
+                if 'masked_loss' in val_metrics:
+                    loss += val_metrics['masked_loss']
+                    print(f"Using combined metric: zinb_nll ({val_metrics['zinb_nll']:.6f}) + masked_loss ({val_metrics['masked_loss']:.6f}) = {loss:.6f}")
+                else:
+                    print(f"Using combined metric: zinb_nll only = {loss:.6f}")
+            elif optimization_metric not in val_metrics:
+                print(f"Warning: Metric '{optimization_metric}' not found in val_metrics.")
+                print(f"Available metrics: {list(val_metrics.keys())}")
+                # Fallback to total_loss or first available metric
+                if 'total_loss' in val_metrics:
+                    loss = val_metrics['total_loss']
+                    print(f"Using 'total_loss' instead: {loss:.6f}")
+                else:
+                    loss = float(list(val_metrics.values())[0])
+                    print(f"Using first metric '{list(val_metrics.keys())[0]}': {loss:.6f}")
+            else:
+                loss = val_metrics[optimization_metric]
+            
+            print(f"\n>>> Optimizing {optimization_metric} on VALIDATION set: {loss:.6f}")
+            print(f">>> Full validation metrics: {val_metrics}\n")
+            
+            # Explicitly delete metrics to free memory
+            del train_metrics, val_metrics
             gc.collect()
             if cuda.is_available():
                 cuda.empty_cache()
-        except:
-            pass
-        
-        # Return a large penalty value instead of crashing
-        return 1e6
+            
+            return loss
+            
+        except Exception as e:
+            print(f"\nERROR during training: {str(e)}")
+            print(f"Parameters that caused error: {params}\n")
+            import traceback
+            traceback.print_exc()
+            
+            # Clean up any allocated memory before returning error
+            try:
+                if 'train_set' in locals():
+                    del train_set
+                if 'val_set' in locals():
+                    del val_set
+                if 'test_set' in locals():
+                    del test_set
+                if 'train_metrics' in locals():
+                    del train_metrics
+                if 'val_metrics' in locals():
+                    del val_metrics
+                gc.collect()
+                if cuda.is_available():
+                    cuda.empty_cache()
+            except:
+                pass
+            
+            # Return a large penalty value instead of crashing
+            return 1e6
+    
+    return objective
 
 
 # ============================================================================
 # OPTIMIZATION FUNCTION
 # ============================================================================
 def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE, 
-                              n_initial_points=N_INITIAL_POINTS, n_jobs=1):
+                              n_initial_points=N_INITIAL_POINTS, n_jobs=1,
+                              optimization_metric='combined'):
     """
     Run Bayesian hyperparameter optimization using scikit-optimize.
     
@@ -304,7 +309,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     """
     print(f"\n{'#'*80}")
     print(f"# Starting Bayesian Hyperparameter Optimization")
-    print(f"# Optimizing metric: {OPTIMIZATION_METRIC} on VALIDATION set")
+    print(f"# Optimizing metric: {optimization_metric} on VALIDATION set")
     print(f"# Number of trials: {n_calls}")
     print(f"# Initial random points: {n_initial_points}")
     print(f"# Random state: {random_state}")
@@ -320,6 +325,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     
     # Disable tqdm progress bars to reduce output clutter
     os.environ['TQDM_DISABLE'] = '1'
+    
+    # Create objective function with specified metric
+    objective = create_objective_function(optimization_metric)
     
     # Run optimization
     result = gp_minimize(
@@ -337,7 +345,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     
     # Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{timestamp}.pkl")
+    result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}.pkl")
     dump(result, result_file)
     print(f"\nOptimization result saved to: {result_file}")
     
@@ -347,7 +355,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Extract ALL trial results from the optimization result
     all_trials_data = {
         'optimization_info': {
-            'optimization_metric': OPTIMIZATION_METRIC,
+            'optimization_metric': optimization_metric,
             'n_calls': n_calls,
             'n_initial_points': n_initial_points,
             'random_state': random_state,
@@ -399,7 +407,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         all_trials_data['all_trials'].append(trial_data)
     
     # Save all results to single JSON file
-    all_results_file = os.path.join(RESULTS_DIR, f"all_trials_{timestamp}.json")
+    all_results_file = os.path.join(RESULTS_DIR, f"all_trials_{optimization_metric}_{timestamp}.json")
     with open(all_results_file, 'w') as f:
         json.dump(all_trials_data, f, indent=4)
     
@@ -411,8 +419,8 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Print summary
     print(f"\n{'#'*80}")
     print(f"# Optimization Complete!")
-    print(f"# Optimized metric: {OPTIMIZATION_METRIC} on VALIDATION set")
-    print(f"# Best validation {OPTIMIZATION_METRIC}: {result.fun:.6f}")
+    print(f"# Optimized metric: {optimization_metric} on VALIDATION set")
+    print(f"# Best validation {optimization_metric}: {result.fun:.6f}")
     print(f"# Total trials: {len(result.x_iters)}")
     print(f"# Best parameters:")
     for key, value in best_params.items():
@@ -436,6 +444,9 @@ if __name__ == "__main__":
                        help='Random seed for reproducibility')
     parser.add_argument('--n_jobs', type=int, default=1,
                        help='Number of parallel jobs (-1 for all cores, 1 for sequential)')
+    parser.add_argument('--metric', type=str, default=OPTIMIZATION_METRIC,
+                       choices=['zinb_nll', 'combined', 'total_loss'],
+                       help='Optimization metric to minimize (zinb_nll or combined)')
     
     args = parser.parse_args()
     
@@ -444,6 +455,7 @@ if __name__ == "__main__":
         n_calls=args.n_calls,
         random_state=args.random_state,
         n_initial_points=args.n_initial_points,
-        n_jobs=args.n_jobs
+        n_jobs=args.n_jobs,
+        optimization_metric=args.metric
     )
 
