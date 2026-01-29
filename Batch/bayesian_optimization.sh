@@ -27,8 +27,8 @@ srun apptainer exec \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
   python AE/training/bayesian_hyperparameter.py \
-    --n_calls 5000 \
+    --n_calls 300 \
     --n_initial_points 20 \
     --random_state 42 \
-    --n_jobs 1
+    --n_jobs 2
 
