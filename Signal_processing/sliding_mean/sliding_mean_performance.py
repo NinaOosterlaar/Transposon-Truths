@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from Utils.plot_config import setup_plot_style, COLORS
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from evaluation import (precision, recall, F1_score, annotation_error, 
+                       hausdorff_distance, rand_index, adjusted_rand_index,
+                       precision_recall_curve, plot_precision_recall_curves,
+                       roc_curve_from_cps_by_threshold, mean_absolute_error)
 
 # Set up standardized plot style
 setup_plot_style()
@@ -14,29 +19,6 @@ setup_plot_style()
 # Localization error (absolute error, median error), how sharp are the detected change points
 # Overlay plots of detected change points on the signal
 
-def precision(detected_cps, true_cps, tol):
-    """Calculate precision of detected change points."""
-    true_positives = 0
-    for cp in detected_cps:
-        if any(abs(cp - true_cp) <= tol for true_cp in true_cps):
-            true_positives += 1
-    precision_value = true_positives / len(detected_cps) if detected_cps else 0
-    return precision_value
-
-def recall(detected_cps, true_cps, tol):
-    """Calculate recall of detected change points."""
-    true_positives = 0
-    for true_cp in true_cps:
-        if any(abs(cp - true_cp) <= tol for cp in detected_cps):
-            true_positives += 1
-    recall_value = true_positives / len(true_cps) if true_cps else 0
-    return recall_value
-
-def F1_score(precision_value, recall_value):
-    """Calculate F1 score from precision and recall."""
-    if precision_value + recall_value == 0:
-        return 0
-    return 2 * (precision_value * recall_value) / (precision_value + recall_value)
 
 def read_change_points(file_path):
     """Read change points from a CSV file."""
@@ -206,6 +188,160 @@ def create_overlay_plots(dataset_name='pretty_data', num_plots=5, section_length
     
     print(f"\nOverlay plots saved to {output_plots_folder}")
 
+
+def plot_metric_vs_threshold(results_df, metric_name, output_folder, dataset_name, 
+                            metric_label=None, use_log_scale=False, exclude_inf=True):
+    """Plot a tolerance-independent metric vs threshold for each window size.
+    
+    Args:
+        results_df: DataFrame with results
+        metric_name: Name of the metric column to plot
+        output_folder: Where to save the plot
+        dataset_name: Name of the dataset
+        metric_label: Label for y-axis (defaults to metric_name)
+        use_log_scale: Whether to use log scale for y-axis
+        exclude_inf: Whether to exclude infinite values from the plot
+    """
+    if metric_label is None:
+        metric_label = metric_name.replace('_', ' ').title()
+    
+    # Get unique values (one per window/threshold combo)
+    unique_results = results_df.drop_duplicates(subset=['window_size', 'threshold'])
+    window_sizes = sorted(unique_results['window_size'].unique())
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    for window_size in window_sizes:
+        window_data = unique_results[unique_results['window_size'] == window_size].sort_values('threshold')
+        
+        thresholds = window_data['threshold'].values
+        metric_values = window_data[metric_name].values
+        
+        # Filter out inf values if requested
+        if exclude_inf:
+            mask = np.isfinite(metric_values)
+            thresholds = thresholds[mask]
+            metric_values = metric_values[mask]
+        
+        if len(thresholds) > 0:
+            ax.plot(thresholds, metric_values, marker='o', label=f'Window {window_size}', 
+                   linewidth=2, markersize=6)
+    
+    ax.set_xlabel('Threshold')
+    ax.set_ylabel(metric_label)
+    ax.set_title(f'{metric_label} vs Threshold ({dataset_name})')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    if use_log_scale:
+        ax.set_yscale('log')
+    
+    plt.tight_layout()
+    output_path = os.path.join(output_folder, f'{metric_name}_vs_threshold.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved plot: {output_path}")
+
+
+def plot_all_metrics_comparison(results_df, output_folder, dataset_name):
+    """Create a multi-panel figure comparing all tolerance-independent metrics.
+    
+    Args:
+        results_df: DataFrame with results
+        output_folder: Where to save the plot
+        dataset_name: Name of the dataset
+    """
+    unique_results = results_df.drop_duplicates(subset=['window_size', 'threshold'])
+    window_sizes = sorted(unique_results['window_size'].unique())
+    
+    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
+    axes = axes.flatten()
+    
+    metrics = [
+        ('annotation_error', 'Annotation Error', False, False),
+        ('hausdorff_distance', 'Hausdorff Distance', True, True),  # log scale, exclude inf
+        ('mae_localization', 'MAE Localization Error', True, True),  # log scale, exclude inf
+        ('rand_index', 'Rand Index', False, False),
+        ('adjusted_rand_index', 'Adjusted Rand Index', False, False)
+    ]
+    
+    for ax, (metric_name, metric_label, use_log, exclude_inf) in zip(axes.flat, metrics):
+        for window_size in window_sizes:
+            window_data = unique_results[unique_results['window_size'] == window_size].sort_values('threshold')
+            
+            thresholds = window_data['threshold'].values
+            metric_values = window_data[metric_name].values
+            
+            # Filter out inf values if requested
+            if exclude_inf:
+                mask = np.isfinite(metric_values)
+                thresholds = thresholds[mask]
+                metric_values = metric_values[mask]
+            
+            if len(thresholds) > 0:
+                ax.plot(thresholds, metric_values, marker='o', label=f'Window {window_size}', 
+                       linewidth=2, markersize=4)
+        
+        ax.set_xlabel('Threshold')
+        ax.set_ylabel(metric_label)
+        ax.set_title(metric_label)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        
+        if use_log:
+            ax.set_yscale('log')
+    
+    # Hide the unused subplot
+    axes[-1].axis('off')
+    
+    plt.suptitle(f'Tolerance-Independent Metrics vs Threshold ({dataset_name})', fontsize=16, y=0.995)
+    plt.tight_layout()
+    output_path = os.path.join(output_folder, 'all_metrics_comparison.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved comparison plot: {output_path}")
+
+
+def plot_roc_curves(roc_curves_data, output_folder, tol_name, dataset_name):
+    """Plot ROC curves for different window sizes.
+    
+    Args:
+        roc_curves_data: List of dictionaries with 'fprs', 'tprs', and 'label' keys
+        output_folder: Where to save the plot
+        tol_name: Name of the tolerance type
+        dataset_name: Name of the dataset
+    """
+    fig, ax = plt.subplots(figsize=(10, 8))
+    
+    for curve_data in roc_curves_data:
+        fprs = curve_data['fprs']
+        tprs = curve_data['tprs']
+        label = curve_data.get('label', None)
+        marker = curve_data.get('marker', 'o')
+        markersize = curve_data.get('markersize', 4)
+        linewidth = curve_data.get('linewidth', 2)
+        
+        ax.plot(fprs, tprs, marker=marker, markersize=markersize, 
+               linewidth=linewidth, label=label)
+    
+    # Plot diagonal line (random classifier)
+    ax.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=1, label='Random')
+    
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate (Recall)')
+    ax.set_title(f'ROC Curve (Tolerance: {tol_name})')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    ax.set_xlim([0, 1.05])
+    ax.set_ylim([0, 1.05])
+    
+    plt.tight_layout()
+    output_path = os.path.join(output_folder, f'roc_curve_{tol_name}.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved ROC curve: {output_path}")
+
+
 def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
     """Evaluate precision, recall, and F1 for all window sizes and thresholds.
     
@@ -214,6 +350,7 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
     """
 
     # Setup paths
+    data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
     true_param_file = f"Signal_processing/sample_data/{dataset_name}_params.csv"
     base_results_folder = f"Signal_processing/results/sliding_mean_CPD/{dataset_name}"
     output_csv = f"Signal_processing/results/performance_metrics_{dataset_name}.csv"
@@ -222,12 +359,18 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
     # Create output folder for plots
     os.makedirs(output_plots_folder, exist_ok=True)
     
-    # Read true change points
+    # Read data and true change points
+    data = read_data(data_file)
+    n_points = len(data)
     true_cps = read_true_params(true_param_file)
+    print(f"Total data points: {n_points}")
     print(f"Total true change points: {len(true_cps)}")
     
     # Collect all results
     results = []
+    
+    # Store detected CPs by window/threshold for ROC curve calculation
+    window_threshold_cps = {}  # {window_size: [(threshold, detected_cps), ...]}
     
     # Get all window folders
     window_folders = [f for f in os.listdir(base_results_folder) 
@@ -267,6 +410,33 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
             file_path = os.path.join(window_path, result_file)
             detected_cps = read_change_points(file_path)
             
+            # Store for ROC curve calculation
+            if window_size not in window_threshold_cps:
+                window_threshold_cps[window_size] = []
+            window_threshold_cps[window_size].append((threshold, detected_cps))
+            
+            # Calculate annotation error (independent of tolerance)
+            ann_error = annotation_error(detected_cps, true_cps)
+            
+            # Calculate Hausdorff distance
+            hausdorff = hausdorff_distance(true_cps, detected_cps)
+            
+            # Calculate Rand Index and Adjusted Rand Index
+            rand_idx = rand_index(true_cps, detected_cps, n_points)
+            adj_rand_idx = adjusted_rand_index(true_cps, detected_cps, n_points)
+            
+            # Calculate MAE (Mean Absolute Error) for localization
+            # Match each detected CP to nearest true CP and vice versa
+            if len(detected_cps) > 0 and len(true_cps) > 0:
+                # For each detected CP, find distance to nearest true CP
+                detected_errors = [min(abs(dcp - tcp) for tcp in true_cps) for dcp in detected_cps]
+                # For each true CP, find distance to nearest detected CP
+                true_errors = [min(abs(tcp - dcp) for dcp in detected_cps) for tcp in true_cps]
+                # Average both directions
+                mae = (sum(detected_errors) + sum(true_errors)) / (len(detected_cps) + len(true_cps))
+            else:
+                mae = float('inf') if len(true_cps) > 0 else 0.0
+            
             # Calculate metrics for each tolerance
             for tol_name, tol_value in tolerances.items():
                 prec = precision(detected_cps, true_cps, tol_value)
@@ -282,7 +452,12 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
                     'recall': rec,
                     'F1': f1,
                     'num_detected': len(detected_cps),
-                    'num_true': len(true_cps)
+                    'num_true': len(true_cps),
+                    'annotation_error': ann_error,
+                    'hausdorff_distance': hausdorff,
+                    'rand_index': rand_idx,
+                    'adjusted_rand_index': adj_rand_idx,
+                    'mae_localization': mae
                 })
         
         print(f"  Processed {len(result_files)} files for {window_folder}")
@@ -292,9 +467,9 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
     results_df.to_csv(output_csv, index=False)
     print(f"\nResults saved to {output_csv}")
     
-    # Create precision-recall curves for each window and tolerance
+    # Create precision-recall curves for each window and tolerance using evaluation.py functions
     for tol_name in ["full_window", "half_window", "quarter_window"]:
-        plt.figure(figsize=(10, 8))
+        pr_curves_data = []
         
         for window_folder in window_folders:
             window_size = int(window_folder.replace("window", ""))
@@ -306,35 +481,109 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
             ].sort_values('threshold')
             
             if len(window_data) > 0:
-                plt.plot(window_data['recall'], window_data['precision'], 
-                        marker='o', label=f'Window {window_size}', linewidth=2, markersize=4)
+                # Use precision_recall_curve to prepare the data
+                pr_data = precision_recall_curve(
+                    detected_cps_list=None,  # Not needed since we already have precision/recall
+                    precisions=window_data['precision'].values,
+                    recalls=window_data['recall'].values,
+                    thresholds=window_data['threshold'].values,
+                    label=f'Window {window_size}'
+                )
+                
+                pr_curves_data.append({
+                    'recalls': pr_data['recalls'],
+                    'precisions': pr_data['precisions'],
+                    'label': f'Window {window_size}',
+                    'marker': 'o',
+                    'markersize': 4,
+                    'linewidth': 2
+                })
         
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.title(f'Precision-Recall Curve (Tolerance: {tol_name})')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        plt.xlim([0, 1.05])
-        plt.ylim([0, 1.05])
-        
+        # Use the evaluation.py function to create the plot
         plot_path = os.path.join(output_plots_folder, f'precision_recall_{tol_name}.png')
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-        plt.close()
+        plot_precision_recall_curves(
+            pr_curves_data,
+            output_path=plot_path,
+            title=f'Precision-Recall Curve (Tolerance: {tol_name})',
+            figsize=(10, 8)
+        )
         print(f"Saved plot: {plot_path}")
+    
+    # Create ROC curves for each window and tolerance using evaluation.py function
+    print("\nCreating ROC curves...")
+    for tol_name in ["full_window", "half_window", "quarter_window"]:
+        roc_curves_data = []
+        
+        # Get tolerance value
+        tol_value = None
+        for _, row in results_df[results_df['tolerance_type'] == tol_name].iloc[:1].iterrows():
+            tol_value = int(row['tolerance_value'])
+            break
+        
+        if tol_value is None:
+            continue
+        
+        for window_size in sorted(window_threshold_cps.keys()):
+            # Get the list of (threshold, detected_cps) for this window
+            threshold_cps_list = window_threshold_cps[window_size]
+            
+            # Use the evaluation.py function to calculate ROC curve
+            fpr, tpr, thresholds = roc_curve_from_cps_by_threshold(
+                threshold_cps_list, true_cps, n_points, tol_value
+            )
+            
+            if len(fpr) > 0:
+                roc_curves_data.append({
+                    'fprs': fpr,
+                    'tprs': tpr,
+                    'label': f'Window {window_size}',
+                    'marker': 'o',
+                    'markersize': 4,
+                    'linewidth': 2
+                })
+        
+        # Create ROC curve plot
+        plot_roc_curves(
+            roc_curves_data,
+            output_plots_folder,
+            tol_name,
+            dataset_name
+        )
+    
+    # Create plots for tolerance-independent metrics vs threshold
+    print("\nCreating tolerance-independent metric plots...")
+    plot_all_metrics_comparison(results_df, output_plots_folder, dataset_name)
+    
+    # Individual metric plots
+    plot_metric_vs_threshold(results_df, 'annotation_error', output_plots_folder, dataset_name,
+                            metric_label='Annotation Error (|#predicted - #true|)', use_log_scale=False)
+    plot_metric_vs_threshold(results_df, 'hausdorff_distance', output_plots_folder, dataset_name,
+                            metric_label='Hausdorff Distance', use_log_scale=True, exclude_inf=True)
+    plot_metric_vs_threshold(results_df, 'mae_localization', output_plots_folder, dataset_name,
+                            metric_label='MAE Localization Error', use_log_scale=True, exclude_inf=True)
+    plot_metric_vs_threshold(results_df, 'rand_index', output_plots_folder, dataset_name,
+                            metric_label='Rand Index', use_log_scale=False)
+    plot_metric_vs_threshold(results_df, 'adjusted_rand_index', output_plots_folder, dataset_name,
+                            metric_label='Adjusted Rand Index', use_log_scale=False)
     
     return results_df
 
 
 if __name__ == "__main__":
     # Specify which dataset to analyze
-    dataset_name = 'realistic_data'  # Change to 'realistic_data' to analyze the other dataset
+    dataset_name = 'pretty_data'  # Options: 'pretty_data', 'realistic_data'
     
     # Evaluate performance metrics
     print(f"Analyzing dataset: {dataset_name}")
     print("="*50)
     results_df = evaluate_all_windows_and_thresholds(dataset_name=dataset_name)
-    print("\nSummary statistics:")
+    print("\nSummary statistics by window size and tolerance:")
     print(results_df.groupby(['window_size', 'tolerance_type'])[['precision', 'recall', 'F1']].mean())
+    
+    print("\nOverall summary statistics (tolerance-independent metrics):")
+    # For tolerance-independent metrics, take unique values per window/threshold combination
+    unique_results = results_df.drop_duplicates(subset=['window_size', 'threshold'])
+    print(unique_results.groupby('window_size')[['annotation_error', 'hausdorff_distance', 'mae_localization', 'rand_index', 'adjusted_rand_index']].mean())
     
     # # Create overlay plots for visualization
     # print("\n" + "="*50)
