@@ -9,7 +9,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from evaluation import (precision, recall, F1_score, annotation_error, 
                        hausdorff_distance, rand_index, adjusted_rand_index,
                        precision_recall_curve, plot_precision_recall_curves,
-                       roc_curve_from_cps_by_threshold, mean_absolute_error)
+                       roc_curve_from_cps_by_threshold, mean_absolute_error,
+                       match_cps_one_to_one)
 
 # Set up standardized plot style
 setup_plot_style()
@@ -425,18 +426,6 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
             rand_idx = rand_index(true_cps, detected_cps, n_points)
             adj_rand_idx = adjusted_rand_index(true_cps, detected_cps, n_points)
             
-            # Calculate MAE (Mean Absolute Error) for localization
-            # Match each detected CP to nearest true CP and vice versa
-            if len(detected_cps) > 0 and len(true_cps) > 0:
-                # For each detected CP, find distance to nearest true CP
-                detected_errors = [min(abs(dcp - tcp) for tcp in true_cps) for dcp in detected_cps]
-                # For each true CP, find distance to nearest detected CP
-                true_errors = [min(abs(tcp - dcp) for dcp in detected_cps) for tcp in true_cps]
-                # Average both directions
-                mae = (sum(detected_errors) + sum(true_errors)) / (len(detected_cps) + len(true_cps))
-            else:
-                mae = float('inf') if len(true_cps) > 0 else 0.0
-            
             # Calculate metrics for each tolerance
             for tol_name, tol_value in tolerances.items():
                 prec = precision(detected_cps, true_cps, tol_value)
@@ -457,7 +446,6 @@ def evaluate_all_windows_and_thresholds(dataset_name='pretty_data'):
                     'hausdorff_distance': hausdorff,
                     'rand_index': rand_idx,
                     'adjusted_rand_index': adj_rand_idx,
-                    'mae_localization': mae
                 })
         
         print(f"  Processed {len(result_files)} files for {window_folder}")
