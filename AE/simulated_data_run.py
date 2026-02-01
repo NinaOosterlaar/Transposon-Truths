@@ -116,7 +116,7 @@ def preprocess_simulated(
     
     # Split by chromosome using existing function
     train_data, val_data, test_data = split_data(
-        data, train_val_test_split, split_on='Chrom', chunk_size=50000
+        data, train_val_test_split, split_on='Chrom'
     )
     
     # Calculate step size

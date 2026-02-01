@@ -2,11 +2,11 @@
 #SBATCH --job-name=bayesOpt_%a
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=72:00:00
+#SBATCH --time=100:00:00
 #SBATCH --qos=long
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
-#SBATCH --mem-per-cpu=500G
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=1000G
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
@@ -33,9 +33,9 @@ srun apptainer exec \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
   python AE/training/bayesian_hyperparameter.py \
-    --n_calls 300 \
+    --n_calls 150 \
     --n_initial_points 20 \
     --random_state 42 \
-    --n_jobs 2 \
+    --n_jobs 1 \
     --metric "$METRIC"
 

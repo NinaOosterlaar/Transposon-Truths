@@ -82,8 +82,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
         epoch_reg_loss = 0.0
         epoch_masked_loss = 0.0
         
-        pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
-        for batch in pbar:
+        for batch in dataloader:
             # Unpack batch for ZINB models
             # Note: mask is always the last element in batc
             if chrom:
@@ -178,28 +177,6 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 continue
             
             epoch_loss += loss.item() * y.size(0)
-            
-            # Update progress bar with current loss
-            if is_zinbvae:
-                postfix_dict = {
-                    'total': f'{loss.item():.4f}',
-                    'recon': f'{recon_loss.item():.4f}',
-                    'kl': f'{kl_loss.item():.4f}'
-                }
-                if masked_loss is not None:
-                    postfix_dict['masked'] = f'{masked_loss.item():.4f}'
-                if regularizer.lower() != 'none' and alpha > 0:
-                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
-                pbar.set_postfix(postfix_dict)
-            else:  # ZINBAE
-                postfix_dict = {
-                    'total': f'{loss.item():.4f}',
-                    'nll': f'{recon_loss.item():.4f}'
-                }
-                if masked_loss is not None:
-                    postfix_dict['masked'] = f'{masked_loss.item():.4f}'
-                    postfix_dict['reg'] = f'{reg_penalty:.6f}'
-                pbar.set_postfix(postfix_dict)
         
         epoch_loss /= len(dataloader.dataset)
         epoch_losses.append(epoch_loss)
@@ -325,9 +302,9 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
     total_kl_loss = 0.0
     total_masked_loss = 0.0
     total_reg_loss = 0.0
-    
+
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc="Testing"):
+        for batch in dataloader:
             # Unpack batch for ZINB models
             # Note: mask is always the last element in batch
             if chrom:
@@ -420,7 +397,15 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             # Store mask from dataloader
             if denoise_percent > 0:
                 all_masks.append(mask.detach().cpu().numpy())
-    # ... after loop
+            
+            # Clear batch data from memory after processing
+            del batch_input, mu, theta, pi, z, x, y, y_raw, size_factors, mask
+            if chrom:
+                del c, c_emb
+            if is_zinbvae:
+                del mu_z, logvar_z
+    
+    # After loop - concatenate results
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
     all_originals = np.concatenate(all_originals, axis=0)

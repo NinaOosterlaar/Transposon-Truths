@@ -46,7 +46,7 @@ search_space = [
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
     # Model Architecture (parameterized, layer sizes divisible by 16)
-    Integer(4, 200, name='first_layer_size_factor'),  # Multiplied by 16: 64-3200
+    Integer(4, 100, name='first_layer_size_factor'),  # Reduced from 200 to 100 for memory (64-1600 instead of 64-3200)
     Integer(1, 6, name='num_layers'),  # Number of layers (each divides by 2)
     
     # Convolutional Layers
@@ -57,7 +57,7 @@ search_space = [
     
     # Training
     Integer(30, 150, name='epochs'),  # EPOCHS range
-    Categorical([32, 64, 128, 256], name='batch_size'),  # Powers of 2 only
+    Categorical([16, 32, 64], name='batch_size'),  # Reduced max batch size for memory efficiency
     Real(0.0, 0.9, name='noise_level'),  # NOISE_LEVELS as continuous
     Real(0.3, 0.7, name='pi_threshold'),  # PI_THRESHOLD as continuous
     Real(1e-5, 1e-2, prior='log-uniform', name='learning_rate'),  # Log scale for learning rate
@@ -218,8 +218,11 @@ def create_objective_function(optimization_metric):
                     eval_on_val=True  # Use validation set for optimization
                 )
             finally:
-                # Explicitly delete datasets to free memory after training
+                # Explicitly delete datasets and metrics to free memory after training
                 del train_set, val_set, test_set
+                if 'train_metrics' in locals():
+                    del train_metrics
+                # Force garbage collection and clear CUDA cache
                 gc.collect()
                 if cuda.is_available():
                     cuda.empty_cache()
@@ -252,7 +255,10 @@ def create_objective_function(optimization_metric):
             print(f">>> Full validation metrics: {val_metrics}\n")
             
             # Explicitly delete metrics to free memory
-            del train_metrics, val_metrics
+            if 'train_metrics' in locals():
+                del train_metrics
+            del val_metrics
+            # Force garbage collection
             gc.collect()
             if cuda.is_available():
                 cuda.empty_cache()
@@ -277,9 +283,12 @@ def create_objective_function(optimization_metric):
                     del train_metrics
                 if 'val_metrics' in locals():
                     del val_metrics
-                gc.collect()
+                # Force multiple garbage collection cycles
+                for _ in range(3):
+                    gc.collect()
                 if cuda.is_available():
                     cuda.empty_cache()
+                    cuda.synchronize()
             except:
                 pass
             
