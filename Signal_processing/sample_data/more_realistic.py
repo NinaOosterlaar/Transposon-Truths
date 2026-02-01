@@ -110,30 +110,33 @@ def make_random_zinb_counts(
 
 
 if __name__ == "__main__":
-    plot = True
+    plot = False
     generate = True
+    number_of_samples = 1000
 
     if generate:
-        number_of_regions = 2000
-        output_path = f"Signal_processing/realistic_data.csv"
+        for i in range(number_of_samples):
+            print(f"Generating sample {i}")
+            number_of_regions = 2000
+            output_path = f"Data/simulated_data/realistic_data_{i}.csv"
 
-        counts, boundaries, params = make_random_zinb_counts(
-            n_regions=number_of_regions,
-            mean_range=(0.1, 40.0),
-            length_mean_range=(40, 1000),
-            theta_range=(5.0, 60.0),
-            zero_prob_range=(0.7, 0.95),
-            min_region_length=20,
-            probability_zero_region=0.1,
-        )
+            counts, boundaries, params = make_random_zinb_counts(
+                n_regions=number_of_regions,
+                mean_range=(0.1, 40.0),
+                length_mean_range=(40, 1000),
+                theta_range=(5.0, 60.0),
+                zero_prob_range=(0.7, 0.95),
+                min_region_length=20,
+                probability_zero_region=0.1,
+            )
 
-        positions = np.arange(len(counts))
-        df = pd.DataFrame({"Position": positions, "Count": counts})
-        df.to_csv(output_path, index=False)
-        # Save params
-        params_output_path = f"Signal_processing/realistic_data_params.csv"
-        params_df = pd.DataFrame(params)
-        params_df.to_csv(params_output_path, index=False)
+            positions = np.arange(len(counts))
+            df = pd.DataFrame({"Position": positions, "Value": counts})
+            df.to_csv(output_path, index=False)
+            # Save params
+            params_output_path = f"Data/simulated_data/realistic_data_params_{i}.csv"
+            params_df = pd.DataFrame(params)
+            params_df.to_csv(params_output_path, index=False)
 
     if plot:
         counts, boundaries, params = make_random_zinb_counts(
