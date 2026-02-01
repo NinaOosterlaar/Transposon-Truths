@@ -57,7 +57,7 @@ search_space = [
     
     # Training
     Integer(30, 150, name='epochs'),  # EPOCHS range
-    Categorical([16, 32, 64], name='batch_size'),  # Reduced max batch size for memory efficiency
+    Categorical([32, 64, 128], name='batch_size'),  # Powers of 2 only
     Real(0.0, 0.9, name='noise_level'),  # NOISE_LEVELS as continuous
     Real(0.3, 0.7, name='pi_threshold'),  # PI_THRESHOLD as continuous
     Real(1e-5, 1e-2, prior='log-uniform', name='learning_rate'),  # Log scale for learning rate
