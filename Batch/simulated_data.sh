@@ -2,7 +2,8 @@
 #SBATCH --job-name=simulated_data
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
+#SBATCH --qos=medium
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=264G
