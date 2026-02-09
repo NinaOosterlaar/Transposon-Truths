@@ -5,6 +5,7 @@ from AE.architectures.ZINBAE import ZINBAE
 from AE.training.training_utils import dataloader_from_array, ChromosomeEmbedding
 from AE.training.training import train, test
 
+
 # Preprocessing
 INPUT_FOLDER = "Data/test/strain_FD"
 FEATURES = ['Nucl', 'Centr']

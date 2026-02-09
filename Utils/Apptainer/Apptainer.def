@@ -11,7 +11,7 @@ From: pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime
     apt-get install -y tree time vim ncdu speedtest-cli build-essential
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
-    # Install your Python deps (torch is already installed!)
+    # Install your Python deps 
     pip install --no-cache-dir \
         numpy \
         matplotlib \
