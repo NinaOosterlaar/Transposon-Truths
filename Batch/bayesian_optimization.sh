@@ -1,19 +1,17 @@
 #!/bin/sh
-#SBATCH --job-name=BayesOpt
+#SBATCH --job-name=bayesOpt
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=06:00:00
-#SBATCH --qos=medium
+#SBATCH --time=100:00:00
+#SBATCH --qos=long
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=3
-#SBATCH --mem-per-cpu=128G
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=1000G
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_bayesopt_%j.out
 #SBATCH --error=slurm_bayesopt_%j.err
-#SBATCH --output=slurm_bayesopt_%A_%a.out
-#SBATCH --error=slurm_bayesopt_%A_%a.err
 
 set -euo pipefail
 
