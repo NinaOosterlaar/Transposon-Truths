@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name=bayesOpt
+#SBATCH --job-name=bayesOpt_%a
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=100:00:00
@@ -10,11 +10,11 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
-#SBATCH --output=slurm_bayesopt_%A_%a.out
-#SBATCH --error=slurm_bayesopt_%A_%a.err
-#SBATCH --array=0-1
+#SBATCH --output=slurm_bayesopt_%j.out
+#SBATCH --error=slurm_bayesopt_%j.err
 
 set -euo pipefail
+
 
 
 export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif"
@@ -33,5 +33,5 @@ srun apptainer exec \
     --n_initial_points 20 \
     --random_state 42 \
     --n_jobs 1 \
-    --metric "combined"
+    --metric "zinb_nll"
 
