@@ -9,10 +9,37 @@ from skopt import gp_minimize
 from skopt.space import Real, Integer, Categorical
 from skopt.utils import use_named_args
 from skopt import dump, load
-from skopt.callbacks import CheckpointSaver
 from AE.main import main_with_datasets
 from AE.preprocessing.preprocessing import preprocess
 import argparse
+
+# Custom checkpoint callback to avoid pickle errors with nested functions
+class CustomCheckpointSaver:
+    """Custom checkpoint callback that avoids pickling issues."""
+    def __init__(self, checkpoint_path):
+        self.checkpoint_path = checkpoint_path
+        self.x_iters = []
+        self.func_vals = []
+    
+    def __call__(self, res):
+        """Called after each iteration to save checkpoint."""
+        # Extract only the data we need (no function references)
+        self.x_iters = res.x_iters
+        self.func_vals = res.func_vals
+        
+        # Create a minimal checkpoint with just the data
+        checkpoint_data = {
+            'x_iters': self.x_iters,
+            'func_vals': self.func_vals,
+            'x': res.x,
+            'fun': res.fun,
+            'space': res.space,
+        }
+        
+        # Save using joblib dump
+        import joblib
+        joblib.dump(checkpoint_data, self.checkpoint_path, compress=9)
+        return False  # Continue optimization
 
 # Force numpy to not use memory mapping for large arrays (prevents bus errors)
 os.environ['NUMPY_MMAP_MODE'] = 'c'  # Copy mode instead of mmap
@@ -206,8 +233,8 @@ def create_objective_function(optimization_metric):
                     conv_channel=int(all_params['conv_channel']),
                     pool_size=int(all_params['pool_size']),
                     kernel_size=int(all_params['kernel_size']),
-                    padding=int(all_params['padding']),
-                    stride=int(all_params['stride']),
+                    padding=all_params['padding'],  # Keep as string 'same'
+                    stride=all_params['stride'],  # Already int from FIXED_PARAMS
                     epochs=int(all_params['epochs']),
                     batch_size=int(all_params['batch_size']),
                     noise_level=all_params['noise_level'],
@@ -325,9 +352,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Generate timestamp for this optimization run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # Setup checkpoint saving
+    # Setup checkpoint saving with custom callback to avoid pickle errors
     checkpoint_path = os.path.join(RESULTS_DIR, f"checkpoint_{optimization_metric}_{timestamp}.pkl")
-    checkpoint_saver = CheckpointSaver(checkpoint_path, compress=9)
+    checkpoint_saver = CustomCheckpointSaver(checkpoint_path)
     
     # Save checkpoint metadata for easy identification
     checkpoint_metadata = {
@@ -352,9 +379,19 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         print(f"\n{'='*80}")
         print(f"Resuming from checkpoint: {resume_from}")
         print(f"{'='*80}\n")
-        previous_result = load(resume_from)
-        x0 = previous_result.x_iters
-        y0 = previous_result.func_vals
+        import joblib
+        checkpoint_data = joblib.load(resume_from)
+        
+        # Handle both old skopt format and new custom format
+        if isinstance(checkpoint_data, dict) and 'x_iters' in checkpoint_data:
+            # Custom checkpoint format
+            x0 = checkpoint_data['x_iters']
+            y0 = checkpoint_data['func_vals']
+        else:
+            # Old skopt OptimizeResult format
+            x0 = checkpoint_data.x_iters
+            y0 = checkpoint_data.func_vals
+        
         print(f"Loaded {len(x0)} previous trials")
         print(f"Best score so far: {min(y0):.6f}\n")
     
