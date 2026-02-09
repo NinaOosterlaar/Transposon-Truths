@@ -146,90 +146,57 @@ def mae_loss(x, mu, pi, pi_threshold, reduction='sum'):
         raise ValueError(f"Invalid reduction mode: {reduction}. Choose 'sum', 'mean', or 'none'.")
     
     
-def fused_lasso_penalty(mu, theta, pi, lambda_mu=0.0, lambda_theta=0.0, lambda_pi=0.0, eps=1e-8):
+def segment_transition_loss(mu, pi, eps=1e-8):
     """
-    Compute fused lasso penalty for ZINB parameters to encourage segmentation.
-    Penalizes differences between consecutive genomic positions.
+    Encourage sharp segmentation by penalizing gradual transitions.
     
-    Formula (normalized per position):
-        λ_μ * (1/T) * Σ|log(μ_i) - log(μ_{i-1})| 
-        + λ_θ * (1/T) * Σ|log(θ_i) - log(θ_{i-1})|
-        + λ_π * (1/T) * Σ|logit(π_i) - logit(π_{i-1})|
+    This loss promotes piecewise-constant parameters (mu, pi) by:
+    1. Allowing no change (same segment) -> low penalty
+    2. Allowing large changes (sharp boundary) -> penalty saturates
+    3. Penalizing medium/gradual changes -> high penalty (forces commitment)
     
-    Note: The penalty is normalized by dividing by sequence length to match the scale
-    of the NLL loss (which uses reduction='mean'). This ensures the penalties are
-    comparable and λ values are more interpretable.
+    Uses a non-convex potential x/(1+x) that:
+    - Is ~0 for small differences (stable segments)
+    - Grows linearly for medium differences (penalizes gradual transitions)
+    - Saturates at 1 for large differences (sharp boundaries OK)
     
     Parameters:
     -----------
     mu : torch.Tensor
         Mean parameter of NB distribution, shape (batch, seq_length)
-    theta : torch.Tensor
-        Dispersion parameter of NB distribution, shape (batch, seq_length)
     pi : torch.Tensor
         Zero-inflation probability, shape (batch, seq_length)
-    lambda_mu : float
-        Weight for the μ fused lasso penalty. Default=0.0 (no penalty)
-    lambda_theta : float
-        Weight for the θ fused lasso penalty. Default=0.0 (no penalty)
-    lambda_pi : float
-        Weight for the π fused lasso penalty. Default=0.0 (no penalty)
     eps : float
         Small constant for numerical stability
     
     Returns:
     --------
     torch.Tensor
-        Scalar fused lasso penalty (per-position, averaged across batch)
+        Scalar transition penalty (encourages sharp boundaries)
     """
-    penalty = 0.0
-    seq_length = mu.size(1)
+    # Work in log/logit space without normalization to avoid numerical issues
+    # mu: use log scale (counts are multiplicative)
+    mu_safe = torch.clamp(mu, min=eps, max=1e10)  # Prevent explosion
+    log_mu = torch.log(mu_safe)
     
-    # Fused lasso penalty on μ (in log space)
-    if lambda_mu > 0:
-        # Clamp mu to safe range for log
-        mu_safe = torch.clamp(mu, min=eps)
-        log_mu = torch.log(mu_safe)
-        
-        # Compute differences between consecutive positions: log(μ_i) - log(μ_{i-1})
-        # Shape: (batch, seq_length - 1)
-        log_mu_diff = log_mu[:, 1:] - log_mu[:, :-1]
-        
-        # L1 norm of differences, averaged over sequence and batch (per-position penalty)
-        penalty_mu = torch.abs(log_mu_diff).sum(dim=1).mean() / seq_length
-        penalty += lambda_mu * penalty_mu
+    # pi: use logit scale (probabilities are on logit scale)
+    pi_safe = torch.clamp(pi, min=eps, max=1.0 - eps)
+    logit_pi = torch.log(pi_safe / (1.0 - pi_safe))
     
-    # # Fused lasso penalty on θ (in log space)
-    # if lambda_theta > 0:
-    #     # Clamp theta to safe range for log
-    #     theta_safe = torch.clamp(theta, min=eps)
-    #     log_theta = torch.log(theta_safe)
-        
-    #     # Compute differences between consecutive positions: log(θ_i) - log(θ_{i-1})
-    #     # Shape: (batch, seq_length - 1)
-    #     log_theta_diff = log_theta[:, 1:] - log_theta[:, :-1]
-        
-    #     # L1 norm of differences, averaged over sequence and batch (per-position penalty)
-    #     penalty_theta = torch.abs(log_theta_diff).sum(dim=1).mean() / seq_length
-    #     penalty += lambda_theta * penalty_theta
+    # Compute differences between consecutive positions (already in comparable scales)
+    # Scale log_mu differences to be comparable to logit_pi (typically in [-5, 5] range)
+    log_mu_diff = torch.abs(log_mu[:, 1:] - log_mu[:, :-1])  # (batch, seq-1)
+    logit_pi_diff = torch.abs(logit_pi[:, 1:] - logit_pi[:, :-1])
     
-    # Fused lasso penalty on π (in logit space)
-    if lambda_pi > 0:
-        # Clamp pi to safe range for logit
-        pi_safe = torch.clamp(pi, min=eps, max=1.0 - eps)
-        
-        # Logit transformation: logit(p) = log(p / (1 - p))
-        logit_pi = torch.log(pi_safe / (1.0 - pi_safe))
-        
-        # Compute differences between consecutive positions: logit(π_i) - logit(π_{i-1})
-        # Shape: (batch, seq_length - 1)
-        logit_pi_diff = logit_pi[:, 1:] - logit_pi[:, :-1]
-        
-        # L1 norm of differences, averaged over sequence and batch (per-position penalty)
-        penalty_pi = torch.abs(logit_pi_diff).sum(dim=1).mean() / seq_length
-        penalty += lambda_pi * penalty_pi
+    # Combined distance in (mu, pi) space - simple L2 norm
+    combined_diff = torch.sqrt(log_mu_diff**2 + logit_pi_diff**2 + eps)
     
-    return penalty
+    # Non-convex penalty: x / (1 + x)
+    # This saturates at 1.0 for large changes (boundaries OK)
+    # But grows linearly for small-to-medium changes (penalizes gradual transitions)
+    penalty = combined_diff / (1.0 + combined_diff)
+    
+    return penalty.mean()
 
 
 def reconstruct_masked_values(x, mu, pi, mask, pi_threshold):

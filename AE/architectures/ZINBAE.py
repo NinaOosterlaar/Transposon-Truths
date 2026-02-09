@@ -132,19 +132,13 @@ class ZINBAE(nn.Module):
         mu_logits = self.mu_layer(D)          # (B,T)
         pi_logits = self.pi_layer(D)          # (B,T)
 
-        # penalty on logits (NOT log(mu) / logit(pi))
-        tv_mu = (mu_logits[:,1:] - mu_logits[:,:-1]).abs().mean()
-        tv_pi = (pi_logits[:,1:] - pi_logits[:,:-1]).abs().mean()
-
         if size_factors.dim() == 1:
             size_factors = size_factors.unsqueeze(1)
         log_sf = torch.log(size_factors.clamp_min(1e-8))
 
         log_mu = mu_logits + log_sf
-        log_mu = torch.clamp(log_mu, min=-20, max=20)
-        # mu = torch.exp(log_mu) 
-        mu=torch.exp(log_mu) 
-        # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity 
+        log_mu = torch.clamp(log_mu, min=-10, max=10)  # exp(10) ≈ 22k, exp(-10) ≈ 0.00005
+        mu = torch.exp(log_mu) 
         
         # Theta: either global or per-position
         if self.global_theta:
@@ -166,7 +160,7 @@ class ZINBAE(nn.Module):
         #     size_factors = size_factors.unsqueeze(1)  # (batch, 1)
         # mu = mu_hat * size_factors                   # broadcast over seq_length
         
-        return mu, theta, pi, z, tv_mu, tv_pi
+        return mu, theta, pi, z
     
 class ZINBVAE(nn.Module):
     def __init__(
@@ -299,16 +293,12 @@ class ZINBVAE(nn.Module):
         pi_logits = self.pi_layer(D)
         # mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
 
-        # penalty on logits (NOT log(mu) / logit(pi))
-        tv_mu = (mu_hat_logits[:,1:] - mu_hat_logits[:,:-1]).abs().mean()
-        tv_pi = (pi_logits[:,1:] - pi_logits[:,:-1]).abs().mean()
-
         if size_factors.dim() == 1:
             size_factors = size_factors.unsqueeze(1)
         log_sf = torch.log(size_factors.clamp_min(1e-8))
 
         log_mu = mu_hat_logits + log_sf
-        # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity
+        log_mu = torch.clamp(log_mu, min=-10, max=10)  # exp(10) ≈ 22k, exp(-10) ≈ 0.00005
         mu = torch.exp(log_mu)
 
         # Theta: either global or per-position
@@ -326,5 +316,5 @@ class ZINBVAE(nn.Module):
         pi = torch.sigmoid(pi_logits)
         pi = pi.clamp(1e-5, 1 - 1e-5)
 
-        return mu, theta, pi, z, mu_z, logvar_z, tv_mu, tv_pi
+        return mu, theta, pi, z, mu_z, logvar_z
         

@@ -15,7 +15,7 @@ SIMULATED_DATA_FOLDER = "Data/simulated_small"
 BIN_SIZE = 1
 MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 0.25
+STEP_SIZE = 1.0
 SAMPLE_FRACTION = 1.0
 
 # Split parameters (split by file/chromosome)
@@ -29,22 +29,21 @@ KERNEL_SIZE = 5
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 30
+EPOCHS = 15
 BATCH_SIZE = 64
-NOISE_LEVEL = 0.3
+NOISE_LEVEL = 0
 PI_THRESHOLD = 0.5
-MASKED_RECON_WEIGHT = 1.0
+MASKED_RECON_WEIGHT = 0
 LEARNING_RATE = 1e-3
 DROPOUT_RATE = 0.2
 LAYERS = [512, 256, 128]
 REGULARIZER = 'none'
 REGULARIZATION_WEIGHT = 0
-lambda_mu = 0.2
-lambda_pi = 0.2
-GLOBAL_THETA = False
+lambda_mu = 0.5
+GLOBAL_THETA = True
 
 # Output configuration
-OUTPUT_NAME = "Simulated_data_fused"  # Name for results folder
+OUTPUT_NAME = "Simulated_data_trans"  # Name for results folder
 PLOT = True
 
 
@@ -186,7 +185,6 @@ def main_simulated(
     regularizer=REGULARIZER,
     regularization_weight=REGULARIZATION_WEIGHT,
     lambda_mu=lambda_mu,
-    lambda_pi=lambda_pi,
     global_theta=GLOBAL_THETA,
     plot=PLOT,
     output_name=OUTPUT_NAME
@@ -293,7 +291,6 @@ def main_simulated(
         denoise_percent=noise_level,
         gamma=masked_recon_weight,
         lambda_mu=lambda_mu,
-        lambda_pi=lambda_pi,
         chrom=False,
         plot=plot,
         name=output_name,  # Pass output name for results folder

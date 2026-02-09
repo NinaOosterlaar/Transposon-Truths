@@ -10,7 +10,7 @@ from AE.plotting.plot_loss import plot_zinb_training_loss
 from AE.plotting.results_ZINB import plot_zinb_test_results
 import argparse
 from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
-from AE.training.loss_functions import zinb_nll, l1_regularization, reconstruct_masked_values, fused_lasso_penalty
+from AE.training.loss_functions import zinb_nll, l1_regularization, reconstruct_masked_values, segment_transition_loss
 from AE.training.training_utils import ChromosomeEmbedding, dataloader_from_array, gaussian_kl
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -77,7 +77,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
     epoch_kl_losses = []      # For ZINBVAE/VAE
     epoch_reg_losses = []     # For regularization
     epoch_masked_losses = []  # For masked reconstruction loss
-    epoch_fused_lasso_losses = []  # For fused lasso penalty tracking
+    epoch_segment_losses = []  # For segment transition penalty tracking
     
     # Collect masks from dataloader for evaluation
     training_masks_collected = []
@@ -88,7 +88,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
         epoch_kl_loss = 0.0
         epoch_reg_loss = 0.0
         epoch_masked_loss = 0.0
-        epoch_fused_lasso = 0.0
+        epoch_segment = 0.0
         
         # Use tqdm for progress bar
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=True)
@@ -128,7 +128,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
 
             # Forward pass for ZINB models
             if is_zinbvae:
-                mu, theta, pi, z, mu_z, logvar_z, tv_mu, tv_pi = model(batch_input, size_factors)
+                mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
                 # KL loss: divide by seq_length to get "per-element" KL
                 kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
@@ -138,7 +138,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                     masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
                     loss = loss + gamma * masked_loss
             else:  # ZINBAE
-                mu, theta, pi, z, tv_mu, tv_pi = model(batch_input, size_factors)
+                mu, theta, pi, z = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
                 loss = recon_loss
                 # Add masked reconstruction loss if gamma > 0
@@ -159,14 +159,15 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
                 reg_penalty = alpha * l2_penalty.item()
             
-            # Add TV regularization (fused lasso) if lambda_mu or lambda_pi > 0
-            # Use TV penalties computed directly on logits in the model
-            if lambda_mu > 0 or lambda_pi > 0:
-                fl_penalty = lambda_mu * tv_mu + lambda_pi * tv_pi
-                loss = loss + fl_penalty
-                # Track fused lasso contribution separately
-                fl_penalty_val = fl_penalty.item()
-                reg_penalty += fl_penalty_val
+            # Add segment transition loss if lambda_mu > 0
+            # Encourages sharp boundaries and piecewise-constant parameters
+            seg_penalty_val = 0.0
+            if lambda_mu > 0:
+                seg_penalty = segment_transition_loss(mu, pi)
+                loss = loss + lambda_mu * seg_penalty
+                # Track segment penalty contribution separately
+                seg_penalty_val = seg_penalty.item()
+                reg_penalty += lambda_mu * seg_penalty_val
 
             # bookkeeping (recon_loss and kl_loss are already per-sample averages)
             epoch_recon_loss += recon_loss.item() * y.size(0)
@@ -175,7 +176,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
             if masked_loss is not None:
                 epoch_masked_loss += masked_loss.item() * y.size(0)
             epoch_reg_loss += reg_penalty * y.size(0)
-            epoch_fused_lasso += fl_penalty_val * y.size(0)
+            epoch_segment += seg_penalty_val * lambda_mu * y.size(0)
             
             # Update progress bar with current losses
             pbar_info = {
@@ -186,10 +187,10 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 pbar_info["KL"] = f"{kl_loss.item():.4f}"
             if gamma > 0 and masked_loss is not None:
                 pbar_info["masked"] = f"{masked_loss.item():.4f}"
-            if (regularizer.lower() != 'none' and alpha > 0) or (lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0):
+            if (regularizer.lower() != 'none' and alpha > 0) or lambda_mu > 0:
                 pbar_info["reg"] = f"{reg_penalty:.6f}"
-            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
-                pbar_info["FL"] = f"{fl_penalty_val:.6f}"
+            if lambda_mu > 0:
+                pbar_info["seg"] = f"{seg_penalty_val:.6f}"
             
             pbar.set_postfix(pbar_info)
             
@@ -233,9 +234,9 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
         epoch_masked_loss /= len(dataloader.dataset)
         epoch_masked_losses.append(epoch_masked_loss)
         
-        # Track fused lasso loss
-        epoch_fused_lasso /= len(dataloader.dataset)
-        epoch_fused_lasso_losses.append(epoch_fused_lasso)
+        # Track segment loss
+        epoch_segment /= len(dataloader.dataset)
+        epoch_segment_losses.append(epoch_segment)
         
         # Track recon and KL losses
         epoch_recon_loss /= len(dataloader.dataset)
@@ -250,8 +251,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 msg += f", Masked: {epoch_masked_loss:.4f}"
             if regularizer.lower() != 'none' and alpha > 0:
                 msg += f", Reg: {epoch_reg_loss:.6f}"
-            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
-                msg += f", FL: {epoch_fused_lasso:.6f}"
+            if lambda_mu > 0:
+                msg += f", Seg: {epoch_segment:.6f}"
             print(msg)
         else:  # ZINBAE
             # Build print message with optional components
@@ -260,8 +261,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 msg += f", Masked: {epoch_masked_loss:.4f}"
             if regularizer.lower() != 'none' and alpha > 0:
                 msg += f", Reg: {epoch_reg_loss:.6f}"
-            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
-                msg += f", FL: {epoch_fused_lasso:.6f}"
+            if lambda_mu > 0:
+                msg += f", Seg: {epoch_segment:.6f}"
             print(msg)
     
     if plot:
@@ -392,7 +393,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             # Forward pass for ZINB models
             masked_loss = None  # Initialize to avoid UnboundLocalError
             if is_zinbvae:
-                mu, theta, pi, z, mu_z, logvar_z, tv_mu, tv_pi = model(batch_input, size_factors)
+                mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                 # KL loss: divide by seq_length to get "per-element" KL
                 kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
@@ -402,7 +403,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                     masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
                     loss = loss + gamma * masked_loss
             else:  # ZINBAE
-                mu, theta, pi, z, tv_mu, tv_pi = model(batch_input, size_factors)
+                mu, theta, pi, z = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                 loss = recon_loss
                 # Add masked reconstruction loss if gamma > 0
@@ -431,13 +432,12 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 reg_penalty = alpha * l2_penalty.item()
                 # Note: L2 is typically applied via weight_decay in optimizer, but we compute it here for tracking
             
-            # Add TV regularization (fused lasso) if lambda_mu or lambda_pi > 0
-            # Use TV penalties computed directly on logits in the model
-            if lambda_mu > 0 or lambda_pi > 0:
-                fl_penalty = lambda_mu * tv_mu + lambda_pi * tv_pi
-                loss = loss + fl_penalty
-                # Track fused lasso contribution
-                reg_penalty += fl_penalty.item()
+            # Add segment transition loss if lambda_mu > 0
+            if lambda_mu > 0:
+                seg_penalty = segment_transition_loss(mu, pi)
+                loss = loss + lambda_mu * seg_penalty
+                # Track segment penalty contribution
+                reg_penalty += lambda_mu * seg_penalty.item()
 
             # -------- bookkeeping (single place) --------
             total_loss += loss.item() * batch_size
