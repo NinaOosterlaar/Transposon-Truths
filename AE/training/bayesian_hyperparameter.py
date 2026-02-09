@@ -17,13 +17,21 @@ import joblib
 # Custom checkpoint callback to avoid pickle errors with nested functions
 class CustomCheckpointSaver:
     """Custom checkpoint callback that avoids pickling issues."""
-    def __init__(self, checkpoint_path):
+    def __init__(self, checkpoint_path, save_every=10):
         self.checkpoint_path = checkpoint_path
+        self.save_every = save_every
+        self.iteration_count = 0
         self.x_iters = []
         self.func_vals = []
     
     def __call__(self, res):
-        """Called after each iteration to save checkpoint."""
+        """Called after each iteration to save checkpoint every N iterations."""
+        self.iteration_count += 1
+        
+        # Only save every N iterations
+        if self.iteration_count % self.save_every != 0:
+            return False  # Continue without saving
+        
         # Extract only the data we need (no function references)
         self.x_iters = res.x_iters
         self.func_vals = res.func_vals
@@ -39,6 +47,7 @@ class CustomCheckpointSaver:
         
         # Save using joblib dump
         joblib.dump(checkpoint_data, self.checkpoint_path, compress=9)
+        print(f"\n*** Checkpoint saved at iteration {self.iteration_count} ***\n")
         return False  # Continue optimization
 
 # Force numpy to not use memory mapping for large arrays (prevents bus errors)
@@ -353,24 +362,10 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # Setup checkpoint saving with custom callback to avoid pickle errors
-    checkpoint_path = os.path.join(RESULTS_DIR, f"checkpoint_{optimization_metric}_{timestamp}.pkl")
-    checkpoint_saver = CustomCheckpointSaver(checkpoint_path)
-    
-    # Save checkpoint metadata for easy identification
-    checkpoint_metadata = {
-        'optimization_metric': optimization_metric,
-        'timestamp': timestamp,
-        'n_calls': n_calls,
-        'n_initial_points': n_initial_points,
-        'random_state': random_state,
-        'n_jobs': n_jobs,
-        'checkpoint_file': checkpoint_path,
-        'note': f'Optimizing {optimization_metric} on validation set'
-    }
-    metadata_path = os.path.join(RESULTS_DIR, f"checkpoint_{optimization_metric}_{timestamp}_metadata.json")
-    with open(metadata_path, 'w') as f:
-        json.dump(checkpoint_metadata, f, indent=4)
-    print(f"Checkpoint metadata saved to: {metadata_path}")
+    checkpoint_dir = os.path.join(RESULTS_DIR, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_{optimization_metric}_{timestamp}.pkl")
+    checkpoint_saver = CustomCheckpointSaver(checkpoint_path, save_every=10)
     
     # Check if resuming from previous checkpoint
     x0 = None
