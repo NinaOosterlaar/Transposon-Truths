@@ -484,11 +484,11 @@ def _combine_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, pl
         if plot:
             fig, ax = plt.subplots(figsize=(7,4))
             # main line
-            ax.plot(sub["distance"], sub["mean_density"], label="Mean")
+            ax.plot(sub["distance"], sub["mean_density"], label="Mean", color='black')
             # ribbon: ±2 SE (approximately 95% confidence interval)
             lo = sub["mean_density"] - 2 * sub["se_density"].fillna(0)
             hi = sub["mean_density"] + 2 * sub["se_density"].fillna(0)
-            ax.fill_between(sub["distance"], lo, hi, alpha=0.2, label="±2 SE", color='green')
+            ax.fill_between(sub["distance"], lo, hi, alpha=0.15, label="±2 SE", color='black')
 
             ax.set_xlabel("Distance from nucleosome (bp)")
             ax.set_ylabel("Transposon Insertion Rate")
@@ -655,11 +655,11 @@ def _combine_cen_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str
         if len(sub_filtered) > 0:
             sub_sorted = sub_filtered.sort_values("Bin_Center").copy()
             fig, ax = plt.subplots(figsize=(7,4))
-            ax.plot(sub_sorted["Bin_Center"], sub_sorted["mean_density"], label="Mean")
+            ax.plot(sub_sorted["Bin_Center"], sub_sorted["mean_density"], label="Mean", color='black')
             # ribbon: ±2 SE (approximately 95% confidence interval)
             lo = sub_sorted["mean_density"] - 2 * sub_sorted["se_density"].fillna(0)
             hi = sub_sorted["mean_density"] + 2 * sub_sorted["se_density"].fillna(0)
-            ax.fill_between(sub_sorted["Bin_Center"], lo, hi, alpha=0.2, label="±2 SE", color='green')
+            ax.fill_between(sub_sorted["Bin_Center"], lo, hi, alpha=0.15, label="±2 SE", color='black')
             # Only show centromere line at x=0 when using signed distances
             if not absolute_distance:
                 ax.axvline(0, linestyle="--", linewidth=1, color="red", alpha=0.7, label="Centromere")
@@ -740,7 +740,7 @@ if __name__ == "__main__":
     # density_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/densities/nucleosome_new", boolean=True)
     
     # Combine nucleosome data: 
-    # combine_nucleosome_data(data="All", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=800)
+    combine_nucleosome_data(data="All", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=800)
     # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:

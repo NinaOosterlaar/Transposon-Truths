@@ -2,11 +2,11 @@
 #SBATCH --job-name=bayesOpt
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
-#SBATCH --time=100:00:00
-#SBATCH --qos=long
+#SBATCH --time=36:00:00
+#SBATCH --qos=medium
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=1000G
+#SBATCH --mem-per-cpu=500G
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl

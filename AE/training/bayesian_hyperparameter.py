@@ -9,6 +9,7 @@ from skopt import gp_minimize
 from skopt.space import Real, Integer, Categorical
 from skopt.utils import use_named_args
 from skopt import dump, load
+from skopt.callbacks import CheckpointSaver
 from AE.main import main_with_datasets
 from AE.preprocessing.preprocessing import preprocess
 import argparse
@@ -307,7 +308,7 @@ def create_objective_function(optimization_metric):
 # ============================================================================
 def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE, 
                               n_initial_points=N_INITIAL_POINTS, n_jobs=1,
-                              optimization_metric='combined'):
+                              optimization_metric='combined', resume_from=None):
     """
     Run Bayesian hyperparameter optimization using scikit-optimize.
     
@@ -316,10 +317,47 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         random_state: Random seed for reproducibility
         n_initial_points: Number of random evaluations before Gaussian Process
         n_jobs: Number of parallel jobs (-1 for all cores, 1 for sequential)
+        resume_from: Path to checkpoint file to resume from (optional)
         
     Returns:
         result: OptimizeResult object from skopt
     """
+    # Generate timestamp for this optimization run
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Setup checkpoint saving
+    checkpoint_path = os.path.join(RESULTS_DIR, f"checkpoint_{optimization_metric}_{timestamp}.pkl")
+    checkpoint_saver = CheckpointSaver(checkpoint_path, compress=9)
+    
+    # Save checkpoint metadata for easy identification
+    checkpoint_metadata = {
+        'optimization_metric': optimization_metric,
+        'timestamp': timestamp,
+        'n_calls': n_calls,
+        'n_initial_points': n_initial_points,
+        'random_state': random_state,
+        'n_jobs': n_jobs,
+        'checkpoint_file': checkpoint_path,
+        'note': f'Optimizing {optimization_metric} on validation set'
+    }
+    metadata_path = os.path.join(RESULTS_DIR, f"checkpoint_{optimization_metric}_{timestamp}_metadata.json")
+    with open(metadata_path, 'w') as f:
+        json.dump(checkpoint_metadata, f, indent=4)
+    print(f"Checkpoint metadata saved to: {metadata_path}")
+    
+    # Check if resuming from previous checkpoint
+    x0 = None
+    y0 = None
+    if resume_from and os.path.exists(resume_from):
+        print(f"\n{'='*80}")
+        print(f"Resuming from checkpoint: {resume_from}")
+        print(f"{'='*80}\n")
+        previous_result = load(resume_from)
+        x0 = previous_result.x_iters
+        y0 = previous_result.func_vals
+        print(f"Loaded {len(x0)} previous trials")
+        print(f"Best score so far: {min(y0):.6f}\n")
+    
     print(f"\n{'#'*80}")
     print(f"# Starting Bayesian Hyperparameter Optimization")
     print(f"# Optimizing metric: {optimization_metric} on VALIDATION set")
@@ -327,6 +365,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     print(f"# Initial random points: {n_initial_points}")
     print(f"# Random state: {random_state}")
     print(f"# Parallel jobs: {n_jobs}")
+    print(f"# Checkpoint will be saved to: {checkpoint_path}")
+    if x0 is not None:
+        print(f"# Resuming with {len(x0)} previous trials")
     print(f"{'#'*80}\n")
     
     # Set environment variables to prevent each worker from spawning multiple threads
@@ -351,16 +392,36 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         random_state=random_state,
         verbose=True,
         n_jobs=n_jobs,
+        x0=x0,
+        y0=y0,
+        callback=[checkpoint_saver]
     )
     
     # Force cleanup of any remaining resources
     gc.collect()
     
-    # Save results
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Save final results (timestamp already created at start)
     result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}.pkl")
     dump(result, result_file)
     print(f"\nOptimization result saved to: {result_file}")
+    
+    # Save final result metadata
+    final_metadata = {
+        'optimization_metric': optimization_metric,
+        'timestamp': timestamp,
+        'n_calls': n_calls,
+        'n_initial_points': n_initial_points,
+        'random_state': random_state,
+        'n_jobs': n_jobs,
+        'total_trials': len(result.x_iters),
+        'best_score': float(result.fun),
+        'result_file': result_file,
+        'note': f'Final result of optimizing {optimization_metric} on validation set'
+    }
+    final_metadata_path = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}_metadata.json")
+    with open(final_metadata_path, 'w') as f:
+        json.dump(final_metadata, f, indent=4)
+    print(f"Result metadata saved to: {final_metadata_path}")
     
     # Extract best parameters
     best_params = {search_space[i].name: result.x[i] for i in range(len(search_space))}
@@ -368,11 +429,15 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Extract ALL trial results from the optimization result
     all_trials_data = {
         'optimization_info': {
+            'description': f'Bayesian optimization results for minimizing {optimization_metric} on validation set',
             'optimization_metric': optimization_metric,
+            'metric_description': 'The loss metric being minimized during optimization',
             'n_calls': n_calls,
             'n_initial_points': n_initial_points,
             'random_state': random_state,
+            'n_jobs': n_jobs,
             'timestamp': timestamp,
+            'total_trials_completed': len(result.x_iters),
             'best_score': float(result.fun),
         },
         'best_parameters': {},
@@ -460,6 +525,8 @@ if __name__ == "__main__":
     parser.add_argument('--metric', type=str, default=OPTIMIZATION_METRIC,
                        choices=['zinb_nll', 'combined', 'total_loss'],
                        help='Optimization metric to minimize (zinb_nll or combined)')
+    parser.add_argument('--resume_from', type=str, default=None,
+                       help='Path to checkpoint file to resume optimization from')
     
     args = parser.parse_args()
     
@@ -469,6 +536,7 @@ if __name__ == "__main__":
         random_state=args.random_state,
         n_initial_points=args.n_initial_points,
         n_jobs=args.n_jobs,
-        optimization_metric=args.metric
+        optimization_metric=args.metric,
+        resume_from=args.resume_from
     )
 
