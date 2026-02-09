@@ -12,10 +12,10 @@ import gc
 
 # Preprocessing parameters
 SIMULATED_DATA_FOLDER = "Data/simulated/simulated_data"
-BIN_SIZE = 5
+BIN_SIZE = 1
 MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 0.25
+STEP_SIZE = 1
 SAMPLE_FRACTION = 0.01
 
 # Split parameters (split by file/chromosome)
@@ -31,7 +31,7 @@ STRIDE = 1
 
 EPOCHS = 100
 BATCH_SIZE = 64
-NOISE_LEVEL = 0.3
+NOISE_LEVEL = 0.5
 PI_THRESHOLD = 0.5
 MASKED_RECON_WEIGHT = 1.0
 LEARNING_RATE = 1e-3
@@ -41,7 +41,7 @@ REGULARIZER = 'none'
 REGULARIZATION_WEIGHT = 1e-4
 
 # Output configuration
-OUTPUT_NAME = "Simulated_data"  # Name for results folder
+OUTPUT_NAME = "Simulated_data_new"  # Name for results folder
 PLOT = True
 
 
