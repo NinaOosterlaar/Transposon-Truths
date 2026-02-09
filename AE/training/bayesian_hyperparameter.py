@@ -57,7 +57,7 @@ search_space = [
     
     # Training
     Integer(30, 150, name='epochs'),  # EPOCHS range
-    Categorical([32, 64, 128, 256], name='batch_size'),  # Powers of 2 only
+    Categorical([32, 64, 128], name='batch_size'),  # Powers of 2 only
     Real(0.0, 0.9, name='noise_level'),  # NOISE_LEVELS as continuous
     Real(0.3, 0.7, name='pi_threshold'),  # PI_THRESHOLD as continuous
     Real(1e-5, 1e-2, prior='log-uniform', name='learning_rate'),  # Log scale for learning rate
@@ -73,7 +73,7 @@ search_space = [
 
 # Fixed parameters (not optimized)
 FIXED_PARAMS = {
-    'input_folder': "Data/test/strain_FD",
+    'input_folder': "Data/combined_strains",
     'split_on': 'Chrom',
     'train_val_test_split': [0.6, 0.2, 0.2],  # Proper train/val/test split
     'plot': False,
@@ -82,7 +82,10 @@ FIXED_PARAMS = {
 }
 
 # Optimization metric: which loss to minimize from VALIDATION set
-OPTIMIZATION_METRIC = 'zinb_nll'
+# 'zinb_nll': Only ZINB reconstruction loss (no masked loss)
+# 'total_loss': Includes zinb_nll + weighted masked_loss + regularization (optimizer can game this!)
+# 'combined': zinb_nll + masked_loss (unweighted, no regularization - best option)
+OPTIMIZATION_METRIC = 'combined'  # Default, can be overridden by command line arg
 
 # Budget for optimization
 N_CALLS = 50  # Number of Bayesian optimization iterations 
@@ -303,7 +306,8 @@ def create_objective_function(optimization_metric):
 # OPTIMIZATION FUNCTION
 # ============================================================================
 def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE, 
-                              n_initial_points=N_INITIAL_POINTS, n_jobs=1):
+                              n_initial_points=N_INITIAL_POINTS, n_jobs=1,
+                              optimization_metric='combined'):
     """
     Run Bayesian hyperparameter optimization using scikit-optimize.
     
@@ -318,7 +322,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     """
     print(f"\n{'#'*80}")
     print(f"# Starting Bayesian Hyperparameter Optimization")
-    print(f"# Optimizing metric: {OPTIMIZATION_METRIC} on VALIDATION set")
+    print(f"# Optimizing metric: {optimization_metric} on VALIDATION set")
     print(f"# Number of trials: {n_calls}")
     print(f"# Initial random points: {n_initial_points}")
     print(f"# Random state: {random_state}")
@@ -326,11 +330,17 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     print(f"{'#'*80}\n")
     
     # Set environment variables to prevent each worker from spawning multiple threads
-    # Without this, 10 workers × multiple threads each = memory explosion
+    # Without this, 10 workers × multicple threads each = memory explosion
     os.environ['OMP_NUM_THREADS'] = '1'
     os.environ['MKL_NUM_THREADS'] = '1'
     os.environ['OPENBLAS_NUM_THREADS'] = '1'
     os.environ['NUMEXPR_NUM_THREADS'] = '1'
+    
+    # Disable tqdm progress bars to reduce output clutter
+    os.environ['TQDM_DISABLE'] = '1'
+    
+    # Create objective function with specified metric
+    objective = create_objective_function(optimization_metric)
     
     # Run optimization
     result = gp_minimize(
@@ -348,7 +358,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     
     # Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{timestamp}.pkl")
+    result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}.pkl")
     dump(result, result_file)
     print(f"\nOptimization result saved to: {result_file}")
     
@@ -358,7 +368,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Extract ALL trial results from the optimization result
     all_trials_data = {
         'optimization_info': {
-            'optimization_metric': OPTIMIZATION_METRIC,
+            'optimization_metric': optimization_metric,
             'n_calls': n_calls,
             'n_initial_points': n_initial_points,
             'random_state': random_state,
@@ -410,7 +420,7 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         all_trials_data['all_trials'].append(trial_data)
     
     # Save all results to single JSON file
-    all_results_file = os.path.join(RESULTS_DIR, f"all_trials_{timestamp}.json")
+    all_results_file = os.path.join(RESULTS_DIR, f"all_trials_{optimization_metric}_{timestamp}.json")
     with open(all_results_file, 'w') as f:
         json.dump(all_trials_data, f, indent=4)
     
@@ -422,8 +432,8 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Print summary
     print(f"\n{'#'*80}")
     print(f"# Optimization Complete!")
-    print(f"# Optimized metric: {OPTIMIZATION_METRIC} on VALIDATION set")
-    print(f"# Best validation {OPTIMIZATION_METRIC}: {result.fun:.6f}")
+    print(f"# Optimized metric: {optimization_metric} on VALIDATION set")
+    print(f"# Best validation {optimization_metric}: {result.fun:.6f}")
     print(f"# Total trials: {len(result.x_iters)}")
     print(f"# Best parameters:")
     for key, value in best_params.items():
@@ -447,6 +457,9 @@ if __name__ == "__main__":
                        help='Random seed for reproducibility')
     parser.add_argument('--n_jobs', type=int, default=1,
                        help='Number of parallel jobs (-1 for all cores, 1 for sequential)')
+    parser.add_argument('--metric', type=str, default=OPTIMIZATION_METRIC,
+                       choices=['zinb_nll', 'combined', 'total_loss'],
+                       help='Optimization metric to minimize (zinb_nll or combined)')
     
     args = parser.parse_args()
     
@@ -455,6 +468,7 @@ if __name__ == "__main__":
         n_calls=args.n_calls,
         random_state=args.random_state,
         n_initial_points=args.n_initial_points,
-        n_jobs=args.n_jobs
+        n_jobs=args.n_jobs,
+        optimization_metric=args.metric
     )
 
