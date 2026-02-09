@@ -111,9 +111,6 @@ def sliding_window(data, window_size, step_size, moving_average=False):
         step_size (int or float): Step size for the sliding window. If float, interpreted as fraction of window_size.
         moving_average (bool): Whether to compute moving average within the window.
     """
-    # Convert step_size to integer if it's a fraction
-    if isinstance(step_size, float) and step_size < 1:
-        step_size = int(window_size * step_size)
     step_size = int(step_size)  # Ensure it's an integer
     
     current_window = 0

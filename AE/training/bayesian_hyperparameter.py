@@ -27,8 +27,8 @@ MOVING_AVERAGE_OPTIONS = [True, False]
 
 # Convolutional Layer hyperparameters
 USE_CONV_OPTIONS = [True, False]
-# Padding is fixed to 0 (valid padding) to avoid dimension mismatch issues
-FIXED_PADDING = 0
+# Padding is fixed to 'same' to preserve sequence length and avoid dimension collapse
+FIXED_PADDING = 'same'
 
 # Regularization hyperparameters
 REGULARIZATIONS = ["l1", "l2", "none"]
@@ -39,21 +39,21 @@ REGULARIZATIONS = ["l1", "l2", "none"]
 search_space = [
     # Preprocessing
     Categorical(FEATURES_OPTIONS, name='features'),
-    Integer(500, 10000, name='data_point_length'),  # SEQUENCE_LENGTHS range
-    Real(0.05, 1.0, name='step_size'),  # STEP_SIZES as continuous
-    Integer(5, 100, name='bin_size'),  # BIN_SIZES range
+    Integer(500, 5000, name='data_point_length'),  # SEQUENCE_LENGTHS range
+    Real(0.25, 1.0, name='step_size'),  # STEP_SIZES as continuous
+    Integer(1, 100, name='bin_size'),  # BIN_SIZES range
     Real(0.25, 1.0, name='sample_fraction'),  # SAMPLE_FRACTIONS as continuous
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
     # Model Architecture (parameterized, layer sizes divisible by 16)
-    Integer(4, 100, name='first_layer_size_factor'),  # Reduced from 200 to 100 for memory (64-1600 instead of 64-3200)
-    Integer(1, 6, name='num_layers'),  # Number of layers (each divides by 2)
+    Integer(4, 150, name='first_layer_size_factor'),  # 64-2400 (multiples of 16)
+    Integer(1, 5, name='num_layers'),  # Number of layers (1 to 5, with sizes halving each layer)
     
     # Convolutional Layers
     Categorical(USE_CONV_OPTIONS, name='use_conv'),
     Integer(16, 128, name='conv_channel'),  # CONV_CHANNELS range (powers of 2 will be sampled)
     Integer(2, 8, name='pool_size'),  # POOL_SIZES range
-    Categorical([3, 5, 7, 9, 11, 13], name='kernel_size'),  # Odd numbers only for symmetry
+    Categorical([3, 5, 7, 9, ], name='kernel_size'),  # Odd numbers only for symmetry
     
     # Training
     Integer(30, 150, name='epochs'),  # EPOCHS range
@@ -78,7 +78,7 @@ FIXED_PARAMS = {
     'train_val_test_split': [0.6, 0.2, 0.2],  # Proper train/val/test split
     'plot': False,
     'stride': 1,  # Fixed to avoid dimension mismatch issues
-    'padding': 0,  # Fixed to valid padding
+    'padding': 'same',  # Fixed to 'same' to preserve sequence length
 }
 
 # Optimization metric: which loss to minimize from VALIDATION set
@@ -155,12 +155,16 @@ def create_objective_function(optimization_metric):
             if not moving_average:
                 preprocessing_data_length = data_point_length // bin_size
             
+            # Convert step_size from fraction to actual step size
+            # step_size is a fraction (0.25-1.0) that needs to be multiplied by data_point_length
+            actual_step_size = int(preprocessing_data_length * step_size)
+            
             print(f"Creating datasets with:")
             print(f"  features: {features}")
             print(f"  bin_size: {bin_size}")
             print(f"  moving_average: {moving_average}")
             print(f"  data_point_length: {preprocessing_data_length} (from {data_point_length})")
-            print(f"  step_size: {step_size}")
+            print(f"  step_size: {actual_step_size} (from fraction {step_size})")
             print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})")
             print(f"  stride: {all_params['stride']} (fixed), padding: {all_params['padding']} (fixed)\n")
             
@@ -171,7 +175,7 @@ def create_objective_function(optimization_metric):
                 bin_size=bin_size,
                 moving_average=moving_average,
                 data_point_length=preprocessing_data_length,
-                step_size=step_size,
+                step_size=actual_step_size,
                 split_on=all_params['split_on'],
                 train_val_test_split=all_params['train_val_test_split']
             )
