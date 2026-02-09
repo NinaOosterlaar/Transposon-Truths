@@ -48,8 +48,8 @@ def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
     """
     # Clamp inputs to safe ranges to prevent numerical issues
     theta = torch.clamp(theta, min=eps)
-    mu    = torch.clamp(mu,    min=eps)
-    pi    = torch.clamp(pi,    min=eps, max=1.0 - eps)
+    mu    = torch.clamp(mu, min=eps)
+    pi    = torch.clamp(pi, min=eps, max=1.0 - eps)
     
     # Check for NaN/Inf in inputs
     # if torch.isnan(mu).any() or torch.isinf(mu).any():
@@ -146,6 +146,92 @@ def mae_loss(x, mu, pi, pi_threshold, reduction='sum'):
         raise ValueError(f"Invalid reduction mode: {reduction}. Choose 'sum', 'mean', or 'none'.")
     
     
+def fused_lasso_penalty(mu, theta, pi, lambda_mu=0.0, lambda_theta=0.0, lambda_pi=0.0, eps=1e-8):
+    """
+    Compute fused lasso penalty for ZINB parameters to encourage segmentation.
+    Penalizes differences between consecutive genomic positions.
+    
+    Formula (normalized per position):
+        λ_μ * (1/T) * Σ|log(μ_i) - log(μ_{i-1})| 
+        + λ_θ * (1/T) * Σ|log(θ_i) - log(θ_{i-1})|
+        + λ_π * (1/T) * Σ|logit(π_i) - logit(π_{i-1})|
+    
+    Note: The penalty is normalized by dividing by sequence length to match the scale
+    of the NLL loss (which uses reduction='mean'). This ensures the penalties are
+    comparable and λ values are more interpretable.
+    
+    Parameters:
+    -----------
+    mu : torch.Tensor
+        Mean parameter of NB distribution, shape (batch, seq_length)
+    theta : torch.Tensor
+        Dispersion parameter of NB distribution, shape (batch, seq_length)
+    pi : torch.Tensor
+        Zero-inflation probability, shape (batch, seq_length)
+    lambda_mu : float
+        Weight for the μ fused lasso penalty. Default=0.0 (no penalty)
+    lambda_theta : float
+        Weight for the θ fused lasso penalty. Default=0.0 (no penalty)
+    lambda_pi : float
+        Weight for the π fused lasso penalty. Default=0.0 (no penalty)
+    eps : float
+        Small constant for numerical stability
+    
+    Returns:
+    --------
+    torch.Tensor
+        Scalar fused lasso penalty (per-position, averaged across batch)
+    """
+    penalty = 0.0
+    seq_length = mu.size(1)
+    
+    # Fused lasso penalty on μ (in log space)
+    if lambda_mu > 0:
+        # Clamp mu to safe range for log
+        mu_safe = torch.clamp(mu, min=eps)
+        log_mu = torch.log(mu_safe)
+        
+        # Compute differences between consecutive positions: log(μ_i) - log(μ_{i-1})
+        # Shape: (batch, seq_length - 1)
+        log_mu_diff = log_mu[:, 1:] - log_mu[:, :-1]
+        
+        # L1 norm of differences, averaged over sequence and batch (per-position penalty)
+        penalty_mu = torch.abs(log_mu_diff).sum(dim=1).mean() / seq_length
+        penalty += lambda_mu * penalty_mu
+    
+    # # Fused lasso penalty on θ (in log space)
+    # if lambda_theta > 0:
+    #     # Clamp theta to safe range for log
+    #     theta_safe = torch.clamp(theta, min=eps)
+    #     log_theta = torch.log(theta_safe)
+        
+    #     # Compute differences between consecutive positions: log(θ_i) - log(θ_{i-1})
+    #     # Shape: (batch, seq_length - 1)
+    #     log_theta_diff = log_theta[:, 1:] - log_theta[:, :-1]
+        
+    #     # L1 norm of differences, averaged over sequence and batch (per-position penalty)
+    #     penalty_theta = torch.abs(log_theta_diff).sum(dim=1).mean() / seq_length
+    #     penalty += lambda_theta * penalty_theta
+    
+    # Fused lasso penalty on π (in logit space)
+    if lambda_pi > 0:
+        # Clamp pi to safe range for logit
+        pi_safe = torch.clamp(pi, min=eps, max=1.0 - eps)
+        
+        # Logit transformation: logit(p) = log(p / (1 - p))
+        logit_pi = torch.log(pi_safe / (1.0 - pi_safe))
+        
+        # Compute differences between consecutive positions: logit(π_i) - logit(π_{i-1})
+        # Shape: (batch, seq_length - 1)
+        logit_pi_diff = logit_pi[:, 1:] - logit_pi[:, :-1]
+        
+        # L1 norm of differences, averaged over sequence and batch (per-position penalty)
+        penalty_pi = torch.abs(logit_pi_diff).sum(dim=1).mean() / seq_length
+        penalty += lambda_pi * penalty_pi
+    
+    return penalty
+
+
 def reconstruct_masked_values(x, mu, pi, mask, pi_threshold):
     """
     Loss that measures how well the model reconstructs masked values to not be zero.

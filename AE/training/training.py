@@ -10,14 +10,14 @@ from AE.plotting.plot_loss import plot_zinb_training_loss
 from AE.plotting.results_ZINB import plot_zinb_test_results
 import argparse
 from AE.architectures.ZINBAE import ZINBAE, ZINBVAE
-from AE.training.loss_functions import zinb_nll, l1_regularization, reconstruct_masked_values
+from AE.training.loss_functions import zinb_nll, l1_regularization, reconstruct_masked_values, fused_lasso_penalty
 from AE.training.training_utils import ChromosomeEmbedding, dataloader_from_array, gaussian_kl
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 
-def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chrom_embedding=None, plot=True, beta=1.0, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5):
+def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chrom_embedding=None, plot=True, beta=1.0, name="", denoise_percent=0.3, regularizer='none', alpha=0.0, gamma=0.0, pi_threshold=0.5, lambda_mu=0.0, lambda_theta=0.0, lambda_pi=0.0):
     """
     Train ZINBAE or ZINBVAE model
     
@@ -50,6 +50,12 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
         Weight for masked reconstruction loss. Default=0.0
     pi_threshold : float
         Threshold for zero-inflation probability to consider a value as non-zero. Default=0.5
+    lambda_mu : float
+        Fused lasso weight for μ parameter (encourages segmentation). Default=0.0
+    lambda_theta : float
+        Fused lasso weight for θ parameter (encourages segmentation). Default=0.0
+    lambda_pi : float
+        Fused lasso weight for π parameter (encourages segmentation). Default=0.0
     """
     model.to(device)
     parameters = list(model.parameters())
@@ -71,6 +77,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
     epoch_kl_losses = []      # For ZINBVAE/VAE
     epoch_reg_losses = []     # For regularization
     epoch_masked_losses = []  # For masked reconstruction loss
+    epoch_fused_lasso_losses = []  # For fused lasso penalty tracking
     
     # Collect masks from dataloader for evaluation
     training_masks_collected = []
@@ -81,8 +88,11 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
         epoch_kl_loss = 0.0
         epoch_reg_loss = 0.0
         epoch_masked_loss = 0.0
+        epoch_fused_lasso = 0.0
         
-        for batch in dataloader:
+        # Use tqdm for progress bar
+        pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=True)
+        for batch in pbar:
             # Unpack batch for ZINB models
             # Note: mask is always the last element in batc
             if chrom:
@@ -139,6 +149,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
 
             # Add L1 regularization if specified
             reg_penalty = 0.0
+            fl_penalty_val = 0.0
             if regularizer.lower() == 'l1' and alpha > 0:
                 l1_penalty = l1_regularization(parameters)
                 reg_penalty = alpha * l1_penalty.item()
@@ -147,6 +158,14 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 # L2 penalty for tracking (already applied via weight_decay in optimizer)
                 l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
                 reg_penalty = alpha * l2_penalty.item()
+            
+            # Add fused lasso penalty if lambda_mu or lambda_theta or lambda_pi > 0
+            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
+                fl_penalty = fused_lasso_penalty(mu, theta, pi, lambda_mu=lambda_mu, lambda_theta=lambda_theta, lambda_pi=lambda_pi)
+                loss = loss + fl_penalty
+                # Track fused lasso contribution separately
+                fl_penalty_val = fl_penalty.item()
+                reg_penalty += fl_penalty_val
 
             # bookkeeping (recon_loss and kl_loss are already per-sample averages)
             epoch_recon_loss += recon_loss.item() * y.size(0)
@@ -155,6 +174,30 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
             if masked_loss is not None:
                 epoch_masked_loss += masked_loss.item() * y.size(0)
             epoch_reg_loss += reg_penalty * y.size(0)
+            epoch_fused_lasso += fl_penalty_val * y.size(0)
+            
+            # Update progress bar with current losses
+            pbar_info = {
+                "loss": f"{loss.item():.4f}", 
+                "recon": f"{recon_loss.item():.4f}"
+            }
+            if kl_loss is not None:
+                pbar_info["KL"] = f"{kl_loss.item():.4f}"
+            if gamma > 0 and masked_loss is not None:
+                pbar_info["masked"] = f"{masked_loss.item():.4f}"
+            if (regularizer.lower() != 'none' and alpha > 0) or (lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0):
+                pbar_info["reg"] = f"{reg_penalty:.6f}"
+            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
+                pbar_info["FL"] = f"{fl_penalty_val:.6f}"
+            
+            pbar.set_postfix(pbar_info)
+            
+            # Print ZINB parameter statistics separately (every 10 batches)
+            if device.type != "cuda":
+                param_stats = (f"  Parameters - μ: {mu.min().item():.2f}/{mu.mean().item():.2f}/{mu.max().item():.2f}, "
+                                f"θ: {theta.min().item():.2f}/{theta.mean().item():.2f}/{theta.max().item():.2f}, "
+                                f"π: {pi.min().item():.4f}/{pi.mean().item():.4f}/{pi.max().item():.4f}")
+                pbar.write(param_stats)
             
             loss.backward()
             
@@ -189,6 +232,10 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
         epoch_masked_loss /= len(dataloader.dataset)
         epoch_masked_losses.append(epoch_masked_loss)
         
+        # Track fused lasso loss
+        epoch_fused_lasso /= len(dataloader.dataset)
+        epoch_fused_lasso_losses.append(epoch_fused_lasso)
+        
         # Track recon and KL losses
         epoch_recon_loss /= len(dataloader.dataset)
         epoch_recon_losses.append(epoch_recon_loss)
@@ -202,6 +249,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 msg += f", Masked: {epoch_masked_loss:.4f}"
             if regularizer.lower() != 'none' and alpha > 0:
                 msg += f", Reg: {epoch_reg_loss:.6f}"
+            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
+                msg += f", FL: {epoch_fused_lasso:.6f}"
             print(msg)
         else:  # ZINBAE
             # Build print message with optional components
@@ -210,6 +259,8 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 msg += f", Masked: {epoch_masked_loss:.4f}"
             if regularizer.lower() != 'none' and alpha > 0:
                 msg += f", Reg: {epoch_reg_loss:.6f}"
+            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
+                msg += f", FL: {epoch_fused_lasso:.6f}"
             print(msg)
     
     if plot:
@@ -238,11 +289,12 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
     _, _, train_metrics = test(model, dataloader, chrom=chrom, chrom_embedding=chrom_embedding, 
                                 plot=plot, n_examples=5, beta=beta, name=name, 
                                 denoise_percent=denoise_percent, eval_mode="training", 
-                                gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha)
+                                gamma=gamma, pi_threshold=pi_threshold, regularizer=regularizer, alpha=alpha,
+                                lambda_mu=lambda_mu, lambda_theta=lambda_theta, lambda_pi=lambda_pi)
     
     return model, train_metrics
 
-def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, name="", denoise_percent=0.0, eval_mode="testing", gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0):
+def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examples=5, beta=1.0, name="", denoise_percent=0.0, eval_mode="testing", gamma=0.0, pi_threshold=0.5, regularizer='none', alpha=0.0, lambda_mu=0.0, lambda_theta=0.0, lambda_pi=0.0):
     """
     Test ZINBAE or ZINBVAE model
     
@@ -276,6 +328,12 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
         Type of regularization: 'none', 'L1', or 'L2'. Default='none'
     alpha : float
         Regularization strength. Default=0.0
+    lambda_mu : float
+        Fused lasso weight for μ parameter (encourages segmentation). Default=0.0
+    lambda_theta : float
+        Fused lasso weight for θ parameter (encourages segmentation). Default=0.0
+    lambda_pi : float
+        Fused lasso weight for π parameter (encourages segmentation). Default=0.0
     """
     model.to(device)
     model.eval()
@@ -371,6 +429,13 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
                 reg_penalty = alpha * l2_penalty.item()
                 # Note: L2 is typically applied via weight_decay in optimizer, but we compute it here for tracking
+            
+            # Add fused lasso penalty if lambda_mu or lambda_theta or lambda_pi > 0
+            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
+                fl_penalty = fused_lasso_penalty(mu, theta, pi, lambda_mu=lambda_mu, lambda_theta=lambda_theta, lambda_pi=lambda_pi)
+                loss = loss + fl_penalty
+                # Track fused lasso contribution
+                reg_penalty += fl_penalty.item()
 
             # -------- bookkeeping (single place) --------
             total_loss += loss.item() * batch_size
@@ -521,6 +586,9 @@ def parser_args():
     parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability for regularization (0.0 to 1.0, default: 0.0)')
     parser.add_argument('--gamma', type=float, default=1.0, help='Weight for masked reconstruction loss in ZINB models (default: 0.0)')
     parser.add_argument('--pi_threshold', type=float, default=0.5, help='Threshold for zero-inflation probability in ZINB models (default: 0.5)')
+    parser.add_argument('--lambda_mu', type=float, default=0.0, help='Fused lasso weight for μ parameter (default: 0.0)')
+    parser.add_argument('--lambda_theta', type=float, default=0.0, help='Fused lasso weight for θ parameter (default: 0.0)')
+    parser.add_argument('--lambda_pi', type=float, default=0.0, help='Fused lasso weight for π parameter (default: 0.0)')
     return parser.parse_args()
 
     
@@ -562,22 +630,26 @@ if __name__ == "__main__":
     feature_dim += 1  # +1 for y_in (the noisy input)
     feature_dim += chrom_embedding.embedding.embedding_dim if chrom else 0  # +4 for chromosome embedding
     
+    # Infer seq_length from the data
+    seq_length = train_dataloader.dataset.tensors[1].shape[1]  # y tensor shape is (N, seq_length)
+    print(f"Detected sequence length from data: {seq_length}")
+    
     # Train and test based on model choice
     if args.model in ['ZINBAE', 'both']:
         print("="*60)
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
-        zinbae_model = ZINBAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
+        zinbae_model = ZINBAE(seq_length=seq_length, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
         trained_zinbae, zinbae_train_metrics = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent,
-                              regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold)
+                              regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold, lambda_mu=args.lambda_mu, lambda_theta=args.lambda_theta, lambda_pi=args.lambda_pi)
         
         zinbae_reconstructions, zinbae_latents, zinbae_metrics = test(trained_zinbae, test_dataloader, 
                                                                       chrom=chrom, chrom_embedding=chrom_embedding, 
                                                                       plot=True, n_examples=5, name=results_subdir, 
                                                                       denoise_percent=args.denoise_percent,
                                                                       gamma=args.gamma, pi_threshold=args.pi_threshold,
-                                                                      regularizer=args.regularizer, alpha=args.alpha)
+                                                                      regularizer=args.regularizer, alpha=args.alpha, lambda_mu=args.lambda_mu, lambda_theta=args.lambda_theta, lambda_pi=args.lambda_pi)
     
     if args.model in ['ZINBVAE', 'both']:
         if args.model == 'both':
@@ -586,14 +658,14 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)")
         print("="*60)
-        zinbvae_model = ZINBVAE(seq_length=2000, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
+        zinbvae_model = ZINBVAE(seq_length=seq_length, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
         trained_zinbvae, zinbvae_train_metrics = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
                                chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
-                               regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold)
+                               regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold, lambda_mu=args.lambda_mu, lambda_theta=args.lambda_theta, lambda_pi=args.lambda_pi)
         
         zinbvae_reconstructions, zinbvae_latents, zinbvae_metrics = test(trained_zinbvae, test_dataloader, 
                                                                          chrom=chrom, chrom_embedding=chrom_embedding, 
                                                                          plot=True, n_examples=5, beta=args.beta, name=results_subdir, 
                                                                          denoise_percent=args.denoise_percent,
                                                                          gamma=args.gamma, pi_threshold=args.pi_threshold,
-                                                                         regularizer=args.regularizer, alpha=args.alpha)
+                                                                         regularizer=args.regularizer, alpha=args.alpha, lambda_mu=args.lambda_mu, lambda_theta=args.lambda_theta, lambda_pi=args.lambda_pi)

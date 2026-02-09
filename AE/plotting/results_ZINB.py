@@ -484,8 +484,6 @@ def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, al
         
         # Apply pi threshold: set reconstruction to zero where pi > threshold
         reconstruction_plot = all_reconstructions_mu[i].copy()
-        if all_pi is not None:
-            reconstruction_plot[all_pi[i] > pi_threshold] = 0
         
         ax.plot(positions, reconstruction_plot, label='Predicted μ (Raw Counts)', 
                linewidth=2, alpha=0.8, color=COLORS['red'], linestyle='--')
@@ -522,6 +520,127 @@ def reconstructions(all_originals, all_reconstructions_mu, all_variance=None, al
     plt.tight_layout()
     plt.savefig(os.path.join(save_dir, f'{prefix}_example_reconstructions.png'), 
                 dpi=300, bbox_inches='tight')
+    plt.close()
+    
+def reconstructions_with_pi(
+    all_originals,
+    all_reconstructions_mu,
+    all_variance=None,
+    all_pi=None,
+    all_raw_counts=None,
+    n_examples=5,
+    model_type="ZINB",
+    save_dir=None,
+    prefix="",
+    pi_threshold=0.5,
+):
+    fig, axes = plt.subplots(n_examples, 1, figsize=(15, 4 * n_examples))
+    if n_examples == 1:
+        axes = [axes]
+
+    for i in range(min(n_examples, len(all_reconstructions_mu))):
+        ax = axes[i]
+        positions = np.arange(len(all_reconstructions_mu[i]))
+
+        # Use raw counts for comparison if available
+        if all_raw_counts is not None:
+            actual_data = all_raw_counts[i]
+            actual_label = "Actual (Raw Counts)"
+        else:
+            actual_data = all_originals[i]
+            actual_label = "Actual (Normalized)"
+
+        ax.plot(
+            positions,
+            actual_data,
+            label=actual_label,
+            linewidth=2,
+            alpha=0.8,
+            color=COLORS["blue"],
+        )
+
+        # ---- Predicted mean of observed ZINB: E[y] = (1 - pi) * mu ----
+        if all_pi is None:
+            raise ValueError(
+                "all_pi must be provided to plot (1 - pi) * mu. "
+                "If you want to plot mu alone, keep the old behavior."
+            )
+
+        pi_i = all_pi[i]
+        mu_i = all_reconstructions_mu[i]
+        pred_mean = (1.0 - pi_i) * mu_i
+
+        # (Optional) If you still want a thresholded version for visualization,
+        # you can keep this block; otherwise you can delete it.
+        # pred_mean_plot = pred_mean.copy()
+        # pred_mean_plot[pi_i > pi_threshold] = 0.0
+
+        ax.plot(
+            positions,
+            pred_mean,
+            label=r"Predicted $\mathbb{E}[y]=(1-\pi)\mu$",
+            linewidth=2,
+            alpha=0.8,
+            color=COLORS["red"],
+            linestyle="--",
+        )
+
+        # ---- Uncertainty bands (approximate) ----
+        # NOTE: If all_variance corresponds to the NB variance of Y (observed),
+        # you can use it directly. If it is NB variance conditional on NB component,
+        # you may want to scale/adjust. Here we assume it's variance of observed Y.
+        if all_variance is not None:
+            std_dev = np.sqrt(all_variance[i])
+            ax.fill_between(
+                positions,
+                pred_mean - std_dev,
+                pred_mean + std_dev,
+                alpha=0.2,
+                color=COLORS["red"],
+                label=r"$\mathbb{E}[y]\pm\sigma$ (uncertainty)",
+            )
+
+        # ---- Show predicted "mostly zero-inflated" points (still based on pi) ----
+        if all_pi is not None:
+            zero_pred_mask = pi_i > pi_threshold
+            if np.any(zero_pred_mask):
+                ax.scatter(
+                    positions[zero_pred_mask],
+                    np.zeros(np.sum(zero_pred_mask)),
+                    marker="x",
+                    s=30,
+                    color=COLORS["orange"],
+                    label=f"Predicted Zero (π>{pi_threshold})",
+                    zorder=5,
+                )
+
+        # ---- Show actual zeros (if raw) ----
+        if all_raw_counts is not None:
+            actual_zero_mask = all_raw_counts[i] == 0
+            if np.any(actual_zero_mask):
+                ax.scatter(
+                    positions[actual_zero_mask],
+                    all_raw_counts[i][actual_zero_mask],
+                    marker="o",
+                    s=15,
+                    color=COLORS["green"],
+                    alpha=0.37,
+                    label="Actual Zero (raw)",
+                    zorder=4,
+                )
+
+        ax.set_xlabel("Position")
+        ax.set_ylabel("Count Value [Raw Counts]")
+        ax.set_title(f"{model_type}: Example {i+1} - Reconstruction with Uncertainty")
+        ax.legend(loc="upper right", fontsize=8)
+        ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(save_dir, f"{prefix}_example_pi_reconstructions.png"),
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.close()
         
 def metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, residuals, all_theta=None, all_variance=None, all_pi=None, model_type="ZINB", save_dir=None, prefix="", timestamp="", use_conv=False, metrics=None):    
@@ -721,3 +840,16 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
                 all_theta, all_variance, all_pi, model_type=model_type, 
                 save_dir=save_dir, prefix=prefix, timestamp=timestamp, 
                 use_conv=use_conv, metrics=metrics)
+    # 8. Reconstructions with (1 - pi) * mu plot
+    reconstructions_with_pi(
+        all_originals,
+        all_reconstructions_mu,
+        all_variance,
+        all_pi,
+        all_raw_counts,
+        n_examples=n_examples,
+        model_type=model_type,
+        save_dir=save_dir,
+        prefix=prefix,
+        pi_threshold=pi_threshold,
+    )
