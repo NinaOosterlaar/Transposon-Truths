@@ -12,11 +12,11 @@ import gc
 
 # Preprocessing parameters
 SIMULATED_DATA_FOLDER = "Data/simulated/simulated_data"
-BIN_SIZE = 1
+BIN_SIZE = 5
 MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
 STEP_SIZE = 0.25
-SAMPLE_FRACTION = 1.0
+SAMPLE_FRACTION = 0.01
 
 # Split parameters (split by file/chromosome)
 TRAIN_VAL_TEST_SPLIT = [0.7, 0, 0.3]
