@@ -27,7 +27,7 @@ def setup_plot_style():
     """
     plt.rcParams.update({
         'font.size': 14,          # Base font size
-        'axes.labelsize': 18,     # X and Y labels
+        'axes.labelsize': 14,     # X and Y labels
         'axes.titlesize': 20,     # Subplot titles
         'xtick.labelsize': 10,    # X-axis tick labels
         'ytick.labelsize': 14,    # Y-axis tick labels
