@@ -14,6 +14,7 @@ class ZINBAE(nn.Module):
         padding='same',
         stride=1,
         dropout=0.0,
+        global_theta=False,
     ):
         super().__init__()
         
@@ -22,6 +23,7 @@ class ZINBAE(nn.Module):
         self.model_type = 'ZINBAE'
         self.use_conv = use_conv
         self.dropout = dropout
+        self.global_theta = global_theta
         
         # ----- Optional Conv1D Layer -----
         if use_conv:
@@ -82,16 +84,22 @@ class ZINBAE(nn.Module):
         # ----- ZINB heads -----
         # Each outputs seq_length parameters (one per position)
         self.mu_layer    = nn.Linear(decoder_out_dim, seq_length)
-        self.theta_layer = nn.Linear(decoder_out_dim, seq_length)
         self.pi_layer    = nn.Linear(decoder_out_dim, seq_length)
+        
+        # Theta: either global (single parameter) or per-position
+        if self.global_theta:
+            # Single learnable theta parameter (in log space)
+            self.theta_param = nn.Parameter(torch.tensor(2.0))  # exp(2.0) ≈ 7.4
+        else:
+            self.theta_layer = nn.Linear(decoder_out_dim, seq_length)
+            nn.init.xavier_uniform_(self.theta_layer.weight, gain=0.1)
+            nn.init.constant_(self.theta_layer.bias, 2.0)  # Higher init: exp(2.0) ≈ 7.4
         
         # Initialize ZINB output layers with smaller weights to prevent initial explosion
         nn.init.xavier_uniform_(self.mu_layer.weight, gain=0.1)
-        nn.init.xavier_uniform_(self.theta_layer.weight, gain=0.1)
         nn.init.xavier_uniform_(self.pi_layer.weight, gain=0.1)
         # Initialize biases to reasonable starting values
         nn.init.constant_(self.mu_layer.bias, 0.0)  # Will result in mu_hat ~= 1 after exp
-        nn.init.constant_(self.theta_layer.bias, 0.0)  # Will result in theta ~= 1 after exp
         nn.init.constant_(self.pi_layer.bias, -2.0)  # Will result in pi ~= 0.12 after sigmoid
     
     def forward(self, x_in, size_factors):
@@ -121,28 +129,35 @@ class ZINBAE(nn.Module):
         # Decode shared representation
         D = self.decoder_shared(z)  # shape (batch, decoder_out_dim)
         
-        # ZINB parameters with clamping to prevent overflow
-        # Use softplus or clamped exp to prevent exploding values
-        mu_hat_logits = self.mu_layer(D)                 # log-mean (unscaled)
-        # mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
+        mu_logits = self.mu_layer(D)          # (B,T)
+        pi_logits = self.pi_layer(D)          # (B,T)
+
+        # penalty on logits (NOT log(mu) / logit(pi))
+        tv_mu = (mu_logits[:,1:] - mu_logits[:,:-1]).abs().mean()
+        tv_pi = (pi_logits[:,1:] - pi_logits[:,:-1]).abs().mean()
 
         if size_factors.dim() == 1:
             size_factors = size_factors.unsqueeze(1)
         log_sf = torch.log(size_factors.clamp_min(1e-8))
 
-        log_mu = mu_hat_logits + log_sf
+        log_mu = mu_logits + log_sf
         log_mu = torch.clamp(log_mu, min=-20, max=20)
         # mu = torch.exp(log_mu) 
         mu=torch.exp(log_mu) 
         # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity 
         
-        theta_logits = self.theta_layer(D)
-        theta = torch.clamp(theta_logits, min=-20, max=10)
-        # theta = torch.exp(theta)    # (batch, seq_length), positive
-        theta = torch.exp(theta).clamp(min=1)
-        # theta = torch.nn.functional.softplus(theta) + 1e-4
+        # Theta: either global or per-position
+        if self.global_theta:
+            # Single global theta value broadcasted to all positions
+            theta_logit = torch.clamp(self.theta_param, min=-20, max=10)
+            theta = torch.exp(theta_logit).clamp(min=1.0)
+            theta = theta.expand(batch_size, self.seq_length)  # (batch, seq_length)
+        else:
+            theta_logits = self.theta_layer(D)
+            theta = torch.clamp(theta_logits, min=-20, max=10)
+            theta = torch.exp(theta).clamp(min=1.0)
         
-        pi = torch.sigmoid(self.pi_layer(D))
+        pi = torch.sigmoid(pi_logits)  
         pi = pi.clamp(1e-5, 1 - 1e-5)
 
         
@@ -151,7 +166,7 @@ class ZINBAE(nn.Module):
         #     size_factors = size_factors.unsqueeze(1)  # (batch, 1)
         # mu = mu_hat * size_factors                   # broadcast over seq_length
         
-        return mu, theta, pi, z
+        return mu, theta, pi, z, tv_mu, tv_pi
     
 class ZINBVAE(nn.Module):
     def __init__(
@@ -166,6 +181,7 @@ class ZINBVAE(nn.Module):
         padding=1,
         stride=1,
         dropout=0.0,
+        global_theta=False,
     ):
         super().__init__()
         
@@ -174,6 +190,7 @@ class ZINBVAE(nn.Module):
         self.model_type = 'ZINBVAE'
         self.use_conv = use_conv
         self.dropout = dropout
+        self.global_theta = global_theta
         
         # ----- Optional Conv1D Layer -----
         if self.use_conv:
@@ -227,16 +244,22 @@ class ZINBVAE(nn.Module):
         # ----- ZINB heads -----
         # Each outputs seq_length parameters (one per position)
         self.mu_layer    = nn.Linear(decoder_out_dim, seq_length)
-        self.theta_layer = nn.Linear(decoder_out_dim, seq_length)
         self.pi_layer    = nn.Linear(decoder_out_dim, seq_length)
+        
+        # Theta: either global (single parameter) or per-position
+        if self.global_theta:
+            # Single learnable theta parameter (in log space)
+            self.theta_param = nn.Parameter(torch.tensor(2.0))  # exp(2.0) ≈ 7.4
+        else:
+            self.theta_layer = nn.Linear(decoder_out_dim, seq_length)
+            nn.init.xavier_uniform_(self.theta_layer.weight, gain=0.1)
+            nn.init.constant_(self.theta_layer.bias, 2.0)  # Higher init: exp(2.0) ≈ 7.4
         
         # Initialize ZINB output layers with smaller weights to prevent initial explosion
         nn.init.xavier_uniform_(self.mu_layer.weight, gain=0.1)
-        nn.init.xavier_uniform_(self.theta_layer.weight, gain=0.1)
         nn.init.xavier_uniform_(self.pi_layer.weight, gain=0.1)
         # Initialize biases to reasonable starting values
         nn.init.constant_(self.mu_layer.bias, 0.0)  # Will result in mu_hat ~= 1 after exp
-        nn.init.constant_(self.theta_layer.bias, 0.0)  # Will result in theta ~= 1 after exp
         nn.init.constant_(self.pi_layer.bias, -2.0)  # Will result in pi ~= 0.12 after sigmoid
     
     def encode(self, x):
@@ -273,7 +296,12 @@ class ZINBVAE(nn.Module):
         # ZINB parameters with clamping to prevent overflow
         # Compute mu similar to ZINBAE: mu_hat logits + log(size_factors) then exp
         mu_hat_logits = self.mu_layer(D)
+        pi_logits = self.pi_layer(D)
         # mu_hat_logits = torch.clamp(mu_hat_logits, -20, 20)
+
+        # penalty on logits (NOT log(mu) / logit(pi))
+        tv_mu = (mu_hat_logits[:,1:] - mu_hat_logits[:,:-1]).abs().mean()
+        tv_pi = (pi_logits[:,1:] - pi_logits[:,:-1]).abs().mean()
 
         if size_factors.dim() == 1:
             size_factors = size_factors.unsqueeze(1)
@@ -283,15 +311,20 @@ class ZINBVAE(nn.Module):
         # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity
         mu = torch.exp(log_mu)
 
-        # theta via softplus (positive, stable)
-        theta_logits = self.theta_layer(D)
-        theta = torch.clamp(theta_logits, min=-20, max=10)
-        theta = torch.exp(theta)
-        # theta = torch.nn.functional.softplus(theta) + 1e-4
+        # Theta: either global or per-position
+        if self.global_theta:
+            # Single global theta value broadcasted to all positions
+            theta_logit = torch.clamp(self.theta_param, min=-20, max=10)
+            theta = torch.exp(theta_logit).clamp(min=1.0)
+            theta = theta.expand(batch_size, self.seq_length)  # (batch, seq_length)
+        else:
+            theta_logits = self.theta_layer(D)
+            theta = torch.clamp(theta_logits, min=-20, max=10)
+            theta = torch.exp(theta).clamp(min=1.0)
 
         # dropout / zero-inflation probability
-        pi = torch.sigmoid(self.pi_layer(D))
+        pi = torch.sigmoid(pi_logits)
         pi = pi.clamp(1e-5, 1 - 1e-5)
 
-        return mu, theta, pi, z, mu_z, logvar_z
+        return mu, theta, pi, z, mu_z, logvar_z, tv_mu, tv_pi
         

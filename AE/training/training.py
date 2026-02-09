@@ -128,7 +128,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
 
             # Forward pass for ZINB models
             if is_zinbvae:
-                mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
+                mu, theta, pi, z, mu_z, logvar_z, tv_mu, tv_pi = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
                 # KL loss: divide by seq_length to get "per-element" KL
                 kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
@@ -138,7 +138,7 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                     masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
                     loss = loss + gamma * masked_loss
             else:  # ZINBAE
-                mu, theta, pi, z = model(batch_input, size_factors)
+                mu, theta, pi, z, tv_mu, tv_pi = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction='mean')
                 loss = recon_loss
                 # Add masked reconstruction loss if gamma > 0
@@ -159,9 +159,10 @@ def train(model, dataloader, num_epochs=50, learning_rate=1e-3, chrom=False, chr
                 l2_penalty = sum(torch.sum(p ** 2) for p in parameters)
                 reg_penalty = alpha * l2_penalty.item()
             
-            # Add fused lasso penalty if lambda_mu or lambda_theta or lambda_pi > 0
-            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
-                fl_penalty = fused_lasso_penalty(mu, theta, pi, lambda_mu=lambda_mu, lambda_theta=lambda_theta, lambda_pi=lambda_pi)
+            # Add TV regularization (fused lasso) if lambda_mu or lambda_pi > 0
+            # Use TV penalties computed directly on logits in the model
+            if lambda_mu > 0 or lambda_pi > 0:
+                fl_penalty = lambda_mu * tv_mu + lambda_pi * tv_pi
                 loss = loss + fl_penalty
                 # Track fused lasso contribution separately
                 fl_penalty_val = fl_penalty.item()
@@ -391,7 +392,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             # Forward pass for ZINB models
             masked_loss = None  # Initialize to avoid UnboundLocalError
             if is_zinbvae:
-                mu, theta, pi, z, mu_z, logvar_z = model(batch_input, size_factors)
+                mu, theta, pi, z, mu_z, logvar_z, tv_mu, tv_pi = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                 # KL loss: divide by seq_length to get "per-element" KL
                 kl_loss = gaussian_kl(mu_z, logvar_z) / model.seq_length
@@ -401,7 +402,7 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                     masked_loss = reconstruct_masked_values(y_raw, mu, pi, mask, pi_threshold)
                     loss = loss + gamma * masked_loss
             else:  # ZINBAE
-                mu, theta, pi, z = model(batch_input, size_factors)
+                mu, theta, pi, z, tv_mu, tv_pi = model(batch_input, size_factors)
                 recon_loss = zinb_nll(y_raw, mu, theta, pi, reduction="mean")
                 loss = recon_loss
                 # Add masked reconstruction loss if gamma > 0
@@ -430,9 +431,10 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
                 reg_penalty = alpha * l2_penalty.item()
                 # Note: L2 is typically applied via weight_decay in optimizer, but we compute it here for tracking
             
-            # Add fused lasso penalty if lambda_mu or lambda_theta or lambda_pi > 0
-            if lambda_mu > 0 or lambda_theta > 0 or lambda_pi > 0:
-                fl_penalty = fused_lasso_penalty(mu, theta, pi, lambda_mu=lambda_mu, lambda_theta=lambda_theta, lambda_pi=lambda_pi)
+            # Add TV regularization (fused lasso) if lambda_mu or lambda_pi > 0
+            # Use TV penalties computed directly on logits in the model
+            if lambda_mu > 0 or lambda_pi > 0:
+                fl_penalty = lambda_mu * tv_mu + lambda_pi * tv_pi
                 loss = loss + fl_penalty
                 # Track fused lasso contribution
                 reg_penalty += fl_penalty.item()
@@ -589,6 +591,7 @@ def parser_args():
     parser.add_argument('--lambda_mu', type=float, default=0.0, help='Fused lasso weight for μ parameter (default: 0.0)')
     parser.add_argument('--lambda_theta', type=float, default=0.0, help='Fused lasso weight for θ parameter (default: 0.0)')
     parser.add_argument('--lambda_pi', type=float, default=0.0, help='Fused lasso weight for π parameter (default: 0.0)')
+    parser.add_argument('--global_theta', action='store_true', help='Whether to use a global theta parameter across all features (instead of feature-specific theta)')
     return parser.parse_args()
 
     
@@ -639,7 +642,7 @@ if __name__ == "__main__":
         print("="*60)
         print("TRAINING ZINB AUTOENCODER (ZINBAE)")
         print("="*60)
-        zinbae_model = ZINBAE(seq_length=seq_length, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
+        zinbae_model = ZINBAE(seq_length=seq_length, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout, global_theta=args.global_theta)
         trained_zinbae, zinbae_train_metrics = train(zinbae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
                               chrom=chrom, chrom_embedding=chrom_embedding, plot=True, name=results_subdir, denoise_percent=args.denoise_percent,
                               regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold, lambda_mu=args.lambda_mu, lambda_theta=args.lambda_theta, lambda_pi=args.lambda_pi)
@@ -658,7 +661,7 @@ if __name__ == "__main__":
             print("="*60)
         print("TRAINING ZINB VARIATIONAL AUTOENCODER (ZINBVAE)")
         print("="*60)
-        zinbvae_model = ZINBVAE(seq_length=seq_length, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout)
+        zinbvae_model = ZINBVAE(seq_length=seq_length, feature_dim=feature_dim, layers=[512, 256, 128], use_conv=args.use_conv, dropout=args.dropout, global_theta=args.global_theta)
         trained_zinbvae, zinbvae_train_metrics = train(zinbvae_model, train_dataloader, num_epochs=args.epochs, learning_rate=1e-3, 
                                chrom=chrom, chrom_embedding=chrom_embedding, plot=True, beta=args.beta, name=results_subdir, denoise_percent=args.denoise_percent,
                                regularizer=args.regularizer, alpha=args.alpha, gamma=args.gamma, pi_threshold=args.pi_threshold, lambda_mu=args.lambda_mu, lambda_theta=args.lambda_theta, lambda_pi=args.lambda_pi)

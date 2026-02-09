@@ -11,7 +11,7 @@ import gc
 
 
 # Preprocessing parameters
-SIMULATED_DATA_FOLDER = "Data/simulated/simulated_data"
+SIMULATED_DATA_FOLDER = "Data/simulated_small"
 BIN_SIZE = 1
 MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
@@ -29,7 +29,7 @@ KERNEL_SIZE = 5
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 100
+EPOCHS = 30
 BATCH_SIZE = 64
 NOISE_LEVEL = 0.3
 PI_THRESHOLD = 0.5
@@ -38,10 +38,13 @@ LEARNING_RATE = 1e-3
 DROPOUT_RATE = 0.2
 LAYERS = [512, 256, 128]
 REGULARIZER = 'none'
-REGULARIZATION_WEIGHT = 1e-4
+REGULARIZATION_WEIGHT = 0
+lambda_mu = 0.2
+lambda_pi = 0.2
+GLOBAL_THETA = False
 
 # Output configuration
-OUTPUT_NAME = "Simulated_data"  # Name for results folder
+OUTPUT_NAME = "Simulated_data_fused"  # Name for results folder
 PLOT = True
 
 
@@ -182,6 +185,9 @@ def main_simulated(
     layers=LAYERS,
     regularizer=REGULARIZER,
     regularization_weight=REGULARIZATION_WEIGHT,
+    lambda_mu=lambda_mu,
+    lambda_pi=lambda_pi,
+    global_theta=GLOBAL_THETA,
     plot=PLOT,
     output_name=OUTPUT_NAME
 ):
@@ -266,6 +272,7 @@ def main_simulated(
         padding=padding,
         stride=stride,
         dropout=dropout_rate,
+        global_theta=global_theta
     )
     
     print(f"Model created with seq_length={actual_seq_length}, feature_dim={feature_dim}")
@@ -285,6 +292,8 @@ def main_simulated(
         alpha=regularization_weight,
         denoise_percent=noise_level,
         gamma=masked_recon_weight,
+        lambda_mu=lambda_mu,
+        lambda_pi=lambda_pi,
         chrom=False,
         plot=plot,
         name=output_name,  # Pass output name for results folder
