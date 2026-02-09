@@ -12,6 +12,7 @@ from skopt import dump, load
 from AE.main import main_with_datasets
 from AE.preprocessing.preprocessing import preprocess
 import argparse
+import joblib
 
 # Custom checkpoint callback to avoid pickle errors with nested functions
 class CustomCheckpointSaver:
@@ -37,7 +38,6 @@ class CustomCheckpointSaver:
         }
         
         # Save using joblib dump
-        import joblib
         joblib.dump(checkpoint_data, self.checkpoint_path, compress=9)
         return False  # Continue optimization
 
@@ -379,7 +379,6 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         print(f"\n{'='*80}")
         print(f"Resuming from checkpoint: {resume_from}")
         print(f"{'='*80}\n")
-        import joblib
         checkpoint_data = joblib.load(resume_from)
         
         # Handle both old skopt format and new custom format
