@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name=bayesOpt_%a
+#SBATCH --job-name=bayesOpt
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=100:00:00
