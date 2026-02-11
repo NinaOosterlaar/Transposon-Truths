@@ -1,0 +1,69 @@
+Traceback (most recent call last):
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 209, in objective
+    padding=int(all_params['padding']),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: invalid literal for int() with base 10: 'same'
+Traceback (most recent call last):
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 534, in <module>
+    result = run_bayesian_optimization(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 387, in run_bayesian_optimization
+    result = gp_minimize(
+             ^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/gp.py", line 281, in gp_minimize
+    return base_minimize(
+           ^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/base.py", line 335, in base_minimize
+    if eval_callbacks(callbacks, result):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/utils.py", line 97, in eval_callbacks
+    decision = c(result)
+               ^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/callbacks.py", line 363, in __call__
+    dump(res, self.checkpoint_path, **self.dump_options)
+  File "/opt/conda/lib/python3.11/site-packages/skopt/utils.py", line 133, in dump
+    dump_(res, filename, **kwargs)
+  File "/opt/conda/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 597, in dump
+    NumpyPickler(f, protocol=protocol).dump(value)
+  File "/opt/conda/lib/python3.11/pickle.py", line 487, in dump
+    self.save(obj)
+  File "/opt/conda/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 603, in save
+    self.save_reduce(obj=obj, *rv)
+  File "/opt/conda/lib/python3.11/pickle.py", line 713, in save_reduce
+    self._batch_setitems(dictitems)
+  File "/opt/conda/lib/python3.11/pickle.py", line 998, in _batch_setitems
+    save(v)
+  File "/opt/conda/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 560, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 972, in save_dict
+    self._batch_setitems(obj.items())
+  File "/opt/conda/lib/python3.11/pickle.py", line 998, in _batch_setitems
+    save(v)
+  File "/opt/conda/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 560, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 972, in save_dict
+    self._batch_setitems(obj.items())
+  File "/opt/conda/lib/python3.11/pickle.py", line 998, in _batch_setitems
+    save(v)
+  File "/opt/conda/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 560, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/pickle.py", line 1071, in save_global
+    raise PicklingError(
+_pickle.PicklingError: Can't pickle <function create_objective_function.<locals>.objective at 0x7fe26b5d4b80>: it's not found as __main__.create_objective_function.<locals>.objective
+srun: error: gpu35: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12203893.0

@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 168, in objective
+    train_set, val_set, test_set, _, _, _ = preprocess(
+                                            ^^^^^^^^^^^
+  File "/workspace/AE/preprocessing/preprocessing.py", line 701, in preprocess
+    train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, split_on, zinb_mode=zinb_mode)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/preprocessing/preprocessing.py", line 613, in process_data
+    data_points = np.array(data_points, dtype=np.float32)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 2.26 TiB for an array with shape (58029903, 2672, 4) and data type float32
+srun: error: gpu22: task 0: Killed
+srun: launch/slurm: _step_signal: Terminating StepId=12196298.0
+srun: Force Terminated StepId=12196298.0
