@@ -70,6 +70,7 @@ FIXED_PADDING = 'same'
 # Regularization hyperparameters
 REGULARIZATIONS = ["l1", "l2", "none"]
 
+
 # ============================================================================
 # BAYESIAN OPTIMIZATION SEARCH SPACE
 # ============================================================================
@@ -95,7 +96,6 @@ search_space = [
     # Training
     Integer(30, 150, name='epochs'),  # EPOCHS range
     Categorical([32, 64, 128], name='batch_size'),  # Powers of 2 only
-    Real(0.0, 0.9, name='noise_level'),  # NOISE_LEVELS as continuous
     Real(0.3, 0.7, name='pi_threshold'),  # PI_THRESHOLD as continuous
     Real(1e-5, 1e-2, prior='log-uniform', name='learning_rate'),  # Log scale for learning rate
     Real(0.0, 0.5, name='dropout_rate'),  # DROPOUT_RATES as continuous
@@ -116,6 +116,7 @@ FIXED_PARAMS = {
     'plot': False,
     'stride': 1,  # Fixed to avoid dimension mismatch issues
     'padding': 'same',  # Fixed to 'same' to preserve sequence length
+    'noise_level': 0.15,  # Fixed noise level for data augmentation
 }
 
 # Optimization metric: which loss to minimize from VALIDATION set
@@ -431,9 +432,17 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Force cleanup of any remaining resources
     gc.collect()
     
-    # Note: Final pickle file is not needed since checkpoints already contain this data
-    # The latest checkpoint (if saved at final iteration) contains the same information
-    print(f"\n*** Final results already saved in checkpoint: {checkpoint_path} ***")
+    # Save final results using custom format (same as checkpoint to avoid pickle errors)
+    result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}.pkl")
+    final_result_data = {
+        'x_iters': result.x_iters,
+        'func_vals': result.func_vals,
+        'x': result.x,
+        'fun': result.fun,
+        'space': result.space,
+    }
+    joblib.dump(final_result_data, result_file, compress=9)
+    print(f"\nOptimization result saved to: {result_file}")
     
     # Save final result metadata
     final_metadata = {
@@ -445,8 +454,8 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         'n_jobs': n_jobs,
         'total_trials': len(result.x_iters),
         'best_score': float(result.fun),
-        'checkpoint_file': checkpoint_path,
-        'note': f'Final result of optimizing {optimization_metric} on validation set. See checkpoint file for full data.'
+        'result_file': result_file,
+        'note': f'Final result of optimizing {optimization_metric} on validation set'
     }
     final_metadata_path = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}_metadata.json")
     with open(final_metadata_path, 'w') as f:

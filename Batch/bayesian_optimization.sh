@@ -33,5 +33,4 @@ srun apptainer exec \
     --random_state 42 \
     --n_jobs 1 \
     --metric "combined" \
-    --resume_from "AE/results/bayesian_optimization/checkpoints/checkpoint_combined_20260209_181045.pkl"
 
