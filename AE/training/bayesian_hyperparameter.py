@@ -431,10 +431,9 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Force cleanup of any remaining resources
     gc.collect()
     
-    # Save final results (timestamp already created at start)
-    result_file = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}.pkl")
-    dump(result, result_file)
-    print(f"\nOptimization result saved to: {result_file}")
+    # Note: Final pickle file is not needed since checkpoints already contain this data
+    # The latest checkpoint (if saved at final iteration) contains the same information
+    print(f"\n*** Final results already saved in checkpoint: {checkpoint_path} ***")
     
     # Save final result metadata
     final_metadata = {
@@ -446,8 +445,8 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         'n_jobs': n_jobs,
         'total_trials': len(result.x_iters),
         'best_score': float(result.fun),
-        'result_file': result_file,
-        'note': f'Final result of optimizing {optimization_metric} on validation set'
+        'checkpoint_file': checkpoint_path,
+        'note': f'Final result of optimizing {optimization_metric} on validation set. See checkpoint file for full data.'
     }
     final_metadata_path = os.path.join(RESULTS_DIR, f"bayesian_opt_result_{optimization_metric}_{timestamp}_metadata.json")
     with open(final_metadata_path, 'w') as f:
