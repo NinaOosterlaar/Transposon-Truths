@@ -389,17 +389,30 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
         
         print(f"Loaded {len(x0)} previous trials")
         print(f"Best score so far: {min(y0):.6f}\n")
+        
+        # Adjust n_calls to account for already completed trials
+        remaining_calls = n_calls - len(x0)
+        if remaining_calls <= 0:
+            print(f"WARNING: Requested {n_calls} total trials, but {len(x0)} already completed!")
+            print(f"No new trials will be run. Increase --n_calls to run more trials.\n")
+            # Return existing results without running new trials
+            return None
+        
+        print(f"Adjusting n_calls: {n_calls} total - {len(x0)} completed = {remaining_calls} remaining\n")
+        n_calls = remaining_calls
     
     print(f"\n{'#'*80}")
     print(f"# Starting Bayesian Hyperparameter Optimization")
     print(f"# Optimizing metric: {optimization_metric} on VALIDATION set")
-    print(f"# Number of trials: {n_calls}")
+    if x0 is not None:
+        print(f"# Resuming with {len(x0)} previous trials")
+        print(f"# Running {n_calls} additional trials")
+    else:
+        print(f"# Number of trials: {n_calls}")
     print(f"# Initial random points: {n_initial_points}")
     print(f"# Random state: {random_state}")
     print(f"# Parallel jobs: {n_jobs}")
     print(f"# Checkpoint will be saved to: {checkpoint_path}")
-    if x0 is not None:
-        print(f"# Resuming with {len(x0)} previous trials")
     print(f"{'#'*80}\n")
     
     # Set environment variables to prevent each worker from spawning multiple threads
