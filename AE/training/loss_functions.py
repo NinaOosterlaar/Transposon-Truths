@@ -66,8 +66,8 @@ def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
         - torch.lgamma(theta)
         - torch.lgamma(x + 1.0)
     )
-    t2 = theta * (torch.log(theta + eps) - torch.log(theta + mu + eps))
-    t3 = x * (torch.log(mu + eps) - torch.log(theta + mu + eps))
+    t2 = theta * (torch.log(theta ) - torch.log(theta + mu ))
+    t3 = x * (torch.log(mu ) - torch.log(theta + mu ))
     log_nb = t1 + t2 + t3
     
     # # Clamp log_nb to prevent extreme values
