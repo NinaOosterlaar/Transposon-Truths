@@ -34,5 +34,5 @@ srun apptainer exec \
     --random_state 42 \
     --n_jobs 1 \
     --metric "zinb_nll" \
-    --resume_from "AE/results/bayesian_optimization/checkpoints/checkpoint_zinb_nll_20260211_112559.pkl" \
+    --resume_from "AE/results/bayesian_optimization/checkpoints/checkpoint_zinb_nll_20260213_115730.pkl" \
 
