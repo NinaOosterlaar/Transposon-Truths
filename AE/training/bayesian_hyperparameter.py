@@ -77,9 +77,8 @@ REGULARIZATIONS = ["l1", "l2", "none"]
 search_space = [
     # Preprocessing
     Categorical(FEATURES_OPTIONS, name='features'),
-    Integer(500, 5000, name='data_point_length'),  # SEQUENCE_LENGTHS range
     Real(0.25, 1.0, name='step_size'),  # STEP_SIZES as continuous
-    Integer(1, 100, name='bin_size'),  # BIN_SIZES range
+    Integer(1, 50, name='bin_size'),  # BIN_SIZES range
     Real(0.25, 1.0, name='sample_fraction'),  # SAMPLE_FRACTIONS as continuous
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
@@ -114,6 +113,7 @@ FIXED_PARAMS = {
     'split_on': 'Chrom',
     'train_val_test_split': [0.6, 0.2, 0.2],  # Proper train/val/test split
     'plot': False,
+    'data_point_length': 2000,  # Fixed sequence length
     'stride': 1,  # Fixed to avoid dimension mismatch issues
     'padding': 'same',  # Fixed to 'same' to preserve sequence length
     'noise_level': 0.15,  # Fixed noise level for data augmentation

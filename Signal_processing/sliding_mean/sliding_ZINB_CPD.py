@@ -58,3 +58,49 @@ def zinb_log_likelihood(x, mu, theta, pi, eps=1e-10):
         ll[~is_zero] = np.log(1.0 - pi) + log_nb[~is_zero]
 
     return float(np.sum(ll))
+
+
+def fit_ZINB_em(x, theta, max_iter = 50, tol = 1e-6, eps=1e-10):
+    x = np.asarray(x, dtype=np.float64)
+    n = len(x)
+
+    # Initialize parameters
+    pi = np.clip(np.mean(x == 0), eps, 1.0 - eps)  # fraction of zeros
+    mu = np.clip(np.mean(x), eps, None)  # mean of counts
+    is_zero = (x == 0)
+
+    prev_ll = -np.inf
+
+    for iteration in range(max_iter):
+        # E-step: compute responsibilities for zero-inflation
+        log_nb = nb_logpmf(x, mu, theta, eps)  # elementwise log NB pmf
+
+        # For zeros: log( pi / (pi + (1-pi)*NB(0)) )
+        if np.any(is_zero):
+            a = np.log(pi)
+            b = np.log(1.0 - pi) + log_nb[is_zero]
+            log_resp_zero = a - logsumexp(np.vstack([a * np.ones(np.sum(is_zero)), b]), axis=0)
+        else:
+            log_resp_zero = np.array([])
+
+        # For positives: responsibility is zero
+        log_resp_pos = np.full(n - np.sum(is_zero), -np.inf)
+
+        # M-step: update parameters
+        if np.any(is_zero):
+            resp_zero = np.exp(log_resp_zero)
+            pi_new = np.clip(np.sum(resp_zero) / n, eps, 1.0 - eps)
+        else:
+            pi_new = eps
+
+        mu_new = np.clip(np.sum((1 - np.exp(log_resp_zero)) * x) / np.sum(1 - np.exp(log_resp_zero)), eps, None)  # mean of counts (weighted by responsibilities)
+
+        # Check convergence
+        ll = zinb_log_likelihood(x, mu_new, theta, pi_new, eps)
+        if abs(ll - prev_ll) < tol:
+            break
+
+        pi, mu = pi_new, mu_new
+        prev_ll = ll
+
+    return float(pi), float(mu)
