@@ -83,8 +83,8 @@ search_space = [
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
     # Model Architecture (parameterized, layer sizes divisible by 16)
-    Integer(4, 150, name='first_layer_size_factor'),  # 64-2400 (multiples of 16)
-    Integer(1, 5, name='num_layers'),  # Number of layers (1 to 5, with sizes halving each layer)
+    Integer(4, 100, name='first_layer_size_factor'),  # 64-1600 (multiples of 16)
+    Integer(1, 4, name='num_layers'),  # Number of layers (1 to 5, will be multiplied by 2 since encoder and decoder, and one latent layer will be added in between)
     
     # Convolutional Layers
     Categorical(USE_CONV_OPTIONS, name='use_conv'),
@@ -187,11 +187,11 @@ def create_objective_function(optimization_metric):
             first_layer_size = first_layer_size_factor * 16  # Ensure divisible by 16
             num_layers = all_params['num_layers']
             layers = [first_layer_size // (2**i) for i in range(num_layers)]
+            print(f"len(layers): {len(layers)}")
             
-            # Adjust data_point_length BEFORE preprocessing (if not using moving average)
+            # Always use the fixed output length (2000)
+            # The preprocess function will internally read more nucleotides if bin_size > 1
             preprocessing_data_length = data_point_length
-            if not moving_average:
-                preprocessing_data_length = data_point_length // bin_size
             
             # Convert step_size from fraction to actual step size
             # step_size is a fraction (0.25-1.0) that needs to be multiplied by data_point_length
@@ -217,6 +217,13 @@ def create_objective_function(optimization_metric):
                 split_on=all_params['split_on'],
                 train_val_test_split=all_params['train_val_test_split']
             )
+            print(f"Datasets created with shapes:" )
+            if train_set is not None:
+                print(f"  Train: {train_set.shape}")
+            if val_set is not None:
+                print(f"  Val: {val_set.shape}")
+            if test_set is not None:
+                print(f"  Test: {test_set.shape}")
             
             # CRITICAL: Ensure arrays are in-memory copies, not memory-mapped
             # This prevents bus errors in parallel execution
@@ -231,8 +238,7 @@ def create_objective_function(optimization_metric):
             print(f"  Train: {train_set.shape}, Val: {val_set.shape if val_set is not None else 'None'}, Test: {test_set.shape if test_set is not None else 'None'}\n")
             
             try:
-                # Call main function with the created datasets
-                # eval_on_val=True means it evaluates on validation set (not test)
+                # data_point_length should be the OUTPUT length (always 2000), not preprocessing length
                 train_metrics, val_metrics = main_with_datasets(
                     train_set=train_set,
                     val_set=val_set,
