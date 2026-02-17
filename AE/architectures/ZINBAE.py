@@ -61,19 +61,38 @@ class ZINBAE(nn.Module):
             prev_dim = h
         
         self.encoder = nn.Sequential(*encoder_layers)
-        self.latent_dim = layers[-1]
+        
+        # ----- Latent bottleneck layer -----
+        # Compress to half the size of last encoder layer
+        self.latent_dim = layers[-1] // 2
+        self.latent_layer = nn.Linear(layers[-1], self.latent_dim)
+        self.latent_relu = nn.ReLU()
         
         # ----- Decoder "body" (shared) -----
         decoder_layers = []
         prev_dim = self.latent_dim
         
-        # mirror all but last
+        # First expand from latent back to last encoder layer size
+        decoder_layers.append(nn.Linear(prev_dim, layers[-1]))
+        decoder_layers.append(nn.ReLU())
+        if dropout > 0:
+            decoder_layers.append(nn.Dropout(p=dropout))
+        prev_dim = layers[-1]
+        
+        # Mirror all encoder layers in reverse (except last which we just handled)
         for h in reversed(layers[:-1]):
             decoder_layers.append(nn.Linear(prev_dim, h))
             decoder_layers.append(nn.ReLU())
             if dropout > 0:
                 decoder_layers.append(nn.Dropout(p=dropout))
             prev_dim = h
+        
+        # Count only Linear layers
+        num_encoder_linear = sum(1 for layer in encoder_layers if isinstance(layer, nn.Linear))
+        num_decoder_linear = sum(1 for layer in decoder_layers if isinstance(layer, nn.Linear))
+        print(f"Number of encoder layers: {num_encoder_linear}")
+        print(f"Number of decoder layers (excluding heads): {num_decoder_linear}")
+        print(f"Total number of layers including latent layer: {num_encoder_linear + 1 + num_decoder_linear}")
         
         # this shared decoder output D will feed μ, θ, π heads
         self.decoder_shared = nn.Sequential(*decoder_layers)
@@ -116,7 +135,11 @@ class ZINBAE(nn.Module):
         x = x.view(batch_size, -1)  # flatten
         
         # Encode
-        z = self.encoder(x)
+        h = self.encoder(x)
+        
+        # Latent bottleneck
+        z = self.latent_layer(h)
+        z = self.latent_relu(z)
         
         # Decode shared representation
         D = self.decoder_shared(z)  # shape (batch, decoder_out_dim)
@@ -202,9 +225,15 @@ class ZINBVAE(nn.Module):
             prev_dim = h
         
         self.encoder = nn.Sequential(*encoder_layers)
-        self.latent_dim = layers[-1]
         
-        # Latent space layers
+        # ----- Latent bottleneck layer -----
+        # Compress to half the size of last encoder layer
+        encoder_out_dim = layers[-1]
+        self.latent_dim = encoder_out_dim // 2
+        self.latent_layer = nn.Linear(encoder_out_dim, self.latent_dim)
+        self.latent_relu = nn.ReLU()
+        
+        # Latent space layers (for VAE reparameterization)
         self.fc_mu = nn.Linear(self.latent_dim, self.latent_dim)
         self.fc_logvar = nn.Linear(self.latent_dim, self.latent_dim)
         
@@ -212,7 +241,14 @@ class ZINBVAE(nn.Module):
         decoder_layers = []
         prev_dim = self.latent_dim
         
-        # mirror all but last
+        # First expand from latent back to last encoder layer size
+        decoder_layers.append(nn.Linear(prev_dim, encoder_out_dim))
+        decoder_layers.append(nn.ReLU())
+        if dropout > 0:
+            decoder_layers.append(nn.Dropout(p=dropout))
+        prev_dim = encoder_out_dim
+        
+        # Mirror all encoder layers in reverse (except last which we just handled)
         for h in reversed(layers[:-1]):
             decoder_layers.append(nn.Linear(prev_dim, h))
             decoder_layers.append(nn.ReLU())
@@ -241,8 +277,12 @@ class ZINBVAE(nn.Module):
     
     def encode(self, x):
         h = self.encoder(x)
-        mu = self.fc_mu(h)
-        logvar = self.fc_logvar(h)
+        # Latent bottleneck
+        z_pre = self.latent_layer(h)
+        z_pre = self.latent_relu(z_pre)
+        # VAE sampling parameters
+        mu = self.fc_mu(z_pre)
+        logvar = self.fc_logvar(z_pre)
         return mu, logvar
     
     def reparameterize(self, mu, logvar):
