@@ -10,7 +10,7 @@ from skopt.space import Real, Integer, Categorical
 from skopt.utils import use_named_args
 from skopt import dump, load
 from AE.main import main_with_datasets
-from AE.preprocessing.preprocessing import preprocess
+from AE.preprocessing.preprocessing import preprocess, preprocess_with_split, determine_chromosome_split
 import argparse
 import joblib
 
@@ -138,8 +138,16 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # ============================================================================
 # OBJECTIVE FUNCTION
 # ============================================================================
-def create_objective_function(optimization_metric):
-    """Create objective function with specified optimization metric."""
+def create_objective_function(optimization_metric, train_chroms, val_chroms, test_chroms, input_folder):
+    """Create objective function with specified optimization metric and chromosome splits.
+    
+    Args:
+        optimization_metric: Which metric to optimize on validation set
+        train_chroms: List of chromosomes for training
+        val_chroms: List of chromosomes for validation
+        test_chroms: List of chromosomes for testing (not used during optimization)
+        input_folder: Path to data folder
+    """
     @use_named_args(search_space)
     def objective(**params):
         # Clean up GPU memory before starting new trial
@@ -204,18 +212,20 @@ def create_objective_function(optimization_metric):
             print(f"  data_point_length: {preprocessing_data_length} (from {data_point_length})")
             print(f"  step_size: {actual_step_size} (from fraction {step_size})")
             print(f"  layers: {layers} (first={first_layer_size}, num={num_layers})")
-            print(f"  stride: {all_params['stride']} (fixed), padding: {all_params['padding']} (fixed)\n")
+            print(f"  stride: {all_params['stride']} (fixed), padding: {all_params['padding']} (fixed)")
+            print(f"  Using pre-determined chromosome split\n")
             
-            # Preprocess data with trial-specific parameters
-            train_set, val_set, test_set, _, _, _ = preprocess(
-                input_folder=all_params['input_folder'],
+            # Preprocess data with trial-specific parameters and pre-determined splits
+            train_set, val_set, test_set, _, _, _ = preprocess_with_split(
+                input_folder=input_folder,
+                train_chroms=train_chroms,
+                val_chroms=val_chroms,
+                test_chroms=test_chroms,
                 features=features,
                 bin_size=bin_size,
                 moving_average=moving_average,
                 data_point_length=preprocessing_data_length,
-                step_size=actual_step_size,
-                split_on=all_params['split_on'],
-                train_val_test_split=all_params['train_val_test_split']
+                step_size=actual_step_size
             )
             print(f"Datasets created with shapes:" )
             if train_set is not None:
@@ -368,6 +378,33 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Generate timestamp for this optimization run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
+    # ========================================================================
+    # DETERMINE CHROMOSOME SPLIT ONCE FOR ALL TRIALS
+    # ========================================================================
+    print(f"\n{'='*80}")
+    print(f"Determining chromosome split (will be consistent across all trials)...")
+    print(f"{'='*80}\n")
+    
+    train_chroms, val_chroms, test_chroms = determine_chromosome_split(
+        input_folder=FIXED_PARAMS['input_folder'],
+        train_val_test_split=FIXED_PARAMS['train_val_test_split']
+    )
+    
+    # Save chromosome split to file for reproducibility
+    chrom_split_file = os.path.join(RESULTS_DIR, f"chromosome_split_{timestamp}.json")
+    chrom_split_data = {
+        'train_chromosomes': train_chroms,
+        'val_chromosomes': val_chroms,
+        'test_chromosomes': test_chroms,
+        'train_val_test_split': FIXED_PARAMS['train_val_test_split'],
+        'random_state': random_state,
+        'timestamp': timestamp,
+        'note': 'This chromosome split is used consistently across all optimization trials'
+    }
+    with open(chrom_split_file, 'w') as f:
+        json.dump(chrom_split_data, f, indent=4)
+    print(f"Chromosome split saved to: {chrom_split_file}\n")
+    
     # Setup checkpoint saving with custom callback to avoid pickle errors
     checkpoint_dir = os.path.join(RESULTS_DIR, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -431,8 +468,14 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     # Disable tqdm progress bars to reduce output clutter
     os.environ['TQDM_DISABLE'] = '1'
     
-    # Create objective function with specified metric
-    objective = create_objective_function(optimization_metric)
+    # Create objective function with specified metric and chromosome splits
+    objective = create_objective_function(
+        optimization_metric=optimization_metric,
+        train_chroms=train_chroms,
+        val_chroms=val_chroms,
+        test_chroms=test_chroms,
+        input_folder=FIXED_PARAMS['input_folder']
+    )
     
     # Run optimization
     result = gp_minimize(
@@ -562,6 +605,134 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
     for key, value in best_params.items():
         print(f"#   {key}: {value}")
     print(f"{'#'*80}\n")
+    
+    # ========================================================================
+    # EVALUATE BEST MODEL ON TEST SET
+    # ========================================================================
+    print(f"\n{'#'*80}")
+    print(f"# Evaluating Best Model on TEST SET")
+    print(f"{'#'*80}\n")
+    
+    try:
+        # Extract best parameters
+        features_str = best_params['features']
+        if features_str == "Centr_Nucl":
+            features = ["Centr", "Nucl"]
+        elif features_str == "Centr":
+            features = ["Centr"]
+        elif features_str == "Nucl":
+            features = ["Nucl"]
+        else:
+            features = [features_str]
+        
+        first_layer_size_factor = best_params['first_layer_size_factor']
+        first_layer_size = first_layer_size_factor * 16
+        num_layers = best_params['num_layers']
+        layers = [first_layer_size // (2**i) for i in range(num_layers)]
+        
+        data_point_length = FIXED_PARAMS['data_point_length']
+        actual_step_size = int(data_point_length * best_params['step_size'])
+        
+        print(f"Retraining with best parameters and evaluating on test set...")
+        print(f"  features: {features}")
+        print(f"  bin_size: {best_params['bin_size']}")
+        print(f"  layers: {layers}\n")
+        
+        # Preprocess data with best parameters
+        train_set, val_set, test_set, _, _, _ = preprocess_with_split(
+            input_folder=FIXED_PARAMS['input_folder'],
+            train_chroms=train_chroms,
+            val_chroms=val_chroms,
+            test_chroms=test_chroms,
+            features=features,
+            bin_size=int(best_params['bin_size']),
+            moving_average=best_params['moving_average'],
+            data_point_length=data_point_length,
+            step_size=actual_step_size
+        )
+        
+        # Ensure arrays are in-memory copies
+        if train_set is not None and hasattr(train_set, 'flags') and not train_set.flags['OWNDATA']:
+            train_set = np.array(train_set, copy=True)
+        if val_set is not None and hasattr(val_set, 'flags') and not val_set.flags['OWNDATA']:
+            val_set = np.array(val_set, copy=True)
+        if test_set is not None and hasattr(test_set, 'flags') and not test_set.flags['OWNDATA']:
+            test_set = np.array(test_set, copy=True)
+        
+        print(f"Datasets created:")
+        print(f"  Train: {train_set.shape}")
+        print(f"  Val: {val_set.shape if val_set is not None else 'None'}")
+        print(f"  Test: {test_set.shape if test_set is not None else 'None'}\n")
+        
+        # Train and evaluate on test set (eval_on_val=False)
+        train_metrics, test_metrics = main_with_datasets(
+            train_set=train_set,
+            val_set=val_set,
+            test_set=test_set,
+            features=features,
+            data_point_length=data_point_length,
+            use_conv=best_params['use_conv'],
+            conv_channel=int(best_params['conv_channel']),
+            pool_size=int(best_params['pool_size']),
+            kernel_size=int(best_params['kernel_size']),
+            padding=FIXED_PARAMS['padding'],
+            stride=FIXED_PARAMS['stride'],
+            epochs=int(best_params['epochs']),
+            batch_size=int(best_params['batch_size']),
+            noise_level=FIXED_PARAMS['noise_level'],
+            pi_threshold=best_params['pi_threshold'],
+            masked_recon_weight=best_params['masked_recon_weight'],
+            learning_rate=best_params['learning_rate'],
+            dropout_rate=best_params['dropout_rate'],
+            layers=layers,
+            regularizer=best_params['regularizer'],
+            regularization_weight=best_params['regularization_weight'],
+            sample_fraction=best_params['sample_fraction'],
+            plot=FIXED_PARAMS['plot'],
+            eval_on_val=False  # Evaluate on TEST set
+        )
+        
+        print(f"\n{'#'*80}")
+        print(f"# TEST SET EVALUATION COMPLETE")
+        print(f"# Test metrics: {test_metrics}")
+        print(f"{'#'*80}\n")
+        
+        # Save test results
+        test_results_file = os.path.join(RESULTS_DIR, f"test_results_{optimization_metric}_{timestamp}.json")
+        test_results_data = {
+            'optimization_metric': optimization_metric,
+            'timestamp': timestamp,
+            'best_validation_score': float(result.fun),
+            'best_parameters': {k: (int(v) if isinstance(v, np.integer) else 
+                                   float(v) if isinstance(v, np.floating) else 
+                                   bool(v) if isinstance(v, (np.bool_, bool)) else v) 
+                              for k, v in best_params.items()},
+            'test_metrics': {k: float(v) if isinstance(v, (int, float, np.number)) else v 
+                           for k, v in test_metrics.items()},
+            'train_metrics': {k: float(v) if isinstance(v, (int, float, np.number)) else v 
+                            for k, v in train_metrics.items()},
+            'chromosome_split': {
+                'train': train_chroms,
+                'val': val_chroms,
+                'test': test_chroms
+            },
+            'note': 'Final model trained with best hyperparameters and evaluated on held-out test set'
+        }
+        with open(test_results_file, 'w') as f:
+            json.dump(test_results_data, f, indent=4)
+        print(f"Test results saved to: {test_results_file}\n")
+        
+        # Cleanup
+        del train_set, val_set, test_set, train_metrics, test_metrics
+        gc.collect()
+        if cuda.is_available():
+            cuda.empty_cache()
+    
+    except Exception as e:
+        print(f"\nERROR during test set evaluation: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        print(f"\nContinuing without test set evaluation...\n")
     
     return result
 

@@ -255,6 +255,36 @@ def _split_items(items, train_size, val_size, test_size):
     val_items, test_items = train_test_split(temp_items, test_size=test_size/(test_size + val_size), random_state=42)
     return train_items, val_items, test_items
 
+def determine_chromosome_split(input_folder, train_val_test_split):
+    """Determine which chromosomes go to train/val/test splits.
+    
+    This function should be called ONCE before running multiple preprocessing operations
+    to ensure consistent splits across different hyperparameter configurations.
+    
+    Args:
+        input_folder (str): Folder containing the raw CSV files
+        train_val_test_split (list): Proportions for training, validation, and testing sets
+        
+    Returns:
+        tuple: (train_chroms, val_chroms, test_chroms) - lists of chromosome names
+    """
+    # Read data to get all available chromosomes
+    data = read_csv_file_with_distances(input_folder)
+    
+    # Get all unique chromosomes and SORT them for deterministic ordering
+    all_chroms = sorted(list(set(chrom for dataset in data.values() for chrom in dataset.keys())))
+    
+    train_size, val_size, test_size = train_val_test_split
+    train_chroms, val_chroms, test_chroms = _split_items(all_chroms, train_size, val_size, test_size)
+    
+    print(f"\nChromosome split determined:")
+    print(f"  Train chromosomes: {sorted(train_chroms)}")
+    print(f"  Validation chromosomes: {sorted(val_chroms)}")
+    print(f"  Test chromosomes: {sorted(test_chroms)}")
+    print()
+    
+    return train_chroms, val_chroms, test_chroms
+
 def split_data(data, train_val_test_split, split_on, chunk_size=50000):
     """Split data into training, validation, and testing sets.
     
@@ -272,20 +302,25 @@ def split_data(data, train_val_test_split, split_on, chunk_size=50000):
     train_size, val_size, test_size = train_val_test_split
     
     if split_on == 'Dataset':
-        train_datasets, val_datasets, test_datasets = _split_items(list(data.keys()), train_size, val_size, test_size)
+        # Sort dataset keys for deterministic splitting
+        train_datasets, val_datasets, test_datasets = _split_items(sorted(list(data.keys())), train_size, val_size, test_size)
         
         train_data = {d: data[d] for d in train_datasets}
         val_data = {d: data[d] for d in val_datasets}
         test_data = {d: data[d] for d in test_datasets}
         
-        print(f"Train datasets: {train_datasets}")
-        print(f"Validation datasets: {val_datasets}")
-        print(f"Test datasets: {test_datasets}")
+        print(f"Train datasets: {sorted(train_datasets)}")
+        print(f"Validation datasets: {sorted(val_datasets)}")
+        print(f"Test datasets: {sorted(test_datasets)}")
     
     elif split_on == 'Chrom':
-        # Get all unique chromosomes
-        all_chroms = list(set(chrom for dataset in data.values() for chrom in dataset.keys()))
+        # Get all unique chromosomes and SORT them for consistency
+        all_chroms = sorted(list(set(chrom for dataset in data.values() for chrom in dataset.keys())))
         train_chroms, val_chroms, test_chroms = _split_items(all_chroms, train_size, val_size, test_size)
+        
+        print(f"Train chromosomes: {sorted(train_chroms)}")
+        print(f"Validation chromosomes: {sorted(val_chroms)}")
+        print(f"Test chromosomes: {sorted(test_chroms)}")
         
         # Assign chromosomes to splits for each dataset
         train_data = {d: {c: data[d][c] for c in data[d] if c in train_chroms} for d in data}
@@ -633,6 +668,92 @@ def remove_empty_datapoints(data):
     filtered_data = data[non_empty_mask]
     return filtered_data
             
+def preprocess_with_split(input_folder,
+                          train_chroms,
+                          val_chroms,
+                          test_chroms,
+                          features = ['Nucl', 'Centr'],
+                          normalize_counts = True,
+                          zinb_mode = True,
+                          bin_size = 10,
+                          moving_average = True,
+                          data_point_length = 2000,
+                          step_size = 500,
+                          clip_outliers_flag = True,
+                          outlier_percentile = 95,
+                          outlier_multiplier = 1.5
+                          ):
+    """Preprocessing with pre-determined chromosome splits for consistent data splitting.
+    
+    This function uses pre-determined chromosome assignments instead of calculating splits internally.
+    Use determine_chromosome_split() first to get train_chroms, val_chroms, test_chroms.
+
+    Args:
+        input_folder (Str): The folder with the raw csv files
+        train_chroms (list): List of chromosome names for training set
+        val_chroms (list): List of chromosome names for validation set
+        test_chroms (list): List of chromosome names for test set
+        features (list, optional): The features to be used. Defaults to ['Nucl', 'Centr'].
+        normalize_counts (bool, optional): Whether to apply CPM normalization and log transform to counts. Defaults to True.
+        zinb_mode (bool, optional): If True, save raw counts in 'Value_Raw' column for ZINB models. Defaults to True.
+        bin_size (int, optional): The bin size for binning the data. Defaults to 10.
+        moving_average (bool, optional): Whether to apply a moving average to the data. Defaults to True.
+        data_point_length (int, optional): The length of each data point. Defaults to 2000.
+        step_size (int, optional): The step size for sliding window. Defaults to 500.
+        clip_outliers_flag (bool, optional): Whether to clip outliers. Defaults to True.
+        outlier_percentile (float, optional): Percentile for outlier threshold. Defaults to 95.
+        outlier_multiplier (float, optional): Multiplier for the percentile threshold. Defaults to 1.5.
+    
+    Returns:
+        train (np.ndarray): Training data
+        val (np.ndarray): Validation data
+        test (np.ndarray): Test data
+        scalers (dict): Dictionary of StandardScaler objects
+        count_stats (dict): Statistics from count normalization
+        clip_stats (dict): Statistics from outlier clipping
+    """
+    transposon_data = read_csv_file_with_distances(input_folder)
+   
+    # Clip outliers if requested (before any normalization)
+    clip_stats = None
+    if clip_outliers_flag:
+        print(f"\nClipping outliers using {outlier_percentile}th percentile * {outlier_multiplier}...")
+        transposon_data, clip_stats = clip_outliers(transposon_data, percentile=outlier_percentile, multiplier=outlier_multiplier)
+    
+    # Optionally normalize counts before splitting
+    count_stats = None
+    if normalize_counts:
+        transposon_data, count_stats = preprocess_counts(transposon_data, zinb_mode=zinb_mode)
+    
+    # Split data using pre-determined chromosome assignments
+    print(f"\nSplitting data using pre-determined chromosomes...")
+    train = {d: {c: transposon_data[d][c] for c in transposon_data[d] if c in train_chroms} for d in transposon_data}
+    val = {d: {c: transposon_data[d][c] for c in transposon_data[d] if c in val_chroms} for d in transposon_data}
+    test = {d: {c: transposon_data[d][c] for c in transposon_data[d] if c in test_chroms} for d in transposon_data}
+    
+    # Remove empty dataset dictionaries
+    train = {d: v for d, v in train.items() if v}
+    val = {d: v for d, v in val.items() if v}
+    test = {d: v for d, v in test.items() if v}
+    
+    # Standardize features (fit on train, transform on val/test)
+    train, val, test, scalers = standardize_data(train, val, test, features)
+    
+    # Bin/window and convert to 3D arrays
+    train = process_data(train, features, bin_size, moving_average, step_size, data_point_length, 'Chrom', zinb_mode=zinb_mode)
+    train = remove_empty_datapoints(train)
+    gc.collect()
+    
+    val = process_data(val, features, bin_size, moving_average, step_size, data_point_length, 'Chrom', zinb_mode=zinb_mode)
+    val = remove_empty_datapoints(val)
+    gc.collect()
+    
+    test = process_data(test, features, bin_size, moving_average, step_size, data_point_length, 'Chrom', zinb_mode=zinb_mode)
+    test = remove_empty_datapoints(test)
+    gc.collect()
+
+    return train, val, test, scalers, count_stats, clip_stats
+
 def preprocess(input_folder, 
                features = ['Nucl', 'Centr'], 
                train_val_test_split = [0.7, 0.15, 0.15], 

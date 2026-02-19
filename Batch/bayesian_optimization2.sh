@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name=bayesOpt
+#SBATCH --job-name=1bayesOpt
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=36:00:00
@@ -10,8 +10,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
-#SBATCH --output=slurm_bayesopt_%j.out
-#SBATCH --error=slurm_bayesopt_%j.err
+#SBATCH --output=slurm_1bayesopt_%j.out
+#SBATCH --error=slurm_1bayesopt_%j.err
 
 set -euo pipefail
 
