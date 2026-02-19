@@ -6,7 +6,7 @@ import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from Utils.plot_config import setup_plot_style, COLORS
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from evaluation import (precision, recall, F1_score, annotation_error, 
+from Signal_processing.evaluation.evaluation import (precision, recall, F1_score, annotation_error, 
                        hausdorff_distance, rand_index, adjusted_rand_index,
                        precision_recall_curve, plot_precision_recall_curves,
                        roc_curve_from_cps_by_threshold, mean_absolute_error,
