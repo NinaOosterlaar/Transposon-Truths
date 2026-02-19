@@ -15,7 +15,7 @@ from ZINB_MLE.estimate_ZINB import estimate_zinb
 from Utils.colors import COLORBLIND_COLORS
 
 
-def evaluate_zinb_estimation(data_dir='ZINB', output_file='estimation_results.csv'):
+def evaluate_zinb_estimation(data_dir='ZINB', output_file='estimation_results_grid.csv'):
     """
     Load all ZINB datasets, estimate parameters, and save results.
     
@@ -213,7 +213,7 @@ def plot_results(results_df, output_dir):
     # Hide unused subplot
     if n_params < len(axes1):
         axes1[3].axis('off')
-    fig1_path = os.path.join(output_dir, 'parameter_comparison.png')
+    fig1_path = os.path.join(output_dir, 'parameter_comparison_grid.png')
     fig1.savefig(fig1_path, dpi=300, bbox_inches='tight')
     print(f"Saved figure: {fig1_path}")
     plt.close(fig1)
@@ -275,7 +275,7 @@ def plot_results(results_df, output_dir):
     cbar = fig2.colorbar(last_im, ax=axes[:n_plots], shrink=0.85)
     cbar.set_label("log10(max relative error)")
     
-    fig2_path = os.path.join(output_dir, 'error_heatmap.png')
+    fig2_path = os.path.join(output_dir, 'error_heatmap_grid.png')
     fig2.savefig(fig2_path, dpi=300, bbox_inches='tight')
     print(f"Saved figure: {fig2_path}")
     plt.close(fig2)
@@ -321,7 +321,7 @@ def plot_results(results_df, output_dir):
     # Add legend to last visible plot
     axes4[n_plots4-1].legend(fontsize=8, loc="best", framealpha=0.9)
     
-    fig4_path = os.path.join(output_dir, 'convergence_failures.png')
+    fig4_path = os.path.join(output_dir, 'convergence_failures_grid.png')
     fig4.savefig(fig4_path, dpi=300, bbox_inches='tight')
     print(f"Saved figure: {fig4_path}")
     plt.close(fig4)
@@ -363,10 +363,57 @@ def plot_results(results_df, output_dir):
     axes5[0].set_ylabel("log10(estimated θ / true θ)")
     axes5[n_plots5-1].legend(fontsize=8, loc="best", framealpha=0.9)
     
-    fig5_path = os.path.join(output_dir, 'theta_log_ratio.png')
+    fig5_path = os.path.join(output_dir, 'theta_log_ratio_grid.png')
     fig5.savefig(fig5_path, dpi=300, bbox_inches='tight')
     print(f"Saved figure: {fig5_path}")
     plt.close(fig5)
+    
+    # ---------------- Figure 6: Relative errors of mu and pi by theta ----------------
+    # Group by true_theta and compute mean/median relative errors
+    theta_groups = df.groupby('true_theta').agg({
+        'pi_relative_error': ['mean', 'median', 'std'],
+        'mu_relative_error': ['mean', 'median', 'std']
+    }).reset_index()
+    
+    theta_values = theta_groups['true_theta'].values
+    pi_rel_mean = theta_groups['pi_relative_error']['mean'].values
+    pi_rel_median = theta_groups['pi_relative_error']['median'].values
+    pi_rel_std = theta_groups['pi_relative_error']['std'].values
+    mu_rel_mean = theta_groups['mu_relative_error']['mean'].values
+    mu_rel_median = theta_groups['mu_relative_error']['median'].values
+    mu_rel_std = theta_groups['mu_relative_error']['std'].values
+    
+    fig6, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
+    fig6.suptitle("Relative Errors of π and μ vs True θ", fontsize=14, fontweight='bold')
+    
+    # Plot for pi
+    ax1.plot(theta_values, pi_rel_mean, 'o-', color=COLORBLIND_COLORS['blue'], 
+             linewidth=2, markersize=6, label='Mean')
+    ax1.plot(theta_values, pi_rel_median, 's--', color=COLORBLIND_COLORS['orange'], 
+             linewidth=2, markersize=6, label='Median')
+    ax1.set_xscale('log')
+    ax1.set_xlabel('True θ', fontsize=12)
+    ax1.set_ylabel('Relative Error of π', fontsize=12)
+    ax1.set_title('π Estimation Error vs θ')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # Plot for mu
+    ax2.plot(theta_values, mu_rel_mean, 'o-', color=COLORBLIND_COLORS['blue'], 
+             linewidth=2, markersize=6, label='Mean')
+    ax2.plot(theta_values, mu_rel_median, 's--', color=COLORBLIND_COLORS['orange'], 
+             linewidth=2, markersize=6, label='Median')
+    ax2.set_xscale('log')
+    ax2.set_xlabel('True θ', fontsize=12)
+    ax2.set_ylabel('Relative Error of μ', fontsize=12)
+    ax2.set_title('μ Estimation Error vs θ')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    fig6_path = os.path.join(output_dir, 'mu_pi_error_vs_theta_grid.png')
+    fig6.savefig(fig6_path, dpi=300, bbox_inches='tight')
+    print(f"Saved figure: {fig6_path}")
+    plt.close(fig6)
 
 
 if __name__ == "__main__":
