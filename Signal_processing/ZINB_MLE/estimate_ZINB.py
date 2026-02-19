@@ -4,33 +4,38 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from log_likelihoods import zinb_log_likelihood
 from ZINB_MLE.EM import em_zinb_step
-from ZINB_MLE.newton_raphson import newton_raphson_theta_step
 
 
-def estimate_zinb(data, max_iter=100, tol=1e-6, tol_theta=1e-4, eps=1e-10, theta_max=1e6, theta_init_max=100):
+def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.05, theta_max=1e6, 
+                  n_theta_grid=60):
     """
-    Estimate ZINB parameters (pi, mu, theta) by iteratively running EM and Newton-Raphson.
+    Estimate ZINB parameters (pi, mu, theta) using profile likelihood for theta.
     
     The algorithm:
     1. Initialize parameters using method of moments
-    2. Iteratively:
-       a. E-step: compute expectations (weights)
-       b. M-step: update pi and mu
-       c. Update theta using Newton-Raphson with the same weights
-    3. Continue until convergence or max_iter reached
+    2. Create a grid of theta values (log-spaced)
+    3. For each theta value:
+       a. Run EM to optimize pi and mu (holding theta fixed)
+       b. Record the final log-likelihood
+    4. Choose theta that maximizes the log-likelihood
+    5. Return the best parameters
     
     Parameters:
     -----------
     data : array-like
         Observed count data
     max_iter : int
-        Maximum number of iterations (EM + NR cycles)
+        Maximum number of EM iterations for each theta value
     tol : float
-        Convergence tolerance (parameter changes)
+        Convergence tolerance for EM
     eps : float
         Small value for numerical stability
+    theta_min : float
+        Minimum value for theta grid (default: 0.05)
     theta_max : float
-        Maximum allowed value for theta
+        Maximum value for theta grid (default: 1e6)
+    n_theta_grid : int
+        Number of theta values to try in the grid (default: 60)
     
     Returns:
     --------
@@ -38,104 +43,89 @@ def estimate_zinb(data, max_iter=100, tol=1e-6, tol_theta=1e-4, eps=1e-10, theta
         - 'pi': final estimate of zero-inflation parameter
         - 'mu': final estimate of mean parameter
         - 'theta': final estimate of dispersion parameter
-        - 'iterations': number of outer iterations performed
+        - 'iterations': number of EM iterations for best theta
         - 'converged': boolean indicating if convergence was reached
         - 'log_likelihood': final log-likelihood
-        - 'log_likelihood_history': list of log-likelihoods at each outer iteration
-        - 'pi_history': list of pi values at each outer iteration
-        - 'mu_history': list of mu values at each outer iteration
-        - 'theta_history': list of theta values at each outer iteration
+        - 'theta_grid': array of theta values tested
+        - 'll_grid': array of log-likelihoods for each theta
     """
     data = np.asarray(data, dtype=np.float64)
     N = len(data)
     
-    # ===== INITIALIZATION =====
-    pi = np.clip(np.mean(data == 0), eps, 1 - eps)
-
-    ybar = np.mean(data)
-    mu = np.clip(ybar / (1 - pi), eps, None)
-
-    # crude: use var of all data to guess overdispersion of NB part
-    v = np.var(data, ddof=1) if len(data) > 1 else 0.0
-
-    # Under ZINB, Var(Y) = (1-pi)*(mu + mu^2/theta) + pi(1-pi)*mu^2
-    # Solve approximately for theta (can go negative -> then set large)
-    numer = (1 - pi) * mu**2
-    denom = v - (1 - pi)*mu - pi*(1 - pi)*mu**2
-
-    if denom > eps:
-        theta = np.clip(numer / denom, eps, theta_init_max)
-    else:
-        theta = theta_init_max
-
-
-        
-    print(f"Initial parameters: pi={pi:.4f}, mu={mu:.4f}, theta={theta:.4f}")
+    # ===== CREATE THETA GRID =====
+    # Log-spaced grid from theta_min to theta_max
+    theta_grid = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta_grid)
     
-    # Track convergence
-    log_likelihood_history = []
-    pi_history = [pi]
-    mu_history = [mu]
-    theta_history = [theta]
-    converged = False
+    # Storage for results
+    ll_grid = np.zeros(n_theta_grid)
+    pi_grid = np.zeros(n_theta_grid)
+    mu_grid = np.zeros(n_theta_grid)
+    converged_grid = np.zeros(n_theta_grid, dtype=bool)
+    iterations_grid = np.zeros(n_theta_grid, dtype=int)
     
-    # Compute initial log-likelihood
-    ll = zinb_log_likelihood(data, mu, theta, pi, eps)
-    log_likelihood_history.append(ll)
+    print(f"Testing {n_theta_grid} theta values from {theta_min:.2e} to {theta_max:.2e}")
     
-    # ===== ITERATIVE OPTIMIZATION =====
-    for iteration in range(max_iter):
-        # Store old parameters for convergence check
-        pi_old = pi
-        mu_old = mu
-        theta_old = theta
+    # ===== PROFILE LIKELIHOOD: TRY EACH THETA =====
+    for idx, theta in enumerate(theta_grid):
+        # Initialize pi and mu for this theta
+        pi = np.clip(np.mean(data == 0), eps, 1 - eps)
+        ybar = np.mean(data)
+        mu = np.clip(ybar / (1 - pi), eps, None)
         
-        # ===== STEP 1: EM step (E-step + M-step to update pi, mu, and get weights) =====
-        em_result = em_zinb_step(data, pi, mu, theta, eps=eps)
-        
-        pi = em_result['pi']
-        mu = em_result['mu']
-        weights = em_result['weights']  # a_i = P(z_i=0|y_i)
-        
-        # ===== STEP 2: Newton-Raphson step (update theta with weights from EM) =====
-        for _ in range(20):
-            theta_new = newton_raphson_theta_step(data, mu, weights, theta, eps=eps, theta_max=theta_max)
-            if abs(theta_new - theta) / (theta + eps) < tol_theta:
-                theta = theta_new
+        # Run EM to convergence for this fixed theta
+        for iteration in range(max_iter):
+            pi_old = pi
+            mu_old = mu
+            
+            # EM step (optimize pi and mu, theta is fixed)
+            em_result = em_zinb_step(data, pi, mu, theta, eps=eps)
+            pi = em_result['pi']
+            mu = em_result['mu']
+            
+            # Check convergence
+            pi_change = abs(pi - pi_old)
+            mu_change = abs(mu - mu_old) / (mu_old + eps)
+            
+            if pi_change < tol and mu_change < tol:
+                converged_grid[idx] = True
+                iterations_grid[idx] = iteration + 1
                 break
-            if theta >= theta_max * 0.999:
-                theta = theta_max
-                break
-            theta = theta_new
+        else:
+            # Did not converge
+            converged_grid[idx] = False
+            iterations_grid[idx] = max_iter
         
-        # Compute log-likelihood after this iteration
+        # Compute final log-likelihood for this theta
         ll = zinb_log_likelihood(data, mu, theta, pi, eps)
-        log_likelihood_history.append(ll)
+        ll_grid[idx] = ll
+        pi_grid[idx] = pi
+        mu_grid[idx] = mu
         
-        # Store parameter history
-        pi_history.append(pi)
-        mu_history.append(mu)
-        theta_history.append(theta)
-        
-        # ===== CHECK CONVERGENCE =====
-        pi_change = abs(pi - pi_old)
-        mu_change = abs(mu - mu_old) / (mu_old + eps)
-        theta_change = abs(theta - theta_old) / (theta_old + eps)
-        
-        if pi_change < tol and mu_change < tol and theta_change < tol:
-            converged = True
-            break
+        if (idx + 1) % 10 == 0 or idx == 0 or idx == n_theta_grid - 1:
+            print(f"  theta={theta:.2e}: pi={pi:.4f}, mu={mu:.4f}, ll={ll:.2f}, "
+                  f"converged={converged_grid[idx]}")
+    
+    # ===== SELECT BEST THETA =====
+    best_idx = np.argmax(ll_grid)
+    best_theta = theta_grid[best_idx]
+    best_pi = pi_grid[best_idx]
+    best_mu = mu_grid[best_idx]
+    best_ll = ll_grid[best_idx]
+    best_converged = converged_grid[best_idx]
+    best_iterations = iterations_grid[best_idx]
+    
+    print(f"\nBest theta: {best_theta:.2e} with ll={best_ll:.2f}")
+    print(f"Final parameters: pi={best_pi:.4f}, mu={best_mu:.4f}, theta={best_theta:.4f}")
     
     return {
-        'pi': pi,
-        'mu': mu,
-        'theta': theta,
-        'iterations': iteration + 1,
-        'converged': converged,
-        'log_likelihood': ll,
-        'log_likelihood_history': log_likelihood_history,
-        'pi_history': pi_history,
-        'mu_history': mu_history,
-        'theta_history': theta_history
+        'pi': best_pi,
+        'mu': best_mu,
+        'theta': best_theta,
+        'iterations': best_iterations,
+        'converged': best_converged,
+        'log_likelihood': best_ll,
+        'theta_grid': theta_grid,
+        'll_grid': ll_grid
     }
+
 
