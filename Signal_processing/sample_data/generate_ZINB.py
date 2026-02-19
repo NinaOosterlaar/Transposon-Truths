@@ -50,7 +50,7 @@ def generate_zinb_datasets(sample_size=1000, output_dir='ZINB'):
     # Define parameter ranges
     pi_values = [0.1, 0.3, 0.5, 0.7, 0.9]
     mu_values = [1, 2, 3, 4, 5, 10, 20, 50]
-    theta_values = [5, 10, 25, 50, 65, 85, 100, 200]
+    theta_values = [0.01, 0.1, 1, 5, 10, 50, 75, 100, 200]
     
     # Create output directory if it doesn't exist
     script_dir = os.path.dirname(os.path.abspath(__file__))

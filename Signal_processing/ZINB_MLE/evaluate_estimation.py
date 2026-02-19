@@ -367,6 +367,8 @@ def plot_results(results_df, output_dir):
     fig5.savefig(fig5_path, dpi=300, bbox_inches='tight')
     print(f"Saved figure: {fig5_path}")
     plt.close(fig5)
+    
+    
 
 
 if __name__ == "__main__":
