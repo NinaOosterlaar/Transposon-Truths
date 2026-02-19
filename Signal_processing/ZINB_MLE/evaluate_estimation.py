@@ -368,6 +368,52 @@ def plot_results(results_df, output_dir):
     print(f"Saved figure: {fig5_path}")
     plt.close(fig5)
     
+    # ---------------- Figure 6: Relative errors of mu and pi by theta ----------------
+    # Group by true_theta and compute mean/median relative errors
+    theta_groups = df.groupby('true_theta').agg({
+        'pi_relative_error': ['mean', 'median', 'std'],
+        'mu_relative_error': ['mean', 'median', 'std']
+    }).reset_index()
+    
+    theta_values = theta_groups['true_theta'].values
+    pi_rel_mean = theta_groups['pi_relative_error']['mean'].values
+    pi_rel_median = theta_groups['pi_relative_error']['median'].values
+    pi_rel_std = theta_groups['pi_relative_error']['std'].values
+    mu_rel_mean = theta_groups['mu_relative_error']['mean'].values
+    mu_rel_median = theta_groups['mu_relative_error']['median'].values
+    mu_rel_std = theta_groups['mu_relative_error']['std'].values
+    
+    fig6, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
+    fig6.suptitle("Relative Errors of π and μ vs True θ", fontsize=14, fontweight='bold')
+    
+    # Plot for pi
+    ax1.plot(theta_values, pi_rel_mean, 'o-', color=COLORBLIND_COLORS['blue'], 
+             linewidth=2, markersize=6, label='Mean')
+    ax1.plot(theta_values, pi_rel_median, 's--', color=COLORBLIND_COLORS['orange'], 
+             linewidth=2, markersize=6, label='Median')
+    ax1.set_xscale('log')
+    ax1.set_xlabel('True θ', fontsize=12)
+    ax1.set_ylabel('Relative Error of π', fontsize=12)
+    ax1.set_title('π Estimation Error vs θ')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # Plot for mu
+    ax2.plot(theta_values, mu_rel_mean, 'o-', color=COLORBLIND_COLORS['blue'], 
+             linewidth=2, markersize=6, label='Mean')
+    ax2.plot(theta_values, mu_rel_median, 's--', color=COLORBLIND_COLORS['orange'], 
+             linewidth=2, markersize=6, label='Median')
+    ax2.set_xscale('log')
+    ax2.set_xlabel('True θ', fontsize=12)
+    ax2.set_ylabel('Relative Error of μ', fontsize=12)
+    ax2.set_title('μ Estimation Error vs θ')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    fig6_path = os.path.join(output_dir, 'mu_pi_error_vs_theta_grid.png')
+    fig6.savefig(fig6_path, dpi=300, bbox_inches='tight')
+    print(f"Saved figure: {fig6_path}")
+    plt.close(fig6)
     
 
 
