@@ -19,9 +19,7 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
 
-MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}
 
-echo "Task ${SLURM_ARRAY_TASK_ID}: Training ${MODEL}"
 srun apptainer exec \
   --nv \
   --bind "$PROJECT_DIR":/workspace \
