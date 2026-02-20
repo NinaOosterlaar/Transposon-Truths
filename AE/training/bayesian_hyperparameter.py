@@ -84,7 +84,7 @@ search_space = [
     
     # Model Architecture (parameterized, layer sizes divisible by 16)
     Integer(4, 100, name='first_layer_size_factor'),  # 64-1600 (multiples of 16)
-    Integer(1, 4, name='num_layers'),  # Number of layers (1 to 5, will be multiplied by 2 since encoder and decoder, and one latent layer will be added in between)
+    Integer(1, 4, name='num_layers'),  # Number of layers (1 to 4, will be multiplied by 2 since encoder and decoder, and one latent layer will be added in between)
     
     # Convolutional Layers
     Categorical(USE_CONV_OPTIONS, name='use_conv'),
