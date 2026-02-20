@@ -7,7 +7,14 @@ from Signal_processing.ZINB_MLE.estimate_ZINB import estimate_zinb
 from Signal_processing.ZINB_MLE.EM import em_zinb_step
 from Signal_processing.log_likelihoods import zinb_log_likelihood
 
-
+def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10):
+    results = estimate_zinb(data, eps=eps)
+    theta_global = results['theta']
+    print(f"Estimated global theta: {theta_global:.4f}")
+    if theta_global >= 1000:
+        # Throw an error that the estimation of theta failed
+        raise ValueError("Estimated global theta is very large, indicating a failure in estimation. ")
+    
 
 def save_results(output_folder, dataset_name, change_points, scores, theta_global, window_size, overlap, threshold):  
     if not os.path.exists(output_folder):
