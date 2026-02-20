@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 236, in objective
+  File "/workspace/AE/main.py", line 84, in main_with_datasets
+    train_dataloader = dataloader_from_array(train_set, batch_size=batch_size, shuffle=True, zinb=True, chrom=chrom, sample_fraction=sample_fraction, denoise_percentage=noise_level)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/training/training_utils.py", line 177, in dataloader_from_array
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 351, in __init__
+    sampler = RandomSampler(dataset, generator=generator)  # type: ignore[arg-type]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/utils/data/sampler.py", line 144, in __init__
+    raise ValueError(f"num_samples should be a positive integer value, but got num_samples={self.num_samples}")
+ValueError: num_samples should be a positive integer value, but got num_samples=0
+slurmstepd: error: *** JOB 12215032 ON gpu02 CANCELLED AT 2026-02-16T23:15:53 DUE TO TIME LIMIT ***
+slurmstepd: error: *** STEP 12215032.0 ON gpu02 CANCELLED AT 2026-02-16T23:15:53 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
