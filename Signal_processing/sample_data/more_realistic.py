@@ -118,13 +118,13 @@ if __name__ == "__main__":
         for i in range(number_of_samples):
             print(f"Generating sample {i}")
             number_of_regions = 2000
-            output_path = f"Signal_processing/sample_data/noisy_data.csv"
+            output_path = f"Signal_processing/sample_data/extreme_noisy_data.csv"
 
             counts, boundaries, params = make_random_zinb_counts(
                 n_regions=number_of_regions,
                 mean_range=(0.1, 40.0),
                 length_mean_range=(40, 1000),
-                theta_range=(0.01, 10.0),
+                theta_range=(0.01, 1.0),
                 zero_prob_range=(0.7, 0.95),
                 min_region_length=20,
                 probability_zero_region=0.1,
@@ -134,7 +134,7 @@ if __name__ == "__main__":
             df = pd.DataFrame({"Position": positions, "Value": counts})
             df.to_csv(output_path, index=False)
             # Save params
-            params_output_path = f"Signal_processing/sample_data/noisy_data_params.csv"
+            params_output_path = f"Signal_processing/sample_data/extreme_noisy_data_params.csv"
             params_df = pd.DataFrame(params)
             params_df.to_csv(params_output_path, index=False)
 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
             n_regions=5,
             mean_range=(0.1, 40.0),
             length_mean_range=(40, 1000),
-            theta_range=(5.0, 60.0),
+            theta_range=(0.01, 1.0),
             zero_prob_range=(0.7, 0.95),
             min_region_length=20,
             probability_zero_region=0.1,
