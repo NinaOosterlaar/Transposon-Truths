@@ -1,0 +1,13 @@
+Running sliding ZINB CPD on dataset: realistic_data
+Input file: Signal_processing/sample_data/realistic_data.csv
+[ 0.5         1.34482759  2.18965517  3.03448276  3.87931034  4.72413793
+  5.56896552  6.4137931   7.25862069  8.10344828  8.94827586  9.79310345
+ 10.63793103 11.48275862 12.32758621 13.17241379 14.01724138 14.86206897
+ 15.70689655 16.55172414 17.39655172 18.24137931 19.0862069  19.93103448
+ 20.77586207 21.62068966 22.46551724 23.31034483 24.15517241 25.        ]
+
+Best theta: 2.09e+00 with ll=-1136486.62
+Final parameters: pi=0.8371, mu=20.6170, theta=2.0891
+Estimated global theta: 2.0891
+(Estimated global pi: 0.8371, mu: 20.6170)
+Using 4 workers to process 4 window sizes in parallel
