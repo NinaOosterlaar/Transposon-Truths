@@ -20,9 +20,10 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 cd "$PROJECT_DIR"
 
 
+
 srun apptainer exec \
   --nv \
   --bind "$PROJECT_DIR":/workspace \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
-  python AE/training/main.py
+  python AE/main.py
