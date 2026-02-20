@@ -170,8 +170,10 @@ def main_with_datasets(
         # Return empty metrics if no evaluation set
         eval_metrics = {}
     
-    # Final cleanup
+    # Final cleanup - delete model and dataloader to free memory
+    del zinbae_model
     del eval_dataloader
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
     gc.collect()
     
     return train_metrics, eval_metrics
