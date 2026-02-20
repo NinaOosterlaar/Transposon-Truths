@@ -10,8 +10,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
-#SBATCH --output=slurm_bayesopt_%j.out
-#SBATCH --error=slurm_bayesopt_%j.err
+#SBATCH --output=slurm_comp_bayesopt_%j.out
+#SBATCH --error=slurm_comp_bayesopt_%j.err
 
 set -euo pipefail
 

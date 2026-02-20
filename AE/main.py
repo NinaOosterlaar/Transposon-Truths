@@ -7,37 +7,37 @@ from AE.training.training import train, test
 
 
 # Preprocessing
-INPUT_FOLDER = "Data/test/strain_FD"
+INPUT_FOLDER = "Data/combined_strains"
 FEATURES = ['Nucl', 'Centr']
-BIN_SIZE = 10
-MOVING_AVERAGE = False
+BIN_SIZE = 17
+MOVING_AVERAGE = True
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 0.25
-SAMPLE_FRACTION = 0.01
+STEP_SIZE = 0.6367
+SAMPLE_FRACTION = 0.80
 
 SPLIT_ON = 'Chrom'
-TRAIN_VAL_TEST_SPLIT = [0.5, 0, 0.5]
+TRAIN_VAL_TEST_SPLIT = [0.8, 0, 0.2]
 
 USE_CONV = True
-CONV_CHANNEL = 64
-POOL_SIZE = 2
+CONV_CHANNEL = 85
+POOL_SIZE = 4
 POOLING_OPERATION = 'max'
-KERNEL_SIZE = 5
+KERNEL_SIZE = 3
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 100
+EPOCHS = 101
 BATCH_SIZE = 64
-NOISE_LEVEL = 0.3
-PI_THRESHOLD = 0.5
-MASKED_RECON_WEIGHT = 0.0  # gamma: weight for masked reconstruction loss
-LEARNING_RATE = 1e-3
-DROPOUT_RATE = 0.2
-LAYERS = [512, 256, 128]
+NOISE_LEVEL = 0.15
+PI_THRESHOLD = 0.407
+MASKED_RECON_WEIGHT = 0.0327  # gamma: weight for masked reconstruction loss
+LEARNING_RATE = 0.0009886
+DROPOUT_RATE = 0.315
+LAYERS = [688]
 REGULARIZER = 'none'
 REGULARIZATION_WEIGHT = 1e-4
 
-PLOT = False
+PLOT = True
 
 
 def main_with_datasets(

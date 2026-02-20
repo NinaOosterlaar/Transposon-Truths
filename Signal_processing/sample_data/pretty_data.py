@@ -17,7 +17,7 @@ def make_random_gaussian_counts(
     sd_scale=(0.5, 1.5),                
     min_sd=0.5,                  
     min_region_length=20,
-    probability_zero_region=0.1,
+    probability_zero_region=0,
 ):
     """
     Generate synthetic count data composed of multiple regions, each with counts drawn from a Gaussian distribution.
@@ -80,10 +80,10 @@ if __name__ == "__main__":
     
     if generate:
         number_of_regions = 2000
-        output_path = f"Signal_processing/pretty_data.csv"
+        output_path = f"Signal_processing/sample_data/pretty_data.csv"
         counts, boundaries, params = make_random_gaussian_counts(
             n_regions=number_of_regions,
-            mean_range=(1, 15),
+            mean_range=(1, 40),
             length_mean_range=(40, 1000),
             sd_scale=(0.5, 1.5),
             min_sd=0.3,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         df = pd.DataFrame({"Position": positions, "Count": counts})
         df.to_csv(output_path, index=False)
         # Save params
-        params_output_path = f"Signal_processing/pretty_data_params.csv"
+        params_output_path = f"Signal_processing/sample_data/pretty_data_params.csv"
         params_df = pd.DataFrame(params)
         params_df.to_csv(params_output_path, index=False)
     
