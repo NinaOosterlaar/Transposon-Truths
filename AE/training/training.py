@@ -405,6 +405,18 @@ def test(model, dataloader, chrom=True, chrom_embedding=None, plot=True, n_examp
             if is_zinbvae:
                 del mu_z, logvar_z
     
+    # Check if any data was processed
+    if len(all_reconstructions) == 0:
+        raise ValueError(
+            "No batches were processed from the dataloader. "
+            "Possible causes:\n"
+            "  1. The dataset is empty\n"
+            "  2. Dataset size < batch_size with drop_last=True\n"
+            "  3. All data was filtered out during preprocessing\n"
+            f"  Dataset length: {len(dataloader.dataset) if hasattr(dataloader, 'dataset') else 'unknown'}\n"
+            f"  Batch size: {dataloader.batch_size if hasattr(dataloader, 'batch_size') else 'unknown'}"
+        )
+    
     # After loop - concatenate results
     all_reconstructions = np.concatenate(all_reconstructions, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)

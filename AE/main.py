@@ -92,18 +92,27 @@ def main_with_datasets(
         chrom=chrom, sample_fraction=sample_fraction, denoise_percentage=noise_level
     )
     
-    # Only create eval dataloader when needed (validation or test)
+    # Create evaluation dataloader
+    # Priority: val_set if available and eval_on_val=True, otherwise test_set
     eval_dataloader = None
-    if eval_on_val and val_set is not None:
+    eval_set_name = None
+    
+    if eval_on_val and val_set is not None and len(val_set) > 0:
         eval_dataloader = dataloader_from_array(
             val_set, batch_size=batch_size, shuffle=False, zinb=True, 
             chrom=chrom, sample_fraction=1.0, denoise_percentage=noise_level
         )
-    elif not eval_on_val and test_set is not None:
+        eval_set_name = "VALIDATION"
+    elif test_set is not None and len(test_set) > 0:
+        print(f"\nCreating test dataloader:")
+        print(f"  Test set size: {len(test_set)}")
+        print(f"  Batch size: {batch_size}")
         eval_dataloader = dataloader_from_array(
             test_set, batch_size=batch_size, shuffle=False, zinb=True, 
             chrom=chrom, sample_fraction=1.0, denoise_percentage=noise_level
         )
+        print(f"  Dataloader created: {len(eval_dataloader.dataset)} samples, {len(eval_dataloader)} batches")
+        eval_set_name = "TEST"
     
     # Calculate feature dimension
     feature_dim = train_dataloader.dataset.tensors[0].shape[2] + 1
@@ -153,7 +162,12 @@ def main_with_datasets(
     gc.collect()
     
     # Evaluate model on validation or test set
-    if eval_dataloader is not None:
+    if eval_dataloader is not None and len(eval_dataloader.dataset) > 0:
+        print(f"\n{'='*50}")
+        print(f"EVALUATING ON {eval_set_name} DATA")
+        print(f"Dataset size: {len(eval_dataloader.dataset)}")
+        print(f"{'='*50}\n")
+        
         _, _, eval_metrics = test(
             model=zinbae_model,
             dataloader=eval_dataloader,
@@ -167,7 +181,7 @@ def main_with_datasets(
             regularizer=regularizer,
         )
     else:
-        # Return empty metrics if no evaluation set
+        print(f"\nSkipping evaluation: No evaluation dataset available")
         eval_metrics = {}
     
     # Final cleanup - delete model and dataloader to free memory
@@ -225,12 +239,20 @@ def main(
         train_val_test_split=train_val_test_split
     )
     
-    # Use val_set for evaluation if available, otherwise test_set
-    eval_on_val = val_set is not None
-    if not eval_on_val:
-        val_set = test_set  # Pass test_set as val_set if no val_set
+    # Debug: Print dataset sizes
+    print(f"\nDataset sizes after preprocessing:")
+    print(f"  Train: {len(train_set) if train_set is not None else 0}")
+    print(f"  Val: {len(val_set) if val_set is not None else 0}")
+    print(f"  Test: {len(test_set) if test_set is not None else 0}")
     
-    return main_with_datasets(
+    # Determine evaluation strategy:
+    # - If val_set exists and has data, use it for evaluation (hyperparameter tuning)
+    # - Otherwise, use test_set for final evaluation
+    eval_on_val = (val_set is not None and len(val_set) > 0)
+    print(f"  Eval strategy: {'VALIDATION' if eval_on_val else 'TEST'}\n")
+    
+    # Train and evaluate
+    train_metrics, eval_metrics = main_with_datasets(
         train_set=train_set,
         val_set=val_set,
         test_set=test_set,
@@ -256,6 +278,10 @@ def main(
         plot=plot,
         eval_on_val=eval_on_val
     )
+    
+    # Return metrics (useful for Bayesian optimization or logging)
+    # For normal usage, you can ignore the return value
+    return train_metrics, eval_metrics
 
 if __name__ == "__main__":
     main()
