@@ -1,4 +1,6 @@
 import os, sys
+import gc
+import torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from AE.preprocessing.preprocessing import preprocess
 from AE.architectures.ZINBAE import ZINBAE
@@ -81,18 +83,34 @@ def main_with_datasets(
     if "Chr" in features: chrom = True
     else: chrom = False
     
-    train_dataloader = dataloader_from_array(train_set, batch_size=batch_size, shuffle=True, zinb=True, chrom=chrom, sample_fraction=sample_fraction, denoise_percentage=noise_level)
-    if val_set is not None:
-        val_dataloader = dataloader_from_array(val_set, batch_size=batch_size, shuffle=False, zinb=True, chrom=chrom, sample_fraction=1.0, denoise_percentage=noise_level)
-    if test_set is not None:
-        test_dataloader = dataloader_from_array(test_set, batch_size=batch_size, shuffle=False, zinb=True, chrom=chrom, sample_fraction=1.0, denoise_percentage=noise_level)
-    if chrom: chrom_embedding = ChromosomeEmbedding()
-    else: chrom_embedding = None
+    # Create chromosome embedding once if needed
+    chrom_embedding = ChromosomeEmbedding() if chrom else None
     
-    feature_dim = train_dataloader.dataset.tensors[0].shape[2]
-    feature_dim += 1
-    if chrom in features: feature_dim += chrom_embedding.embedding.embedding_dim 
+    # Create train dataloader
+    train_dataloader = dataloader_from_array(
+        train_set, batch_size=batch_size, shuffle=True, zinb=True, 
+        chrom=chrom, sample_fraction=sample_fraction, denoise_percentage=noise_level
+    )
     
+    # Only create eval dataloader when needed (validation or test)
+    eval_dataloader = None
+    if eval_on_val and val_set is not None:
+        eval_dataloader = dataloader_from_array(
+            val_set, batch_size=batch_size, shuffle=False, zinb=True, 
+            chrom=chrom, sample_fraction=1.0, denoise_percentage=noise_level
+        )
+    elif not eval_on_val and test_set is not None:
+        eval_dataloader = dataloader_from_array(
+            test_set, batch_size=batch_size, shuffle=False, zinb=True, 
+            chrom=chrom, sample_fraction=1.0, denoise_percentage=noise_level
+        )
+    
+    # Calculate feature dimension
+    feature_dim = train_dataloader.dataset.tensors[0].shape[2] + 1
+    if chrom:
+        feature_dim += chrom_embedding.embedding.embedding_dim 
+    
+    # Initialize model
     zinbae_model = ZINBAE(
         seq_length=data_point_length,
         feature_dim=feature_dim,
@@ -105,6 +123,14 @@ def main_with_datasets(
         stride=stride,
         dropout=dropout_rate,
     )
+    
+    # Free memory from train_set after dataloader is created
+    del train_set
+    if val_set is not None:
+        del val_set
+    if test_set is not None:
+        del test_set
+    gc.collect()
     # Train model
     _, train_metrics = train(
         model=zinbae_model,
@@ -117,22 +143,36 @@ def main_with_datasets(
         denoise_percent=noise_level,
         gamma=masked_recon_weight,
         chrom=chrom,
-        plot=plot,
-    )
-    # Evaluate model on validation or test set
-    eval_dataloader = val_dataloader if eval_on_val else test_dataloader
-    _, _, eval_metrics = test(
-        model=zinbae_model,
-        dataloader=eval_dataloader,
-        pi_threshold=pi_threshold,
-        chrom=chrom,
         chrom_embedding=chrom_embedding,
         plot=plot,
-        denoise_percent=noise_level,
-        alpha=regularization_weight,
-        gamma=masked_recon_weight,
-        regularizer=regularizer,
     )
+    
+    # Free training dataloader memory before evaluation
+    del train_dataloader
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    gc.collect()
+    
+    # Evaluate model on validation or test set
+    if eval_dataloader is not None:
+        _, _, eval_metrics = test(
+            model=zinbae_model,
+            dataloader=eval_dataloader,
+            pi_threshold=pi_threshold,
+            chrom=chrom,
+            chrom_embedding=chrom_embedding,
+            plot=plot,
+            denoise_percent=noise_level,
+            alpha=regularization_weight,
+            gamma=masked_recon_weight,
+            regularizer=regularizer,
+        )
+    else:
+        # Return empty metrics if no evaluation set
+        eval_metrics = {}
+    
+    # Final cleanup
+    del eval_dataloader
+    gc.collect()
     
     return train_metrics, eval_metrics
 
