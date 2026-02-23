@@ -78,7 +78,7 @@ search_space = [
     # Preprocessing
     Categorical(FEATURES_OPTIONS, name='features'),
     Real(0.25, 1.0, name='step_size'),  # STEP_SIZES as continuous
-    Integer(1, 50, name='bin_size'),  # BIN_SIZES range
+    Integer(1, 20, name='bin_size'),  # BIN_SIZES range
     Real(0.25, 1.0, name='sample_fraction'),  # SAMPLE_FRACTIONS as continuous
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
