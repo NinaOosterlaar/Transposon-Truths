@@ -9,13 +9,43 @@ from AE.training.training import train, test
 
 
 # Preprocessing
+# INPUT_FOLDER = "Data/combined_strains"
+# FEATURES = ['Nucl', 'Centr']
+# BIN_SIZE = 17
+# MOVING_AVERAGE = True
+# DATA_POINT_LENGTH = 2000
+# STEP_SIZE = 1273
+# SAMPLE_FRACTION = 0.80
+
+# SPLIT_ON = 'Chrom'
+# TRAIN_VAL_TEST_SPLIT = [0.8, 0, 0.2]
+
+# USE_CONV = True
+# CONV_CHANNEL = 85
+# POOL_SIZE = 4
+# POOLING_OPERATION = 'max'
+# KERNEL_SIZE = 3
+# PADDING = 'same'
+# STRIDE = 1
+
+# EPOCHS = 101
+# BATCH_SIZE = 64
+# NOISE_LEVEL = 0.15
+# PI_THRESHOLD = 0.407
+# MASKED_RECON_WEIGHT = 0.0327  # gamma: weight for masked reconstruction loss
+# LEARNING_RATE = 0.0009886
+# DROPOUT_RATE = 0.315
+# LAYERS = [688]
+# REGULARIZER = 'none'
+# REGULARIZATION_WEIGHT = 1e-4
+
 INPUT_FOLDER = "Data/combined_strains"
-FEATURES = ['Nucl', 'Centr']
-BIN_SIZE = 17
-MOVING_AVERAGE = True
+FEATURES = ['Centr']
+BIN_SIZE = 1
+MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 1273
-SAMPLE_FRACTION = 0.80
+STEP_SIZE = 500
+SAMPLE_FRACTION = 1.0
 
 SPLIT_ON = 'Chrom'
 TRAIN_VAL_TEST_SPLIT = [0.8, 0, 0.2]
@@ -28,16 +58,16 @@ KERNEL_SIZE = 3
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 101
-BATCH_SIZE = 64
+EPOCHS = 30
+BATCH_SIZE = 32
 NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.407
-MASKED_RECON_WEIGHT = 0.0327  # gamma: weight for masked reconstruction loss
-LEARNING_RATE = 0.0009886
-DROPOUT_RATE = 0.315
-LAYERS = [688]
-REGULARIZER = 'none'
-REGULARIZATION_WEIGHT = 1e-4
+PI_THRESHOLD = 0.7
+MASKED_RECON_WEIGHT = 0.001  # gamma: weight for masked reconstruction loss
+LEARNING_RATE = 1e-5
+DROPOUT_RATE = 0
+LAYERS = [1600]
+REGULARIZER = 'l2'
+REGULARIZATION_WEIGHT = 1e-5
 
 PLOT = True
 
