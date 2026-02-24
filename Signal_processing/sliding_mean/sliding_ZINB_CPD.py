@@ -124,6 +124,10 @@ if __name__ == "__main__":
     # Add dataset name to output folder path
     output_folder = os.path.join(output_folder, dataset_name)
     
+    # Create output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
     # Read data
     # datasets = read_csv_file_with_distances(input_file)
     with open(input_file, "r") as f:
