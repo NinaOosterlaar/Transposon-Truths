@@ -196,11 +196,15 @@ def process_all_strains(window_size=2000):
                     end_pos = int(window_positions[-1])
                     
                     # Check if more than 95% are zeros
-                    zero_fraction = np.sum(window_data == 0) / len(window_data)
-                    if zero_fraction > 0.95:
-                        print(f"    Window {i+1}: pos {start_pos}-{end_pos} | "
-                              f"SKIPPED (>95% zeros: {zero_fraction:.2%})")
-                        continue
+                    # zero_fraction = np.sum(window_data == 0) / len(window_data)
+                    # if zero_fraction > 0.95:
+                    #     print(f"    Window {i+1}: pos {start_pos}-{end_pos} | "
+                    #           f"SKIPPED (>95% zeros: {zero_fraction:.2%})")
+                    #     continue
+                    
+                    # Filter out the 95 percentile of the data to remove extreme outliers
+                    threshold = np.percentile(window_data, 95)
+                    window_data = window_data[window_data <= threshold]
                 
                     
                     # Estimate ZINB parameters for this window
@@ -483,13 +487,13 @@ def plot_zinb_results(csv_file, output_dir=None):
 
 
 if __name__ == "__main__":
-    # results = process_all_strains(window_size=2000)
+    results = process_all_strains(window_size=2000)
     
-    # # Generate plots
-    # base_dir = Path(__file__).parent.parent.parent
-    # output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
-    # csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
+    # Generate plots
+    base_dir = Path(__file__).parent.parent.parent
+    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
+    csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
     
-    # if csv_file.exists():
-    #     plot_zinb_results(csv_file, output_dir)
-    estimate_whole_dataset()
+    if csv_file.exists():
+        plot_zinb_results(csv_file, output_dir)
+    # estimate_whole_dataset()
