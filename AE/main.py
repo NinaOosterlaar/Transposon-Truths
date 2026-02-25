@@ -1,6 +1,7 @@
 import os, sys
 import gc
 import torch
+from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from AE.preprocessing.preprocessing import preprocess
 from AE.architectures.ZINBAE import ZINBAE
@@ -70,6 +71,8 @@ REGULARIZER = 'l2'
 REGULARIZATION_WEIGHT = 1e-5
 
 PLOT = True
+SAVE_MODEL = True
+MODEL_SAVE_DIR = "AE/results/models"
 
 
 def main_with_datasets(
@@ -96,7 +99,9 @@ def main_with_datasets(
     regularization_weight=REGULARIZATION_WEIGHT,
     sample_fraction=SAMPLE_FRACTION,
     plot=PLOT,
-    eval_on_val=True):
+    eval_on_val=True,
+    save_model=SAVE_MODEL,
+    model_save_dir=MODEL_SAVE_DIR):
     """
     Main training function that accepts pre-made datasets.
     Used by Bayesian optimization to avoid recreating data every trial.
@@ -214,6 +219,56 @@ def main_with_datasets(
         print(f"\nSkipping evaluation: No evaluation dataset available")
         eval_metrics = {}
     
+    # Save model before cleanup
+    if save_model:
+        # Create save directory if it doesn't exist
+        os.makedirs(model_save_dir, exist_ok=True)
+        
+        # Generate filename with timestamp and key parameters
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        conv_str = f"conv{conv_channel}" if use_conv else "noconv"
+        layers_str = "_".join(map(str, layers))
+        model_filename = f"ZINBAE_{timestamp}_{conv_str}_layers{layers_str}_ep{epochs}.pt"
+        model_path = os.path.join(model_save_dir, model_filename)
+        
+        # Save model state dict and configuration
+        save_dict = {
+            'model_state_dict': zinbae_model.state_dict(),
+            'model_config': {
+                'seq_length': data_point_length,
+                'feature_dim': feature_dim,
+                'layers': layers,
+                'use_conv': use_conv,
+                'conv_channels': conv_channel,
+                'pool_size': pool_size,
+                'kernel_size': kernel_size,
+                'padding': padding,
+                'stride': stride,
+                'dropout': dropout_rate,
+            },
+            'training_config': {
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'learning_rate': learning_rate,
+                'noise_level': noise_level,
+                'pi_threshold': pi_threshold,
+                'masked_recon_weight': masked_recon_weight,
+                'regularizer': regularizer,
+                'regularization_weight': regularization_weight,
+                'features': features,
+            },
+            'metrics': {
+                'train': train_metrics,
+                'eval': eval_metrics,
+            }
+        }
+        
+        torch.save(save_dict, model_path)
+        print(f"\n{'='*50}")
+        print(f"MODEL SAVED: {model_filename}")
+        print(f"Location: {model_path}")
+        print(f"{'='*50}\n")
+    
     # Final cleanup - delete model and dataloader to free memory
     del zinbae_model
     del eval_dataloader
@@ -249,7 +304,9 @@ def main(
     layers=LAYERS, 
     regularizer=REGULARIZER, 
     regularization_weight=REGULARIZATION_WEIGHT,
-    plot=PLOT):
+    plot=PLOT,
+    save_model=SAVE_MODEL,
+    model_save_dir=MODEL_SAVE_DIR):
     """
     Original main function that handles data preprocessing.
     For backwards compatibility and standalone usage.
@@ -306,7 +363,9 @@ def main(
         regularization_weight=regularization_weight,
         sample_fraction=sample_fraction,
         plot=plot,
-        eval_on_val=eval_on_val
+        eval_on_val=eval_on_val,
+        save_model=save_model,
+        model_save_dir=model_save_dir
     )
     
     # Return metrics (useful for Bayesian optimization or logging)
