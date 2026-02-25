@@ -575,9 +575,9 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
 if __name__ == "__main__":
     # Specify which dataset to analyze
     dataset_name = 'noisy_data'  # Options: 'pretty_data', 'realistic_data', 'noisy_data'
-    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/theta1000/{dataset_name}"
+    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/theta1/{dataset_name}"
     data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
-    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_theta1000"
+    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_theta1"
     
     # Evaluate performance metrics
     print(f"Analyzing dataset: {dataset_name}")
