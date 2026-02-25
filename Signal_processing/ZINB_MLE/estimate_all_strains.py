@@ -17,6 +17,120 @@ sys.path.append(str(project_root))
 from Utils.colors import COLORBLIND_COLORS
 
 
+def estimate_whole_dataset():
+    """
+    Estimate ZINB parameters (pi, mu, theta) for the entire dataset of each strain.
+    All chromosomes are combined for each strain to produce a single set of estimates.
+    
+    Returns:
+    --------
+    dict : Dictionary where keys are strain names and values are dictionaries containing:
+        - 'pi': zero-inflation parameter estimate
+        - 'mu': mean parameter estimate
+        - 'theta': dispersion parameter estimate
+        - 'iterations': number of EM iterations
+        - 'converged': boolean indicating convergence
+        - 'log_likelihood': final log-likelihood
+        - 'n_observations': total number of data points used
+        - 'zero_fraction': fraction of zeros in the data
+    """
+    # Define paths
+    base_dir = Path(__file__).parent.parent.parent
+    data_dir = base_dir / "Data" / "combined_strains"
+    
+    # Get all strain folders
+    strain_folders = sorted([f for f in data_dir.iterdir() if f.is_dir()])
+    
+    print(f"Estimating ZINB parameters for whole dataset")
+    print(f"Found {len(strain_folders)} strain folders\n")
+    
+    # Dictionary to store results for each strain
+    results = {}
+    
+    # Process each strain
+    for strain_folder in strain_folders:
+        strain_name = strain_folder.name
+        print(f"Processing {strain_name}...")
+        
+        # Get all CSV files in this strain folder
+        csv_files = sorted(strain_folder.glob("*.csv"))
+        
+        # Collect all data from all chromosomes
+        all_data = []
+        
+        for csv_file in csv_files:
+            chromosome = csv_file.stem.replace("_distances", "")
+            
+            try:
+                # Read CSV file
+                df = pd.read_csv(csv_file)
+                
+                # Extract Value column and round to integers
+                values = df['Value'].values
+                rounded_values = np.round(values).astype(int)
+                
+                # Append to combined dataset
+                all_data.append(rounded_values)
+                
+                print(f"  Added {chromosome}: {len(rounded_values)} data points")
+                
+            except Exception as e:
+                print(f"  ERROR reading {csv_file.name}: {e}")
+                continue
+        
+        # Combine all chromosome data
+        if len(all_data) == 0:
+            print(f"  WARNING: No data found for {strain_name}, skipping.\n")
+            continue
+        
+        combined_data = np.concatenate(all_data)
+        n_obs = len(combined_data)
+        zero_fraction = np.sum(combined_data == 0) / n_obs
+        
+        print(f"  Total observations: {n_obs}")
+        print(f"  Zero fraction: {zero_fraction:.4f}")
+        
+        # Estimate ZINB parameters for the whole dataset
+        print(f"  Estimating ZINB parameters...")
+        try:
+            estimates = estimate_zinb(combined_data, max_iter=1000)
+            
+            # Store results with additional metadata
+            results[strain_name] = {
+                'pi': estimates['pi'],
+                'mu': estimates['mu'],
+                'theta': estimates['theta'],
+                'iterations': estimates['iterations'],
+                'converged': estimates['converged'],
+                'log_likelihood': estimates['log_likelihood'],
+                'n_observations': n_obs,
+                'zero_fraction': zero_fraction
+            }
+            
+            print(f"  SUCCESS: pi={estimates['pi']:.4f}, mu={estimates['mu']:.4f}, "
+                  f"theta={estimates['theta']:.4f}\n")
+            
+        except Exception as e:
+            print(f"  ERROR during estimation: {e}\n")
+            results[strain_name] = {
+                'pi': None,
+                'mu': None,
+                'theta': None,
+                'iterations': None,
+                'converged': False,
+                'log_likelihood': None,
+                'n_observations': n_obs,
+                'zero_fraction': zero_fraction,
+                'error': str(e)
+            }
+    
+    print("="*60)
+    print("Estimation complete!")
+    print("="*60)
+    
+    return results
+
+
 def process_all_strains(window_size=2000):
     """
     Process all CSV files in Data/combined_strains/, split into windows,
@@ -369,12 +483,13 @@ def plot_zinb_results(csv_file, output_dir=None):
 
 
 if __name__ == "__main__":
-    results = process_all_strains(window_size=2000)
+    # results = process_all_strains(window_size=2000)
     
-    # Generate plots
-    base_dir = Path(__file__).parent.parent.parent
-    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
-    csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
+    # # Generate plots
+    # base_dir = Path(__file__).parent.parent.parent
+    # output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
+    # csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
     
-    if csv_file.exists():
-        plot_zinb_results(csv_file, output_dir)
+    # if csv_file.exists():
+    #     plot_zinb_results(csv_file, output_dir)
+    estimate_whole_dataset()
