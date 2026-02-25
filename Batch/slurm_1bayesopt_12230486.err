@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 763, in <module>
+    result = run_bayesian_optimization(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 481, in run_bayesian_optimization
+    result = gp_minimize(
+             ^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/gp.py", line 281, in gp_minimize
+    return base_minimize(
+           ^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/base.py", line 268, in base_minimize
+    raise ValueError("Expected `n_calls` >= %d, got %d" % (required_calls, n_calls))
+ValueError: Expected `n_calls` >= 20, got 10
+srun: error: gpu20: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12230486.0
