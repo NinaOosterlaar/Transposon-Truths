@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=sliding_ZINB_cpd
+#SBATCH --job-name=sliding_NB_cpd
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=04:00:00
@@ -25,18 +25,18 @@ DATASETS=("realistic_data" "pretty_data" "noisy_data")
 DATASET_NAME=${DATASETS[$SLURM_ARRAY_TASK_ID]}
 INPUT_FILE="Signal_processing/sample_data/${DATASET_NAME}.csv"
 
-echo "Running sliding ZINB CPD on dataset: ${DATASET_NAME}"
+echo "Running sliding NB CPD on dataset: ${DATASET_NAME}"
 echo "Input file: ${INPUT_FILE}"
 
 srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
     --pwd /workspace \
     "$APPTAINER_IMAGE" \
-    python Signal_processing/sliding_mean/sliding_ZINB_CPD.py \
+    python Signal_processing/sliding_mean/sliding_NB_CPD.py \
     "$INPUT_FILE" \
     --dataset_name "${DATASET_NAME}" \
     --n_workers 4 \
-    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD/"
+    --output_folder "Signal_processing/results/sliding_mean/sliding_NB_CPD/"
 
 echo "Finished processing ${DATASET_NAME}"
 

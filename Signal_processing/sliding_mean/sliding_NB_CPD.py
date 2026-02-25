@@ -44,8 +44,8 @@ def sliding_NB_CPD(data, window_size, overlap, threshold, theta_global=None, eps
     # need 2*window_size points to form w1 and w2
     for start in range(0, n - 2 * window_size + 1, step_size):
         w1 = data[start : start + window_size]
-        w2 = data[start + window_size : start + 2 * window_size]
-        w0 = data[start : start + 2 * window_size]
+        w2 = data[start + step_size : start + step_size + window_size]
+        w0 = data[start : start + step_size + window_size]
 
         mu1 = float(np.mean(w1))
         mu2 = float(np.mean(w2))

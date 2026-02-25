@@ -24,8 +24,8 @@ def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_glo
     
     for start in range(0, n - 2 * window_size + 1, step_size):
         w1 = data[start : start + window_size]
-        w2 = data[start + window_size : start + 2 * window_size]
-        w0 = data[start : start + 2 * window_size]
+        w2 = data[start + step_size : start + step_size + window_size]
+        w0 = data[start : start + step_size + window_size]
         
         pi1 = np.clip(np.mean(w1 == 0), eps, 1 - eps)
         pi2 = np.clip(np.mean(w2 == 0), eps, 1 - eps)
@@ -133,8 +133,9 @@ if __name__ == "__main__":
     with open(input_file, "r") as f:
         lines = f.readlines()[1:]  # Skip header
         data = [int(line.strip().split(",")[1]) for line in lines]
-    # theta_global = initialize_theta_global(data)
-    theta_global = 1
+    theta_global = initialize_theta_global(data)
+    print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
+    # theta_global = 1
     
     # Parallelize processing of different window sizes
     n_workers = min(args.n_workers, len(window_size))
