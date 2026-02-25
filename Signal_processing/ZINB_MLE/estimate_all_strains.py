@@ -489,13 +489,13 @@ def plot_zinb_results(csv_file, output_dir=None):
 
 
 if __name__ == "__main__":
-    # results = process_all_strains(window_size=2000)
+    results = process_all_strains(window_size=2000)
     
-    # # Generate plots
-    # base_dir = Path(__file__).parent.parent.parent
-    # output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
-    # csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
+    # Generate plots
+    base_dir = Path(__file__).parent.parent.parent
+    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
+    csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
     
-    # if csv_file.exists():
-    #     plot_zinb_results(csv_file, output_dir)
-    estimate_whole_dataset()
+    if csv_file.exists():
+        plot_zinb_results(csv_file, output_dir)
+    # estimate_whole_dataset()
