@@ -225,7 +225,6 @@ def process_all_strains(window_size=2000):
                             'iterations': estimates['iterations'],
                             'converged': estimates['converged'],
                             'n_observations': len(window_data),
-                            'zero_fraction': zero_fraction
                         }
                         results.append(result)
                         total_windows += 1
