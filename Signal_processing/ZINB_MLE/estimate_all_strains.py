@@ -87,20 +87,11 @@ def process_all_strains(window_size=2000):
                         print(f"    Window {i+1}: pos {start_pos}-{end_pos} | "
                               f"SKIPPED (>95% zeros: {zero_fraction:.2%})")
                         continue
-                    
-                    # Exclude top 1% highest counts
-                    percentile_95 = np.percentile(window_data, 95)
-                    filtered_data = window_data[window_data <= percentile_95]
-                    
-                    # Check if we have enough data left
-                    if len(filtered_data) < 10:
-                        print(f"    Window {i+1}: pos {start_pos}-{end_pos} | "
-                              f"SKIPPED (insufficient data after filtering)")
-                        continue
+                
                     
                     # Estimate ZINB parameters for this window
                     try:
-                        estimates = estimate_zinb(filtered_data, max_iter=1000)
+                        estimates = estimate_zinb(window_data, max_iter=1000)
                         
                         # Store results
                         result = {
@@ -116,7 +107,6 @@ def process_all_strains(window_size=2000):
                             'iterations': estimates['iterations'],
                             'converged': estimates['converged'],
                             'n_observations': len(window_data),
-                            'n_filtered': len(filtered_data),
                             'zero_fraction': zero_fraction
                         }
                         results.append(result)
