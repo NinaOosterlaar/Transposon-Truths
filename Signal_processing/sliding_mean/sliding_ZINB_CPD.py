@@ -134,7 +134,7 @@ if __name__ == "__main__":
         lines = f.readlines()[1:]  # Skip header
         data = [int(line.strip().split(",")[1]) for line in lines]
     # theta_global = initialize_theta_global(data)
-    theta_global = 1000
+    theta_global = 1
     
     # Parallelize processing of different window sizes
     n_workers = min(args.n_workers, len(window_size))
