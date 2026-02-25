@@ -6,7 +6,7 @@ from log_likelihoods import zinb_log_likelihood
 from ZINB_MLE.EM import em_zinb_step
 
 
-def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.05, theta_max=1000, 
+def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.1, theta_max=1, 
                   n_theta_grid=200):
     """
     Estimate ZINB parameters (pi, mu, theta) using profile likelihood for theta.
@@ -54,7 +54,9 @@ def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.05, theta
     
     # ===== CREATE THETA GRID =====
     # Log-spaced grid from theta_min to theta_max
-    theta_grid = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta_grid)
+    # theta_grid = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta_grid)
+    # Uniform grid from theta_min to theta_max
+    theta_grid = np.linspace(theta_min, theta_max, n_theta_grid)
     
     # Storage for results
     ll_grid = np.zeros(n_theta_grid)
