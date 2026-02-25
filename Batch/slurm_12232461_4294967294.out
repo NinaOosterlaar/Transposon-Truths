@@ -1,0 +1,123 @@
+Device: cuda
+
+Clipping outliers using 95th percentile * 1.5...
+strain_yTW001: Clipping values above 134.25 (P95=89.50). Clipped 27529/1193409 values (2.31%)
+strain_FD: Clipping values above 71.92 (P95=47.94). Clipped 95791/4127807 values (2.32%)
+strain_dnrp: Clipping values above 243.00 (P95=162.00). Clipped 25649/1119454 values (2.29%)
+strain_yEK19: Clipping values above 77.10 (P95=51.40). Clipped 83713/3893623 values (2.15%)
+strain_yEK23: Clipping values above 72.00 (P95=48.00). Clipped 86381/3558407 values (2.43%)
+strain_yWT03a: Clipping values above 15.00 (P95=10.00). Clipped 10602/347679 values (3.05%)
+strain_yWT04a: Clipping values above 58.50 (P95=39.00). Clipped 21095/725406 values (2.91%)
+strain_ylic137: Clipping values above 142.50 (P95=95.00). Clipped 28746/1112684 values (2.58%)
+Train chromosomes: ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrVIII', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXVI']
+Validation chromosomes: []
+Test chromosomes: ['ChrI', 'ChrII', 'ChrV', 'ChrXV']
+Standardizing features: ['Centr']
+Column order in final array (Dataset/Chrom split): ['Value', 'Centromere_Distance', 'Value_Raw', 'Size_Factor']
+Removing 0 empty data points out of 149512
+Column order in final array (Dataset/Chrom split): ['Value', 'Centromere_Distance', 'Value_Raw', 'Size_Factor']
+Column order in final array (Dataset/Chrom split): ['Value', 'Centromere_Distance', 'Value_Raw', 'Size_Factor']
+Removing 0 empty data points out of 43304
+
+Dataset sizes after preprocessing:
+  Train: 149512
+  Val: 0
+  Test: 43304
+  Eval strategy: TEST
+
+Applied denoising with 15.0% masking
+
+Creating test dataloader:
+  Test set size: 43304
+  Batch size: 32
+Applied denoising with 15.0% masking
+  Dataloader created: 43304 samples, 1354 batches
+Number of encoder layers: 1
+Number of decoder layers (excluding heads): 1
+Total number of layers including latent layer: 3
+Epoch [1/30], Total Loss: 1.1525, NLL: 1.1359, Masked: 16.5387, Reg: 0.091754
+Epoch [2/30], Total Loss: 0.9862, NLL: 0.9717, Masked: 14.5568, Reg: 0.090120
+Epoch [3/30], Total Loss: 0.9638, NLL: 0.9503, Masked: 13.4976, Reg: 0.088542
+Epoch [4/30], Total Loss: 0.9368, NLL: 0.9239, Masked: 12.8808, Reg: 0.087266
+Epoch [5/30], Total Loss: 0.9261, NLL: 0.9134, Masked: 12.7509, Reg: 0.085590
+Epoch [6/30], Total Loss: 0.9228, NLL: 0.9101, Masked: 12.7145, Reg: 0.083637
+Epoch [7/30], Total Loss: 0.9190, NLL: 0.9064, Masked: 12.6630, Reg: 0.081658
+Epoch [8/30], Total Loss: 0.9159, NLL: 0.9032, Masked: 12.6108, Reg: 0.079704
+Epoch [9/30], Total Loss: 0.9129, NLL: 0.9003, Masked: 12.5776, Reg: 0.077813
+Epoch [10/30], Total Loss: 0.9111, NLL: 0.8985, Masked: 12.5488, Reg: 0.075937
+Epoch [11/30], Total Loss: 0.9101, NLL: 0.8975, Masked: 12.5447, Reg: 0.074087
+Epoch [12/30], Total Loss: 0.9091, NLL: 0.8965, Masked: 12.5315, Reg: 0.072295
+Epoch [13/30], Total Loss: 0.9074, NLL: 0.8949, Masked: 12.4918, Reg: 0.070604
+Epoch [14/30], Total Loss: 0.9058, NLL: 0.8933, Masked: 12.4738, Reg: 0.068966
+Epoch [15/30], Total Loss: 0.9047, NLL: 0.8923, Masked: 12.4422, Reg: 0.067363
+Epoch [16/30], Total Loss: 0.9037, NLL: 0.8912, Masked: 12.4333, Reg: 0.065825
+Epoch [17/30], Total Loss: 0.9026, NLL: 0.8901, Masked: 12.4084, Reg: 0.064344
+Epoch [18/30], Total Loss: 0.9018, NLL: 0.8894, Masked: 12.3882, Reg: 0.062897
+Epoch [19/30], Total Loss: 0.9008, NLL: 0.8884, Masked: 12.3728, Reg: 0.061509
+Epoch [20/30], Total Loss: 0.9002, NLL: 0.8878, Masked: 12.3711, Reg: 0.060140
+Epoch [21/30], Total Loss: 0.8994, NLL: 0.8870, Masked: 12.3610, Reg: 0.058829
+Epoch [22/30], Total Loss: 0.8985, NLL: 0.8862, Masked: 12.3266, Reg: 0.057602
+Epoch [23/30], Total Loss: 0.8966, NLL: 0.8844, Masked: 12.2970, Reg: 0.056513
+Epoch [24/30], Total Loss: 0.8950, NLL: 0.8828, Masked: 12.2631, Reg: 0.055422
+Epoch [25/30], Total Loss: 0.8942, NLL: 0.8820, Masked: 12.2422, Reg: 0.054316
+Epoch [26/30], Total Loss: 0.8930, NLL: 0.8808, Masked: 12.2114, Reg: 0.053264
+Epoch [27/30], Total Loss: 0.8918, NLL: 0.8796, Masked: 12.1923, Reg: 0.052276
+Epoch [28/30], Total Loss: 0.8904, NLL: 0.8783, Masked: 12.1638, Reg: 0.051337
+Epoch [29/30], Total Loss: 0.8894, NLL: 0.8773, Masked: 12.1456, Reg: 0.050405
+Epoch [30/30], Total Loss: 0.8884, NLL: 0.8763, Masked: 12.1242, Reg: 0.049494
+Training loss plot saved to /workspace/AE/results/training/ZINBAE_20260224_141818_no_conv_training_losses.png
+Training losses saved to /workspace/AE/results/training/ZINBAE_20260224_141818_no_conv_training_losses.json
+
+==================================================
+EVALUATING ON TRAINING DATA
+==================================================
+
+==================================================
+TEST RESULTS
+==================================================
+Total Loss: 0.886675
+  - ZINB NLL: 0.874544
+Total number of masked values: 7313619
+  - Number of values with pi >= 0.7: 2790950
+  - Number of values with pi < 0.7: 4522669
+  - Masked Reconstruction: 12.130550
+  - Regularization: 0.049043
+Mean Absolute Error (MAE): 3.265424
+R² Score: -0.000694
+==================================================
+
+Using raw counts for evaluation metrics.
+299024000 249793828 49230172
+Zero imputation: 249,793,828 actual zeros, 11,162,588 imputed (4.5%), 31,789,127 false structural zeros
+Number of masked values: 7313619
+Masked values analysis: 7313619 masked positions, MAE=11.8791, R²=0.1981
+ZINB metrics saved to /workspace/AE/results/training/ZINBAE_20260224_141832_no_conv_test_metrics.json
+ZINB-specific plots saved to /workspace/AE/results/training/
+
+==================================================
+EVALUATING ON TEST DATA
+Dataset size: 43304
+==================================================
+
+
+==================================================
+TEST RESULTS
+==================================================
+Total Loss: 0.933683
+  - ZINB NLL: 0.919813
+Total number of masked values: 2210374
+  - Number of values with pi >= 0.7: 801924
+  - Number of values with pi < 0.7: 1408450
+  - Masked Reconstruction: 13.869672
+  - Regularization: 0.049043
+Mean Absolute Error (MAE): 3.556833
+R² Score: 0.014144
+==================================================
+
+Using raw counts for evaluation metrics.
+86608000 71734214 14873786
+Zero imputation: 71,734,214 actual zeros, 3,891,867 imputed (5.4%), 9,268,342 false structural zeros
+Number of masked values: 2210374
+Masked values analysis: 2210374 masked positions, MAE=12.3286, R²=0.1840
+ZINB metrics saved to /workspace/AE/results/testing/ZINBAE_20260224_154431_no_conv_test_metrics.json
+ZINB-specific plots saved to /workspace/AE/results/testing/
