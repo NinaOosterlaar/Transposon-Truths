@@ -6,7 +6,7 @@ from log_likelihoods import zinb_log_likelihood
 from ZINB_MLE.EM import em_zinb_step
 
 
-def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.05, theta_max=5, 
+def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.05, theta_max=1000, 
                   n_theta_grid=200):
     """
     Estimate ZINB parameters (pi, mu, theta) using profile likelihood for theta.
@@ -99,7 +99,7 @@ def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.05, theta
         pi_grid[idx] = pi
         mu_grid[idx] = mu
         
-        print(f"theta={theta:.2e}: pi={pi:.4f}, mu={mu:.4f}, ll={ll:.2f}, converged={converged_grid[idx]}")
+        # print(f"theta={theta:.2e}: pi={pi:.4f}, mu={mu:.4f}, ll={ll:.2f}, converged={converged_grid[idx]}")
         
         # if (idx + 1) % 10 == 0 or idx == 0 or idx == n_theta_grid - 1:
         #     print(f"  theta={theta:.2e}: pi={pi:.4f}, mu={mu:.4f}, ll={ll:.2f}, "
