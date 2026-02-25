@@ -1,4 +1,0 @@
-srun: error: gpu02: task 0: Out Of Memory
-srun: launch/slurm: _step_signal: Terminating StepId=12232175.0
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=12232175.0. Some of your processes may have been killed by the cgroup out-of-memory handler.
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=12232175.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.
