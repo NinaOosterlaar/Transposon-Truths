@@ -273,7 +273,8 @@ def create_objective_function(optimization_metric, train_chroms, val_chroms, tes
                     regularization_weight=all_params['regularization_weight'],
                     sample_fraction=all_params['sample_fraction'],
                     plot=all_params['plot'],
-                    eval_on_val=True  # Use validation set for optimization
+                    eval_on_val=True,  # Use validation set for optimization
+                    save_model=False  # Don't save models during optimization trials
                 )
             finally:
                 # Explicitly delete datasets and metrics to free memory after training
@@ -689,7 +690,8 @@ def run_bayesian_optimization(n_calls=N_CALLS, random_state=RANDOM_STATE,
             regularization_weight=best_params['regularization_weight'],
             sample_fraction=best_params['sample_fraction'],
             plot=FIXED_PARAMS['plot'],
-            eval_on_val=False  # Evaluate on TEST set
+            eval_on_val=False,  # Evaluate on TEST set
+            save_model=True  # Save the final best model
         )
         
         print(f"\n{'#'*80}")
