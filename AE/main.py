@@ -70,9 +70,9 @@ REGULARIZATION_WEIGHT = 1e-4
 # REGULARIZER = 'l2'
 # REGULARIZATION_WEIGHT = 1e-5
 
-# PLOT = True
-# SAVE_MODEL = True
-# MODEL_SAVE_DIR = "AE/results/models"
+PLOT = True
+SAVE_MODEL = True
+MODEL_SAVE_DIR = "AE/results/models"
 
 
 def main_with_datasets(
