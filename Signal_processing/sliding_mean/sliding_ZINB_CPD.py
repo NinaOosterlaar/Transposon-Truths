@@ -36,20 +36,22 @@ def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_glo
 
         # Estimate parameters for w1 and w2 using EM with fixed theta_global
         for _ in range(max_iter):
-            pi_old, mu1_old = pi1, mu1
+            pi1_old, mu1_old = pi1, mu1
             result1 = em_zinb_step(w1, pi1, mu1, theta_global, eps=eps)
             pi1, mu1 = result1['pi'], result1['mu']
-            if abs(pi1 - pi_old) < tol and abs(mu1 - mu1_old) < tol:
+            if abs(pi1 - pi1_old) < tol and abs(mu1 - mu1_old) < tol:
                 break
         for _ in range(max_iter):
+            pi2_old, mu2_old = pi2, mu2
             result2 = em_zinb_step(w2, pi2, mu2, theta_global, eps=eps)
             pi2, mu2 = result2['pi'], result2['mu']
-            if abs(pi2 - pi_old) < tol and abs(mu2 - mu1_old) < tol:
+            if abs(pi2 - pi2_old) < tol and abs(mu2 - mu2_old) < tol:
                 break
         for _ in range(max_iter):
+            pi0_old, mu0_old = pi0, mu0
             result0 = em_zinb_step(w0, pi0, mu0, theta_global, eps=eps)
             pi0, mu0 = result0['pi'], result0['mu']
-            if abs(pi0 - pi_old) < tol and abs(mu0 - mu1_old) < tol:
+            if abs(pi0 - pi0_old) < tol and abs(mu0 - mu0_old) < tol:
                 break
 
 
