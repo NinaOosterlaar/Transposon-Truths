@@ -147,7 +147,7 @@ def process_all_strains(window_size=2000):
     # Define paths
     base_dir = Path(__file__).parent.parent.parent
     data_dir = base_dir / "Data" / "combined_strains"
-    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
+    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates" / f"window{window_size}"
     
     # Create output directory if it doesn't exist
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -489,11 +489,12 @@ def plot_zinb_results(csv_file, output_dir=None):
 
 
 if __name__ == "__main__":
-    results = process_all_strains(window_size=2000)
+    window_size = 2000
+    results = process_all_strains(window_size=window_size)
     
     # Generate plots
     base_dir = Path(__file__).parent.parent.parent
-    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates"
+    output_dir = base_dir / "Signal_processing" / "results" / "ZINB_estimates" / f"window{window_size}"
     csv_file = output_dir / "zinb_estimates_windows_size2000.csv"
     
     if csv_file.exists():
