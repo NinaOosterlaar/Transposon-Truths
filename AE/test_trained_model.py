@@ -1,0 +1,265 @@
+import os, sys
+import torch
+import numpy as np
+import hashlib
+import json
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from AE.preprocessing.preprocessing import preprocess_with_split
+from AE.architectures.ZINBAE import ZINBAE
+from AE.training.training_utils import dataloader_from_array, ChromosomeEmbedding
+from AE.training.training import test
+
+# ========== MODEL AND DATA CONFIGURATION ==========
+# Path to the trained model
+MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
+
+# Test dataset configuration
+INPUT_FOLDER = "Data/combined_strains"
+test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXV']
+
+# Preprocessing parameters (should match training configuration)
+FEATURES = ['Centr']
+BIN_SIZE = 1
+MOVING_AVERAGE = False
+DATA_POINT_LENGTH = 2000
+STEP_SIZE = 500
+
+# Training parameters (should match training configuration)
+BATCH_SIZE = 32
+NOISE_LEVEL = 0.15
+PI_THRESHOLD = 0.7
+MASKED_RECON_WEIGHT = 0.001  # gamma
+REGULARIZER = 'l2'
+REGULARIZATION_WEIGHT = 1e-5  # alpha
+
+# Data caching options
+USE_CACHED_DATA = True  # Set to False to force reprocessing
+PROCESSED_DATA_DIR = "Data/processed_data"
+
+# Output directory for results and plots
+OUTPUT_DIR = "AE/results/final/testing"  # Where plots and metrics will be saved
+# ================================================
+
+
+def generate_cache_filename(test_chroms, features, bin_size, moving_average, data_point_length, step_size):
+    """
+    Generate a unique filename for cached preprocessed data based on parameters.
+    """
+    # Create a dict of parameters that affect preprocessing
+    params = {
+        'test_chroms': sorted(test_chroms),  # Sort to ensure consistency
+        'features': sorted(features),
+        'bin_size': bin_size,
+        'moving_average': moving_average,
+        'data_point_length': data_point_length,
+        'step_size': step_size
+    }
+    
+    # Create a hash of the parameters for a unique identifier
+    params_str = json.dumps(params, sort_keys=True)
+    params_hash = hashlib.md5(params_str.encode()).hexdigest()[:8]
+    
+    features_str = "_".join(sorted(features))
+    
+    filename = f"{features_str}_bin{bin_size}_ma{moving_average}_len{data_point_length}_step{step_size}_{params_hash}.npy"
+    
+    return filename
+
+
+def load_or_preprocess_data(input_folder, test_chroms, features, bin_size, moving_average, 
+                            preprocessing_length, step_size, use_cache=True, cache_dir="Data/processed_data"):
+    """
+    Load preprocessed data from cache if available, otherwise preprocess and save.
+    
+    Returns:
+        test_set: The preprocessed test dataset
+    """
+    os.makedirs(cache_dir, exist_ok=True)
+    
+    cache_filename = generate_cache_filename(test_chroms, features, bin_size, moving_average, 
+                                            preprocessing_length, step_size)
+    cache_path = os.path.join(cache_dir, cache_filename)
+    
+    # Try to load from cache
+    if use_cache and os.path.exists(cache_path):
+        print(f"\n{'='*50}")
+        print("LOADING CACHED DATA")
+        print(f"{'='*50}")
+        print(f"Loading from: {cache_path}")
+        
+        test_set = np.load(cache_path)
+        print(f"Loaded test set with shape: {test_set.shape}")
+        
+        return test_set
+    
+    # If not cached or cache disabled, preprocess
+    print(f"\n{'='*50}")
+    print("PREPROCESSING DATA")
+    print(f"{'='*50}")
+    print("Cached data not found or caching disabled. Preprocessing from scratch...")
+    
+    # Get all available chromosomes and assign non-test chromosomes to train
+    all_chroms = ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 
+                  'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII',
+                  'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+    train_chroms = [c for c in all_chroms if c not in test_chroms]
+    
+    print(f"Test chromosomes: {test_chroms}")
+    print(f"Train chromosomes: {train_chroms}")
+    
+    # Preprocess data with explicit chromosome split
+    _, _, test_set, _, _, _ = preprocess_with_split(
+        input_folder=input_folder,
+        train_chroms=train_chroms,
+        val_chroms=[],  # No validation set needed for testing
+        test_chroms=test_chroms,
+        features=features,
+        bin_size=bin_size,
+        moving_average=moving_average,
+        data_point_length=preprocessing_length,
+        step_size=step_size
+    )
+    
+    # Save to cache
+    print(f"\nSaving preprocessed data to cache: {cache_path}")
+    np.save(cache_path, test_set)
+    print(f"Cached data saved successfully!")
+    
+    return test_set
+
+
+def load_model_and_test():
+    """
+    Load a trained model and evaluate it on the test dataset.
+    Creates visualization plots of the test results.
+    
+    Uses configuration parameters defined at the top of this file.
+    """
+    print("="*50)
+    print("LOADING TRAINED MODEL")
+    print("="*50)
+    
+    # Load the saved model
+    checkpoint = torch.load(MODEL_PATH, map_location='cpu')
+    
+    # Extract model configuration from checkpoint
+    model_config = checkpoint['model_config']
+    
+    print(f"\nModel Architecture:")
+    for key, value in model_config.items():
+        print(f"  {key}: {value}")
+    
+    print(f"\nTest Configuration:")
+    print(f"  features: {FEATURES}")
+    print(f"  bin_size: {BIN_SIZE}")
+    print(f"  moving_average: {MOVING_AVERAGE}")
+    print(f"  data_point_length: {DATA_POINT_LENGTH}")
+    print(f"  step_size: {STEP_SIZE}")
+    print(f"  batch_size: {BATCH_SIZE}")
+    print(f"  noise_level: {NOISE_LEVEL}")
+    print(f"  pi_threshold: {PI_THRESHOLD}")
+    print(f"  masked_recon_weight: {MASKED_RECON_WEIGHT}")
+    print(f"  regularizer: {REGULARIZER}")
+    print(f"  regularization_weight: {REGULARIZATION_WEIGHT}")
+    print(f"  use_cached_data: {USE_CACHED_DATA}")
+    print(f"  output_dir: {OUTPUT_DIR}")
+    
+    # Adjust data_point_length for preprocessing (reverse the transformation from main.py)
+    if not MOVING_AVERAGE:
+        preprocessing_length = DATA_POINT_LENGTH * BIN_SIZE
+    else:
+        preprocessing_length = DATA_POINT_LENGTH
+    
+    # Check if chromosome feature is used
+    chrom = 'Chr' in FEATURES
+    
+    # Load or preprocess test data
+    test_set = load_or_preprocess_data(
+        input_folder=INPUT_FOLDER,
+        test_chroms=test_chromosomes,
+        features=FEATURES,
+        bin_size=BIN_SIZE,
+        moving_average=MOVING_AVERAGE,
+        preprocessing_length=preprocessing_length,
+        step_size=STEP_SIZE,
+        use_cache=USE_CACHED_DATA,
+        cache_dir=PROCESSED_DATA_DIR
+    )
+    
+    print(f"\nTest set size: {len(test_set)}")
+    
+    # Create chromosome embedding if needed
+    chrom_embedding = ChromosomeEmbedding() if chrom else None
+    
+    # Create test dataloader
+    test_dataloader = dataloader_from_array(
+        test_set,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        zinb=True,  
+        chrom=chrom,
+        sample_fraction=1.0,  # Use all test data
+        denoise_percentage=NOISE_LEVEL
+    )
+    
+    print(f"Test dataloader: {len(test_dataloader.dataset)} samples, {len(test_dataloader)} batches")
+    
+    # Initialize model with saved configuration
+    print("\n" + "="*50)
+    print("INITIALIZING MODEL")
+    print("="*50)
+    
+    model = ZINBAE(**model_config)
+    
+    # Load the trained weights
+    model.load_state_dict(checkpoint['model_state_dict'])
+    
+    print("Model weights loaded successfully!")
+    
+    # Create output directory
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    # Run test function to create plots
+    print("\n" + "="*50)
+    print("EVALUATING ON TEST DATA")
+    print("="*50)
+    
+    # The test function saves plots relative to the current directory
+    # We need to check how the test function actually saves plots
+    _, _, test_metrics = test(
+        model=model,
+        dataloader=test_dataloader,
+        chrom=chrom,
+        chrom_embedding=chrom_embedding,
+        plot=True,  # Enable plotting
+        denoise_percent=NOISE_LEVEL,
+        gamma=MASKED_RECON_WEIGHT,
+        pi_threshold=PI_THRESHOLD,
+        regularizer=REGULARIZER,
+        alpha=REGULARIZATION_WEIGHT,
+        eval_mode="testing",
+        name=OUTPUT_DIR 
+    )
+    
+    print("\n" + "="*50)
+    print("TEST METRICS")
+    print("="*50)
+    for key, value in test_metrics.items():
+        print(f"  {key}: {value}")
+    
+    # Save metrics to output directory
+    metrics_path = os.path.join(OUTPUT_DIR, "test_metrics.json")
+    with open(metrics_path, 'w') as f:
+        json.dump(test_metrics, f, indent=2)
+    print(f"\nMetrics saved to: {metrics_path}")
+    
+    print("\n" + "="*50)
+    print("TESTING COMPLETE")
+    print("="*50)
+    print(f"Results saved to: {OUTPUT_DIR}/")
+    
+    return test_metrics
+
+
+if __name__ == "__main__":
+    load_model_and_test()
