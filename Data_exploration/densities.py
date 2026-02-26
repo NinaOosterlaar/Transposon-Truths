@@ -740,13 +740,13 @@ if __name__ == "__main__":
     # density_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/densities/nucleosome_new", boolean=True)
     
     # Combine nucleosome data: 
-    combine_nucleosome_data(data="All", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=800)
+    combine_nucleosome_data(data="Strains", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=800)
     # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
     bin_size = 10000
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=bin_size, boolean=True)
-    combine_centromere_data(mode="All", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False)
-    combine_centromere_data(mode="All", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True)
+    combine_centromere_data(mode="Strains", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False)
+    combine_centromere_data(mode="Strains", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True)
     # combine_centromere_data(mode="Chromosomes", boolean=True, bin_size=bin_size, plot=True)
     
