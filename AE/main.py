@@ -3,7 +3,7 @@ import gc
 import torch
 from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from AE.preprocessing.preprocessing import preprocess
+from AE.preprocessing.preprocessing import preprocess_with_split
 from AE.architectures.ZINBAE import ZINBAE
 from AE.training.training_utils import dataloader_from_array, ChromosomeEmbedding
 from AE.training.training import train, test
@@ -18,8 +18,9 @@ DATA_POINT_LENGTH = 2000
 STEP_SIZE = 894
 SAMPLE_FRACTION = 0.94
 
-SPLIT_ON = 'Chrom'
-TRAIN_VAL_TEST_SPLIT = [0.8, 0, 0.2]
+TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+VAL_CHROM = []  # No validation set - already optimized hyperparameters
 
 USE_CONV = False
 CONV_CHANNEL = 85
@@ -49,7 +50,9 @@ REGULARIZATION_WEIGHT = 1e-4
 # SAMPLE_FRACTION = 1.0
 
 # SPLIT_ON = 'Chrom'
-# TRAIN_VAL_TEST_SPLIT = [0.8, 0, 0.2]
+# TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+# TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+
 
 # USE_CONV = False
 # CONV_CHANNEL = 85
@@ -286,8 +289,9 @@ def main(
     data_point_length=DATA_POINT_LENGTH, 
     step_size=STEP_SIZE,
     sample_fraction=SAMPLE_FRACTION, 
-    split_on=SPLIT_ON,
-    train_val_test_split=TRAIN_VAL_TEST_SPLIT,
+    train_chroms=TRAIN_CHROM,
+    val_chroms=VAL_CHROM,
+    test_chroms=TEST_CHROM,
     use_conv=USE_CONV, 
     conv_channel=CONV_CHANNEL, 
     pool_size=POOL_SIZE,
@@ -308,22 +312,36 @@ def main(
     save_model=SAVE_MODEL,
     model_save_dir=MODEL_SAVE_DIR):
     """
-    Original main function that handles data preprocessing.
-    For backwards compatibility and standalone usage.
+    Main function that handles data preprocessing with explicit chromosome splits.
+    
+    Parameters:
+    -----------
+    train_chroms : list
+        List of chromosome names for training set
+    val_chroms : list
+        List of chromosome names for validation set (can be empty)
+    test_chroms : list
+        List of chromosome names for test set
     """
     if not moving_average:
         data_point_length = data_point_length // bin_size
     
-    # Preprocess data
-    train_set, val_set, test_set, _, _, _ = preprocess(
+    # Preprocess data with explicit chromosome split
+    print(f"\nPreprocessing with chromosome split:")
+    print(f"  Train chromosomes: {train_chroms}")
+    print(f"  Val chromosomes: {val_chroms if val_chroms else 'None'}")
+    print(f"  Test chromosomes: {test_chroms}")
+    
+    train_set, val_set, test_set, _, _, _ = preprocess_with_split(
         input_folder=input_folder,
+        train_chroms=train_chroms,
+        val_chroms=val_chroms,
+        test_chroms=test_chroms,
         features=features,
         bin_size=bin_size,
         moving_average=moving_average,
         data_point_length=data_point_length,
-        step_size=step_size,
-        split_on=split_on,
-        train_val_test_split=train_val_test_split
+        step_size=step_size
     )
     
     # Debug: Print dataset sizes
