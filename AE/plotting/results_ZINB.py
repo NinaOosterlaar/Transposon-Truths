@@ -211,8 +211,8 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
             label='Observed non-zeros')
 
 
-        axes[0].set_yscale("log")
-        axes[0].set_ylabel("Density (log)")
+        # axes[0].set_yscale("log")
+        axes[0].set_ylabel("Number of positions")
         axes[0].set_xlabel('Zero-inflation Probability (π)')
         axes[0].set_ylabel('Density')
         axes[0].set_title(f'{model_type}: π Distribution')
@@ -351,7 +351,7 @@ def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_m
         axes[0, 1].axvline(x=threshold, color='red', linestyle='--', linewidth=2, label='Threshold (0.5)')
         axes[0, 1].set_xlabel('Zero-inflation Probability (π)')
         axes[0, 1].set_ylabel('Frequency')
-        axes[0, 1].set_yscale('log')
+        # axes[0, 1].set_yscale('log')
         axes[0, 1].set_title(f'{model_type}: π Distribution for Masked Positions\\n(Mean π={np.mean(masked_pi):.3f})')
         axes[0, 1].legend()
         axes[0, 1].grid(True, alpha=0.3)
@@ -451,7 +451,7 @@ def zero_imputation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mod
                       label=f'Threshold ({pi_threshold})')
     axes[1].set_xlabel('Zero-inflation Probability (π)')
     axes[1].set_ylabel('Frequency')
-    axes[1].set_yscale('log')
+    # axes[1].set_yscale('log')
     axes[1].set_title(f'{model_type}: π Distribution for Original Zeros\n(Mean π={np.mean(pi_actual_zeros):.3f})')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
