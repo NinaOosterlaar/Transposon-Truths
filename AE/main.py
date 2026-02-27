@@ -11,17 +11,17 @@ from AE.training.training import train, test
 
 # Preprocessing
 INPUT_FOLDER = "Data/combined_strains"
-FEATURES = ['Nucl', 'Centr']
-BIN_SIZE = 17
+FEATURES = ['Centr']
+BIN_SIZE = 19
 MOVING_AVERAGE = True
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 1273
-SAMPLE_FRACTION = 0.80
+STEP_SIZE = 894
+SAMPLE_FRACTION = 0.94
 
 SPLIT_ON = 'Chrom'
 TRAIN_VAL_TEST_SPLIT = [0.8, 0, 0.2]
 
-USE_CONV = True
+USE_CONV = False
 CONV_CHANNEL = 85
 POOL_SIZE = 4
 POOLING_OPERATION = 'max'
@@ -29,14 +29,14 @@ KERNEL_SIZE = 3
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 101
-BATCH_SIZE = 64
+EPOCHS = 141
+BATCH_SIZE = 128
 NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.407
-MASKED_RECON_WEIGHT = 0.0327  # gamma: weight for masked reconstruction loss
-LEARNING_RATE = 0.0009886
-DROPOUT_RATE = 0.315
-LAYERS = [688]
+PI_THRESHOLD = 0.7
+MASKED_RECON_WEIGHT = 0.0087 # gamma: weight for masked reconstruction loss
+LEARNING_RATE = 0.000102
+DROPOUT_RATE = 0.0077
+LAYERS = [752]
 REGULARIZER = 'none'
 REGULARIZATION_WEIGHT = 1e-4
 
