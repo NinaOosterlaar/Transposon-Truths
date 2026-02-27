@@ -224,8 +224,23 @@ def load_model_and_test():
     print("EVALUATING ON TEST DATA")
     print("="*50)
     
-    # The test function saves plots relative to the current directory
-    # We need to check how the test function actually saves plots
+    # Extract just the final directory name for organizing results
+    # The test function will create: AE/results/{subdir}/{name}/
+    # To save to OUTPUT_DIR, we need to set subdir to the relative path from AE/results/
+    # or use a simple name if OUTPUT_DIR is already under AE/results/
+    
+    # Check if OUTPUT_DIR is under AE/results/
+    if OUTPUT_DIR.startswith("AE/results/"):
+        # Extract the subdirectory structure after AE/results/
+        subdir_path = OUTPUT_DIR.replace("AE/results/", "")
+        # Use the path as subdir and no additional name
+        eval_mode = subdir_path
+        custom_name = ""
+    else:
+        # OUTPUT_DIR is somewhere else - use it as a simple identifier
+        eval_mode = "testing"
+        custom_name = OUTPUT_DIR.replace("/", "_")
+    
     _, _, test_metrics = test(
         model=model,
         dataloader=test_dataloader,
@@ -237,8 +252,8 @@ def load_model_and_test():
         pi_threshold=PI_THRESHOLD,
         regularizer=REGULARIZER,
         alpha=REGULARIZATION_WEIGHT,
-        eval_mode="testing",
-        name=OUTPUT_DIR 
+        eval_mode=eval_mode,
+        name=custom_name
     )
     
     print("\n" + "="*50)

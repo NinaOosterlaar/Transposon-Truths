@@ -199,25 +199,25 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
         
         # Histogram of pi for actual zeros vs non-zeros
         bins = np.linspace(0, 1, 51)  # 50 bins, shared
-        axes[0,0].hist(pi_flat[actual_zeros],
+        axes[0].hist(pi_flat[actual_zeros],
             bins=bins,
             density=True,
             alpha=0.4,
             label='Observed zeros')
-        axes[0,0].hist(pi_flat[actual_nonzeros],
+        axes[0].hist(pi_flat[actual_nonzeros],
             bins=bins,
             density=True,
             alpha=0.3,
             label='Observed non-zeros')
 
 
-        axes[0,0].set_yscale("log")
-        axes[0,0].set_ylabel("Density (log)")
-        axes[0, 0].set_xlabel('Zero-inflation Probability (π)')
-        axes[0, 0].set_ylabel('Density')
-        axes[0, 0].set_title(f'{model_type}: π Distribution')
-        axes[0, 0].legend()
-        axes[0, 0].grid(True, alpha=0.3)
+        axes[0].set_yscale("log")
+        axes[0].set_ylabel("Density (log)")
+        axes[0].set_xlabel('Zero-inflation Probability (π)')
+        axes[0].set_ylabel('Density')
+        axes[0].set_title(f'{model_type}: π Distribution')
+        axes[0].legend()
+        axes[0].grid(True, alpha=0.3)
         
         # Violin Plot
         data = [
@@ -230,7 +230,7 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
             return np.log(p/(1-p))
 
         data = [logit(pi_flat[actual_zeros]), logit(pi_flat[actual_nonzeros])]
-        parts = axes[0,1].violinplot(data, showmedians=True, showextrema=True)
+        parts = axes[1].violinplot(data, showmedians=True, showextrema=True)
         
         # Color the violin plots: blue for zeros, orange for non-zeros
         colors = [COLORS['blue'], COLORS['orange']]
@@ -244,13 +244,13 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
                 parts[partname].set_edgecolor('gray')
                 parts[partname].set_linewidth(1.5)
         
-        axes[0,1].set_ylabel("logit(π)")
+        axes[1].set_ylabel("logit(π)")
 
-        axes[0, 1].set_xticks([1, 2])
-        axes[0, 1].set_xticklabels(['Observed zeros', 'Observed non-zeros'])
-        axes[0, 1].set_ylabel('Zero-inflation probability logit (π)')
-        axes[0, 1].set_title(f'{model_type}: π distribution')
-        axes[0, 1].grid(True, alpha=0.3)
+        axes[1].set_xticks([1, 2])
+        axes[1].set_xticklabels(['Observed zeros', 'Observed non-zeros'])
+        axes[1].set_ylabel('Zero-inflation probability logit (π)')
+        axes[1].set_title(f'{model_type}: π distribution')
+        axes[1].grid(True, alpha=0.3)
                 
         # # Scatter plot of pi vs mu - separated by actual zeros vs non-zeros
         # mu_clipped, mu_hi = clip_hi(all_reconstructions_mu.flatten(), q=99.9)
