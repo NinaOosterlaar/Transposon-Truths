@@ -14,6 +14,7 @@ class ZINBAE(nn.Module):
         padding='same',
         stride=1,
         dropout=0.0,
+        mu_offset=0,
     ):
         super().__init__()
         
@@ -22,6 +23,7 @@ class ZINBAE(nn.Module):
         self.model_type = 'ZINBAE'
         self.use_conv = use_conv
         self.dropout = dropout
+        self.mu_offset = mu_offset
         
         # ----- Optional Conv1D Layer -----
         if use_conv:
@@ -156,7 +158,7 @@ class ZINBAE(nn.Module):
         log_mu = mu_hat_logits + log_sf
         log_mu = torch.clamp(log_mu, min=-20, max=20)
         # mu = torch.exp(log_mu) 
-        mu=torch.exp(log_mu) + 1
+        mu=torch.exp(log_mu) + self.mu_offset
         # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity 
         
         theta_logits = self.theta_layer(D)
@@ -189,6 +191,7 @@ class ZINBVAE(nn.Module):
         padding=1,
         stride=1,
         dropout=0.0,
+        mu_offset=0,
     ):
         super().__init__()
         
@@ -197,6 +200,7 @@ class ZINBVAE(nn.Module):
         self.model_type = 'ZINBVAE'
         self.use_conv = use_conv
         self.dropout = dropout
+        self.mu_offset = mu_offset
         
         # ----- Optional Conv1D Layer -----
         if self.use_conv:
@@ -321,7 +325,7 @@ class ZINBVAE(nn.Module):
 
         log_mu = mu_hat_logits + log_sf
         # mu = torch.nn.functional.softplus(log_mu) + 1e-4  # ensure positivity
-        mu = torch.exp(log_mu)
+        mu = torch.exp(log_mu) + self.mu_offset
 
         # theta via softplus (positive, stable)
         theta_logits = self.theta_layer(D)

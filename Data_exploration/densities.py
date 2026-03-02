@@ -744,9 +744,11 @@ if __name__ == "__main__":
     # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
-    bin_size = 10000
+    bin_size = 1
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=bin_size, boolean=True)
     combine_centromere_data(mode="Strains", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False)
     combine_centromere_data(mode="Strains", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True)
     # combine_centromere_data(mode="Chromosomes", boolean=True, bin_size=bin_size, plot=True)
+    
+
     

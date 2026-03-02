@@ -141,8 +141,12 @@ def density_plots(actual_counts_flat, all_reconstructions_mu, residuals, compari
         # Plot high π points (unreliable mean predictions)
         # axes[0].scatter(actual_counts_flat[high_pi_sample], recon_flat[high_pi_sample], 
         #                alpha=0.3, s=1, c=COLORS['orange'], label='π > 0.5 (structural zeros)')
+        
+    # Filter out predicted values higher than 500 for better visualization
+    mask = recon_flat < 500
+    sample_indices_filtered = sample_indices[mask[sample_indices]]
 
-    axes[0].scatter(actual_counts_flat[sample_indices], recon_flat[sample_indices], 
+    axes[0].scatter(actual_counts_flat[sample_indices_filtered], recon_flat[sample_indices_filtered], 
                     alpha=0.3, s=1, c=COLORS['black'])
     
     axes[0].plot([actual_counts_flat.min(), actual_counts_flat.max()], 
@@ -211,7 +215,7 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
             label='Observed non-zeros')
 
 
-        # axes[0].set_yscale("log")
+        axes[0].set_yscale("log")
         axes[0].set_ylabel("Number of positions")
         axes[0].set_xlabel('Zero-inflation Probability (π)')
         axes[0].set_ylabel('Density')
@@ -714,8 +718,8 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
         masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks,
                               model_type, save_dir, prefix, pi_threshold)
     # 6. Example Reconstructions with ZINB Parameters and Uncertainty
-    # reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 
-    #                 n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix, pi_threshold=pi_threshold)
+    reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 
+                    n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix, pi_threshold=pi_threshold)
     # 7. Metrics Summary
     if metrics is not None:
         metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, residuals, 

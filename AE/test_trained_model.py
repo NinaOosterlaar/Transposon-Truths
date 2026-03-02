@@ -10,12 +10,14 @@ from AE.training.training_utils import dataloader_from_array, ChromosomeEmbeddin
 from AE.training.training import test
 
 # ========== MODEL AND DATA CONFIGURATION ==========
-# Path to the trained model
-MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
 
 # Test dataset configuration
 INPUT_FOLDER = "Data/combined_strains"
-test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXV']
+test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+train_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+
+# Path to the trained model
+MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
 
 # Preprocessing parameters (should match training configuration)
 FEATURES = ['Centr']
@@ -31,6 +33,23 @@ PI_THRESHOLD = 0.7
 MASKED_RECON_WEIGHT = 0.001  # gamma
 REGULARIZER = 'l2'
 REGULARIZATION_WEIGHT = 1e-5  # alpha
+
+# MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
+
+# # Preprocessing parameters (should match training configuration)
+# FEATURES = ['Centr']
+# BIN_SIZE = 19
+# MOVING_AVERAGE = True
+# DATA_POINT_LENGTH = 2000
+# STEP_SIZE = 894
+
+# # Training parameters (should match training configuration)
+# BATCH_SIZE = 128
+# NOISE_LEVEL = 0.15
+# PI_THRESHOLD = 0.7
+# MASKED_RECON_WEIGHT = 0.00872  # gamma
+# REGULARIZER = 'none'
+# REGULARIZATION_WEIGHT = 1e-5  # alpha
 
 # Data caching options
 USE_CACHED_DATA = True  # Set to False to force reprocessing
@@ -98,11 +117,7 @@ def load_or_preprocess_data(input_folder, test_chroms, features, bin_size, movin
     print(f"{'='*50}")
     print("Cached data not found or caching disabled. Preprocessing from scratch...")
     
-    # Get all available chromosomes and assign non-test chromosomes to train
-    all_chroms = ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 
-                  'ChrVII', 'ChrVIII', 'ChrIX', 'ChrX', 'ChrXI', 'ChrXII',
-                  'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
-    train_chroms = [c for c in all_chroms if c not in test_chroms]
+    train_chroms = train_chromosomes
     
     print(f"Test chromosomes: {test_chroms}")
     print(f"Train chromosomes: {train_chroms}")
@@ -140,7 +155,7 @@ def load_model_and_test():
     print("="*50)
     
     # Load the saved model
-    checkpoint = torch.load(MODEL_PATH, map_location='cpu')
+    checkpoint = torch.load(MODEL_PATH, map_location='cpu', weights_only=False)
     
     # Extract model configuration from checkpoint
     model_config = checkpoint['model_config']

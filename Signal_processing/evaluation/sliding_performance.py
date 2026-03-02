@@ -36,32 +36,46 @@ def read_change_points(file_path):
             change_points.append(int(line.strip()))
     return change_points
 
-def read_true_params(file_path):
+def read_true_params(file_path, other_file=False):
     """Read true change point parameters from a CSV file with region parameters.
     
-    Calculates change points from cumulative sum of region lengths.
-    Works with both pretty_data_params.csv and realistic_data_params.csv formats.
+    Args:
+        file_path: Path to the CSV file
+        other_file: If True, reads SATAY_synthetic format (region_start, region_end, region_mean)
+                   If False, reads standard format (region_lengths, region_means, etc.)
+    
+    Returns:
+        List of change point positions
     """
     
     # Read the CSV file with region parameters
     df = pd.read_csv(file_path)
     
-    # Check if 'region_lengths' column exists (should be in both formats)
-    if 'region_lengths' not in df.columns:
-        raise ValueError(f"Column 'region_lengths' not found in {file_path}. Available columns: {df.columns.tolist()}")
-    
-    # Get region lengths and round them to integers
-    region_lengths = df['region_lengths'].values
-    region_lengths = np.rint(region_lengths).astype(int)
-    
-    # Calculate cumulative positions (change points are at region boundaries)
-    cumsum_lengths = np.cumsum(region_lengths)
-    
-    # Change points are at the end of each region (subtract 1 for 0-based indexing)
-    change_points = cumsum_lengths - 1
-    
-    # Return as a list (excluding the last point which is the end of the data)
-    return change_points[:-1].tolist()
+    if other_file:
+        # SATAY_synthetic format: has region_start, region_end columns
+        if 'region_start' not in df.columns:
+            raise ValueError(f"Column 'region_start' not found in {file_path}. Available columns: {df.columns.tolist()}")
+        
+        # Change points are at region_start positions (excluding the first one which is 0)
+        change_points = df['region_start'].values[1:]  # Skip first start position (0)
+        return change_points.tolist()
+    else:
+        # Standard format: has region_lengths column
+        if 'region_lengths' not in df.columns:
+            raise ValueError(f"Column 'region_lengths' not found in {file_path}. Available columns: {df.columns.tolist()}")
+        
+        # Get region lengths and round them to integers
+        region_lengths = df['region_lengths'].values
+        region_lengths = np.rint(region_lengths).astype(int)
+        
+        # Calculate cumulative positions (change points are at region boundaries)
+        cumsum_lengths = np.cumsum(region_lengths)
+        
+        # Change points are at the end of each region (subtract 1 for 0-based indexing)
+        change_points = cumsum_lengths - 1
+        
+        # Return as a list (excluding the last point which is the end of the data)
+        return change_points[:-1].tolist()
 
 def read_data(data_file):
     """Read the signal data from CSV file."""
@@ -109,7 +123,7 @@ def plot_change_points_overlay(data, detected_cps, true_cps, start_pos, end_pos,
     plt.close()
 
 def create_overlay_plots(dataset_name='pretty_data', num_plots=5, section_length=5000, 
-                         base_results_folder=None):
+                         base_results_folder=None, other_file=False):
     """Create overlay plots showing detected vs true change points on random sections of data."""
     
     # Setup paths
@@ -136,7 +150,7 @@ def create_overlay_plots(dataset_name='pretty_data', num_plots=5, section_length
     
     # Read data and true change points
     data = read_data(data_file)
-    true_cps = read_true_params(param_file)
+    true_cps = read_true_params(param_file, other_file=other_file)
     data_length = len(data)
     
     print(f"Data length: {data_length}")
@@ -348,12 +362,15 @@ def plot_roc_curves(roc_curves_data, output_folder, tol_name, dataset_name):
     print(f"Saved ROC curve: {output_path}")
 
 
-def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, dataset_name):
+def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, dataset_name, other_file=False):
     """Evaluate precision, recall, and F1 for all window sizes and thresholds.
     
     Args:
         data_file: Path to the input data file (e.g., 'Signal_processing/sample_data/pretty_data.csv')
-        output_folder: Path to the output folder for performance metrics and plots  
+        input_folder: Path to the folder containing results
+        output_folder: Path to the output folder for performance metrics and plots
+        dataset_name: Name of the dataset
+        other_file: If True, reads SATAY_synthetic params format
     """
 
     # Setup paths
@@ -369,7 +386,7 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
     # Read data and true change points
     data = read_data(data_file)
     n_points = len(data)
-    true_cps = read_true_params(true_param_file)
+    true_cps = read_true_params(true_param_file, other_file=other_file)
     print(f"Total data points: {n_points}")
     print(f"Total true change points: {len(true_cps)}")
     
@@ -574,15 +591,16 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
 
 if __name__ == "__main__":
     # Specify which dataset to analyze
-    dataset_name = 'noisy_data'  # Options: 'pretty_data', 'realistic_data', 'noisy_data'
-    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/{dataset_name}"
+    dataset_name = 'SATAY_synthetic'  # Options: 'pretty_data', 'realistic_data', 'noisy_data', 'SATAY_synthetic'
+    input_folder = f"Signal_processing/results/sliding_mean/sliding_NB_CPD/{dataset_name}"
     data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
-    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift"
+    output_folder = f"Signal_processing/results/sliding_cpd_performance/NB_shift"
+    other_file = True
     
     # Evaluate performance metrics
     print(f"Analyzing dataset: {dataset_name}")
     print("="*50)
-    results_df = evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, dataset_name)
+    results_df = evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, dataset_name, other_file=other_file)
     print("\nSummary statistics by window size and tolerance:")
     print(results_df.groupby(['window_size', 'tolerance_type'])[['precision', 'recall', 'F1']].mean())
     

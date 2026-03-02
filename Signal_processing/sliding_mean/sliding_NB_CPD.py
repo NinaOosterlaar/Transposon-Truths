@@ -95,14 +95,14 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    input_file = args.input_file
+    # args = parse_arguments()
+    input_file = "Signal_processing/sample_data/SATAY_synthetic/SATAY_with_pi.csv"
     window_size = [10, 30, 50, 80]
     overlap = 0.5
-    thresholds = np.linspace(0.5, 25, 30)
+    thresholds = np.linspace(0.01, 7.0, 30)
     print(thresholds)
-    output_folder = args.output_folder
-    dataset_name = args.dataset_name
+    output_folder = "Signal_processing/results/sliding_mean/sliding_NB_CPD"
+    dataset_name = "SATAY_synthetic"
     # Add dataset name to output folder path
     output_folder = os.path.join(output_folder, dataset_name)
     

@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0-2
+#SBATCH --array=0
 
 set -euo pipefail
 
@@ -20,10 +20,10 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 cd "$PROJECT_DIR"
 
 # Array of dataset names
-DATASETS=("realistic_data" "pretty_data" "noisy_data")
+DATASETS=("SATAY_synthetic")
 
 DATASET_NAME=${DATASETS[$SLURM_ARRAY_TASK_ID]}
-INPUT_FILE="Signal_processing/sample_data/${DATASET_NAME}.csv"
+INPUT_FILE="Signal_processing/sample_data/SATAY_synthetic.csv"
 
 echo "Running sliding ZINB CPD on dataset: ${DATASET_NAME}"
 echo "Input file: ${INPUT_FILE}"
