@@ -1,0 +1,3 @@
+scores: []
+theta_global: 0.1
+window_size: 80, overlap: 0.5, threshold: 23.0

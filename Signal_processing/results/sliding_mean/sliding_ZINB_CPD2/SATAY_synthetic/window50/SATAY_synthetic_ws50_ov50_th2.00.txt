@@ -1,0 +1,6 @@
+123175 
+262450 
+263400 
+scores: []
+theta_global: 0.1
+window_size: 50, overlap: 0.5, threshold: 2.0

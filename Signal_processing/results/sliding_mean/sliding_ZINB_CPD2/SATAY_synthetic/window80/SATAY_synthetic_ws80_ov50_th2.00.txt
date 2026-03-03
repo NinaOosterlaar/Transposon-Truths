@@ -1,0 +1,11 @@
+123160 
+174040 
+211400 
+240000 
+242800 
+262440 
+326280 
+344640 
+scores: []
+theta_global: 0.1
+window_size: 80, overlap: 0.5, threshold: 2.0

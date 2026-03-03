@@ -1,0 +1,12 @@
+Running sliding ZINB CPD on dataset: SATAY_synthetic
+Input file: Signal_processing/sample_data/SATAY_synthetic.csv
+[ 0.  1.  2.  3.  4.  5.  6.  7.  8.  9. 10. 11. 12. 13. 14. 15. 16. 17.
+ 18. 19. 20. 21. 22. 23. 24. 25. 26. 27. 28. 29. 30. 31. 32. 33. 34. 35.
+ 36. 37. 38. 39. 40.]
+
+Best theta: 1.00e-01 with ll=-390864.81
+Final parameters: pi=0.5618, mu=2.9201, theta=0.1000
+Estimated global theta: 0.1000
+(Estimated global pi: 0.5618, mu: 2.9201)
+Using global theta: 0.1000 for all window sizes and thresholds.
+Using 4 workers to process 4 window sizes in parallel

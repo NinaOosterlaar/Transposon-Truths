@@ -1,0 +1,5 @@
+7350 
+48975 
+scores: []
+theta_global: 0.1
+window_size: 10, overlap: 0.5, threshold: 0.0
