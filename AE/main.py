@@ -2,6 +2,7 @@ import os, sys
 import gc
 import torch
 from datetime import datetime
+import argparse
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from AE.preprocessing.preprocessing import preprocess_with_split
 from AE.architectures.ZINBAE import ZINBAE
@@ -10,68 +11,68 @@ from AE.training.training import train, test
 
 
 # Preprocessing
-# INPUT_FOLDER = "Data/combined_strains"
-# FEATURES = ['Centr']
-# BIN_SIZE = 19
-# MOVING_AVERAGE = True
-# DATA_POINT_LENGTH = 2000
-# STEP_SIZE = 894
-# SAMPLE_FRACTION = 0.94
-
-# TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
-# TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
-# VAL_CHROM = []  # No validation set 
-
-# USE_CONV = False
-# CONV_CHANNEL = 85
-# POOL_SIZE = 4
-# POOLING_OPERATION = 'max'
-# KERNEL_SIZE = 3
-# PADDING = 'same'
-# STRIDE = 1
-
-# EPOCHS = 141
-# BATCH_SIZE = 128
-# NOISE_LEVEL = 0.15
-# PI_THRESHOLD = 0.7
-# MASKED_RECON_WEIGHT = 0.0087 # gamma: weight for masked reconstruction loss
-# LEARNING_RATE = 0.000102
-# DROPOUT_RATE = 0.0077
-# LAYERS = [752]
-# REGULARIZER = 'none'
-# REGULARIZATION_WEIGHT = 1e-4
-
 INPUT_FOLDER = "Data/combined_strains"
 FEATURES = ['Centr']
-BIN_SIZE = 1
-MOVING_AVERAGE = False
+BIN_SIZE = 19
+MOVING_AVERAGE = True
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 500
-SAMPLE_FRACTION = 1.0
+STEP_SIZE = 894
+SAMPLE_FRACTION = 0.94
 
-SPLIT_ON = 'Chrom'
 TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
 VAL_CHROM = []  # No validation set 
 
 USE_CONV = False
 CONV_CHANNEL = 85
-POOL_SIZE = 8
+POOL_SIZE = 4
 POOLING_OPERATION = 'max'
-KERNEL_SIZE = 7
+KERNEL_SIZE = 3
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 30
-BATCH_SIZE = 32
+EPOCHS = 141
+BATCH_SIZE = 128
 NOISE_LEVEL = 0.15
 PI_THRESHOLD = 0.7
-MASKED_RECON_WEIGHT = 0.001  # gamma: weight for masked reconstruction loss
-LEARNING_RATE = 1e-5
-DROPOUT_RATE = 0
-LAYERS = [1600]
-REGULARIZER = 'l2'
-REGULARIZATION_WEIGHT = 1e-5
+MASKED_RECON_WEIGHT = 0.0087 # gamma: weight for masked reconstruction loss
+LEARNING_RATE = 0.000102
+DROPOUT_RATE = 0.0077
+LAYERS = [752]
+REGULARIZER = 'none'
+REGULARIZATION_WEIGHT = 1e-4
+
+# INPUT_FOLDER = "Data/combined_strains"
+# FEATURES = ['Centr']
+# BIN_SIZE = 1
+# MOVING_AVERAGE = False
+# DATA_POINT_LENGTH = 2000
+# STEP_SIZE = 500
+# SAMPLE_FRACTION = 1.0
+
+# SPLIT_ON = 'Chrom'
+# TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+# TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+# VAL_CHROM = []  # No validation set 
+
+# USE_CONV = False
+# CONV_CHANNEL = 85
+# POOL_SIZE = 8
+# POOLING_OPERATION = 'max'
+# KERNEL_SIZE = 7
+# PADDING = 'same'
+# STRIDE = 1
+
+# EPOCHS = 30
+# BATCH_SIZE = 32
+# NOISE_LEVEL = 0.15
+# PI_THRESHOLD = 0.7
+# MASKED_RECON_WEIGHT = 0.001  # gamma: weight for masked reconstruction loss
+# LEARNING_RATE = 1e-5
+# DROPOUT_RATE = 0
+# LAYERS = [1600]
+# REGULARIZER = 'l2'
+# REGULARIZATION_WEIGHT = 1e-5
 
 PLOT = True
 SAVE_MODEL = True
@@ -391,4 +392,13 @@ def main(
     return train_metrics, eval_metrics
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--noise_level",
+        type=float,
+        default=NOISE_LEVEL,
+        help="Denoising percentage used in dataloader/train/test (default: %(default)s).",
+    )
+    args = parser.parse_args()
+
+    main(noise_level=args.noise_level)

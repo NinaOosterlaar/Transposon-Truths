@@ -489,7 +489,7 @@ def plot_zinb_results(csv_file, output_dir=None):
 
 
 if __name__ == "__main__":
-    window_size = 2000
+    window_size = 100
     results = process_all_strains(window_size=window_size)
     
     # Generate plots

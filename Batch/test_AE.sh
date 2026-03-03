@@ -11,8 +11,14 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
+#SBATCH --array=0-4
 
 set -euo pipefail
+
+NOISE_LEVELS=(0.10 0.25 0.5 0.75 0.9)
+NOISE_LEVEL="${NOISE_LEVELS[$SLURM_ARRAY_TASK_ID]}"
+
+echo "Running with noise_level=${NOISE_LEVEL}"
 
 export APPTAINER_IMAGE="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis/my-container.sif"
 export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
@@ -24,4 +30,4 @@ srun apptainer exec \
   --bind "$PROJECT_DIR":/workspace \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
-  python AE/main.py
+  python AE/main.py --noise_level "$NOISE_LEVEL"
