@@ -13,46 +13,48 @@ from AE.training.training import test
 
 # Test dataset configuration
 INPUT_FOLDER = "Data/combined_strains"
-test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+# test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+test_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 train_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 
-# Path to the trained model
-MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
-
-# Preprocessing parameters (should match training configuration)
-FEATURES = ['Centr']
-BIN_SIZE = 1
-MOVING_AVERAGE = False
-DATA_POINT_LENGTH = 2000
-STEP_SIZE = 500
-
-# Training parameters (should match training configuration)
-BATCH_SIZE = 32
-NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.7
-MASKED_RECON_WEIGHT = 0.001  # gamma
-REGULARIZER = 'l2'
-REGULARIZATION_WEIGHT = 1e-5  # alpha
-
-# MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
+# # Path to the trained model
+# MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
 
 # # Preprocessing parameters (should match training configuration)
 # FEATURES = ['Centr']
-# BIN_SIZE = 19
-# MOVING_AVERAGE = True
+# BIN_SIZE = 1
+# MOVING_AVERAGE = False
 # DATA_POINT_LENGTH = 2000
-# STEP_SIZE = 894
+# STEP_SIZE = 500
 
 # # Training parameters (should match training configuration)
-# BATCH_SIZE = 128
+# BATCH_SIZE = 32
 # NOISE_LEVEL = 0.15
 # PI_THRESHOLD = 0.7
-# MASKED_RECON_WEIGHT = 0.00872  # gamma
-# REGULARIZER = 'none'
+# MASKED_RECON_WEIGHT = 0.001  # gamma
+# REGULARIZER = 'l2'
 # REGULARIZATION_WEIGHT = 1e-5  # alpha
 
+MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
+# MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
+
+# Preprocessing parameters (should match training configuration)
+FEATURES = ['Centr']
+BIN_SIZE = 19
+MOVING_AVERAGE = True
+DATA_POINT_LENGTH = 2000
+STEP_SIZE = 894
+
+# Training parameters (should match training configuration)
+BATCH_SIZE = 128
+NOISE_LEVEL = 0.15
+PI_THRESHOLD = 0.7
+MASKED_RECON_WEIGHT = 0.00872  # gamma
+REGULARIZER = 'none'
+REGULARIZATION_WEIGHT = 1e-5  # alpha
+
 # Data caching options
-USE_CACHED_DATA = True  # Set to False to force reprocessing
+USE_CACHED_DATA = True  
 PROCESSED_DATA_DIR = "Data/processed_data"
 
 # Output directory for results and plots
@@ -60,12 +62,14 @@ OUTPUT_DIR = "AE/results/final/testing"  # Where plots and metrics will be saved
 # ================================================
 
 
-def generate_cache_filename(test_chroms, features, bin_size, moving_average, data_point_length, step_size):
+def generate_cache_filename(train_chroms, test_chroms, features, bin_size, moving_average, data_point_length, step_size):
     """
     Generate a unique filename for cached preprocessed data based on parameters.
+    IMPORTANT: train_chroms affects normalization (size factors), so it MUST be in the cache hash!
     """
     # Create a dict of parameters that affect preprocessing
     params = {
+        'train_chroms': sorted(train_chroms),  # CRITICAL: affects size_factor calculation!
         'test_chroms': sorted(test_chroms),  # Sort to ensure consistency
         'features': sorted(features),
         'bin_size': bin_size,
@@ -85,7 +89,7 @@ def generate_cache_filename(test_chroms, features, bin_size, moving_average, dat
     return filename
 
 
-def load_or_preprocess_data(input_folder, test_chroms, features, bin_size, moving_average, 
+def load_or_preprocess_data(input_folder, train_chroms, test_chroms, features, bin_size, moving_average, 
                             preprocessing_length, step_size, use_cache=True, cache_dir="Data/processed_data"):
     """
     Load preprocessed data from cache if available, otherwise preprocess and save.
@@ -95,7 +99,7 @@ def load_or_preprocess_data(input_folder, test_chroms, features, bin_size, movin
     """
     os.makedirs(cache_dir, exist_ok=True)
     
-    cache_filename = generate_cache_filename(test_chroms, features, bin_size, moving_average, 
+    cache_filename = generate_cache_filename(train_chroms, test_chroms, features, bin_size, moving_average, 
                                             preprocessing_length, step_size)
     cache_path = os.path.join(cache_dir, cache_filename)
     
@@ -116,8 +120,6 @@ def load_or_preprocess_data(input_folder, test_chroms, features, bin_size, movin
     print("PREPROCESSING DATA")
     print(f"{'='*50}")
     print("Cached data not found or caching disabled. Preprocessing from scratch...")
-    
-    train_chroms = train_chromosomes
     
     print(f"Test chromosomes: {test_chroms}")
     print(f"Train chromosomes: {train_chroms}")
@@ -191,6 +193,7 @@ def load_model_and_test():
     # Load or preprocess test data
     test_set = load_or_preprocess_data(
         input_folder=INPUT_FOLDER,
+        train_chroms=train_chromosomes,  # CRITICAL: used for normalization calculation
         test_chroms=test_chromosomes,
         features=FEATURES,
         bin_size=BIN_SIZE,

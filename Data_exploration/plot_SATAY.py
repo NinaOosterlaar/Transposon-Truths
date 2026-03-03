@@ -12,6 +12,24 @@ sys.path.append(str(project_root / "Signal_processing"))
 from ZINB_MLE.estimate_ZINB import estimate_zinb
 
 CHROMS = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI"]
+CPD = {
+    "I": [-720, -500, -450, -200, -70, 80, 440, 517, 720, 930],
+    "II": [-850, -680, -60, 65],
+    "III": [-900, -200, -120, 750],
+    "IV": [],
+    "V": [],
+    "VI": [],    
+    "VII": [],
+    "VIII": [],
+    "IX": [],
+    "X": [],
+    "XI": [],
+    "XII": [],
+    "XIII": [],
+    "XIV": [],
+    "XV": [],
+    "XVI": [],
+}
 
 def plot_around_centromere_x_is_centdist(
     filepath,

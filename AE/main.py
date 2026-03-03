@@ -19,13 +19,13 @@ DATA_POINT_LENGTH = 2000
 STEP_SIZE = 894
 SAMPLE_FRACTION = 0.94
 
-# TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
-# TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
 # VAL_CHROM = []  # No validation set 
 # Train model on all the data (no chromosome split)
-TRAIN_CHROM = ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 
-               'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
-TEST_CHROM = []
+# TRAIN_CHROM = ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 
+#                'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+# TEST_CHROM = []
 VAL_CHROM = []  # No validation set
 
 USE_CONV = False
@@ -80,8 +80,11 @@ REGULARIZATION_WEIGHT = 1e-4
 # REGULARIZATION_WEIGHT = 1e-5
 
 PLOT = True
-SAVE_MODEL = True
+SAVE_MODEL = False
 MODEL_SAVE_DIR = "AE/results/models"
+MODEL_PATH_LOAD = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
+MODEL_LOAD = False
+
 
 
 def main_with_datasets(
@@ -110,7 +113,10 @@ def main_with_datasets(
     plot=PLOT,
     eval_on_val=True,
     save_model=SAVE_MODEL,
-    model_save_dir=MODEL_SAVE_DIR):
+    model_save_dir=MODEL_SAVE_DIR,
+    model_load=MODEL_LOAD,
+    model_path_load=MODEL_PATH_LOAD
+    ):
     """
     Main training function that accepts pre-made datasets.
     Used by Bayesian optimization to avoid recreating data every trial.
@@ -163,42 +169,66 @@ def main_with_datasets(
     if chrom:
         feature_dim += chrom_embedding.embedding.embedding_dim 
     
-    # Initialize model
-    zinbae_model = ZINBAE(
-        seq_length=data_point_length,
-        feature_dim=feature_dim,
-        layers=layers,
-        use_conv=use_conv,
-        conv_channels=conv_channel,
-        pool_size=pool_size,
-        kernel_size=kernel_size,
-        padding=padding,
-        stride=stride,
-        dropout=dropout_rate,
-    )
-    
-    # Free memory from train_set after dataloader is created
-    del train_set
-    if val_set is not None:
-        del val_set
-    if test_set is not None:
-        del test_set
-    gc.collect()
-    # Train model
-    _, train_metrics = train(
-        model=zinbae_model,
-        dataloader=train_dataloader,
-        num_epochs=epochs,
-        pi_threshold=pi_threshold,
-        learning_rate=learning_rate,
-        regularizer=regularizer,
-        alpha=regularization_weight,
-        denoise_percent=noise_level,
-        gamma=masked_recon_weight,
-        chrom=chrom,
-        chrom_embedding=chrom_embedding,
-        plot=plot,
-    )
+    if model_load and os.path.exists(model_path_load):
+        print(f"\n{'='*50}")
+        print(f"LOADING MODEL FROM: {model_path_load}")
+        print(f"{'='*50}\n")
+        loaded_dict = torch.load(model_path_load, map_location=torch.device('cpu'), weights_only=False)
+        
+        # CRITICAL: Use saved model_config, not current parameters!
+        model_config = loaded_dict['model_config']
+        
+        # Handle backward compatibility for mu_offset
+        if 'mu_offset' not in model_config:
+            print("WARNING: mu_offset not in saved model_config. Using default of 1.")
+            model_config['mu_offset'] = 1
+        
+        print("Loaded model configuration:")
+        for k, v in model_config.items():
+            print(f"  {k}: {v}")
+        
+        zinbae_model = ZINBAE(**model_config)
+        zinbae_model.load_state_dict(loaded_dict['model_state_dict'])
+        print(f"Model loaded successfully!")
+        # No training performed when loading model
+        train_metrics = {}
+    else:
+        # Initialize model
+        zinbae_model = ZINBAE(
+            seq_length=data_point_length,
+            feature_dim=feature_dim,
+            layers=layers,
+            use_conv=use_conv,
+            conv_channels=conv_channel,
+            pool_size=pool_size,
+            kernel_size=kernel_size,
+            padding=padding,
+            stride=stride,
+            dropout=dropout_rate,
+        )
+        
+        # Free memory from train_set after dataloader is created
+        del train_set
+        if val_set is not None:
+            del val_set
+        if test_set is not None:
+            del test_set
+        gc.collect()
+        # Train model
+        _, train_metrics = train(
+            model=zinbae_model,
+            dataloader=train_dataloader,
+            num_epochs=epochs,
+            pi_threshold=pi_threshold,
+            learning_rate=learning_rate,
+            regularizer=regularizer,
+            alpha=regularization_weight,
+            denoise_percent=noise_level,
+            gamma=masked_recon_weight,
+            chrom=chrom,
+            chrom_embedding=chrom_embedding,
+            plot=plot,
+        )
     
     # Free training dataloader memory before evaluation
     del train_dataloader
@@ -254,6 +284,7 @@ def main_with_datasets(
                 'padding': padding,
                 'stride': stride,
                 'dropout': dropout_rate,
+                'mu_offset': zinbae_model.mu_offset,  
             },
             'training_config': {
                 'epochs': epochs,

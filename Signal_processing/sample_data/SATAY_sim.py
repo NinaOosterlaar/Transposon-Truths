@@ -394,7 +394,7 @@ if __name__ == "__main__":
         pd.DataFrame({"Distance": distances}).to_csv(output_path, index=False)
         
         # Generate centromere distances
-        middle_position = total_size // 2
+        middle_position = total_size // 2 
         centromere_distances = [abs(pos - middle_position) for pos in range(new_total_size)]
         output_path = f"Signal_processing/sample_data/SATAY_synthetic/centromere_distances.csv"
         pd.DataFrame({"Distance": centromere_distances}).to_csv(output_path, index=False)
