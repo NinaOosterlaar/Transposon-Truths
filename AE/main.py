@@ -19,9 +19,14 @@ DATA_POINT_LENGTH = 2000
 STEP_SIZE = 894
 SAMPLE_FRACTION = 0.94
 
-TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
-TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
-VAL_CHROM = []  # No validation set 
+# TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+# TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+# VAL_CHROM = []  # No validation set 
+# Train model on all the data (no chromosome split)
+TRAIN_CHROM = ['ChrI', 'ChrII', 'ChrIII', 'ChrIV', 'ChrV', 'ChrVI', 'ChrVII', 'ChrVIII', 
+               'ChrIX', 'ChrX', 'ChrXI', 'ChrXII', 'ChrXIII', 'ChrXIV', 'ChrXV', 'ChrXVI']
+TEST_CHROM = []
+VAL_CHROM = []  # No validation set
 
 USE_CONV = False
 CONV_CHANNEL = 85
