@@ -1,3 +1,0 @@
-srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
-slurmstepd: error: *** JOB 12234437 ON insy16 CANCELLED AT 2026-02-27T08:48:12 DUE TO TIME LIMIT ***
-slurmstepd: error: *** STEP 12234437.0 ON insy16 CANCELLED AT 2026-02-27T08:48:12 DUE TO TIME LIMIT ***
