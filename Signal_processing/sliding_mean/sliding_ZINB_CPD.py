@@ -121,7 +121,7 @@ def process_window_size(ws, data, overlap, thresholds, theta_global, output_fold
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Apply a sliding window mean change point detection algorithm on discrete count data.")
     parser.add_argument("input_file", type=str, help="Path to the input CSV file containing the count data.")
-    parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean/sliding_ZINB_CPD", help="Output folder for results.")
+    parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean/sliding_ZINB_CPD_2", help="Output folder for results.")
     parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
     parser.add_argument("--n_workers", type=int, default=4, help="Number of parallel workers/CPUs to use.")
     return parser.parse_args()
