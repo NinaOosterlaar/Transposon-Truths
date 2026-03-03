@@ -1,0 +1,139 @@
+Running sliding ZINB CPD on dataset: SATAY_synthetic
+Input file: Signal_processing/sample_data/SATAY_synthetic.csv
+[ 0.5         1.34482759  2.18965517  3.03448276  3.87931034  4.72413793
+  5.56896552  6.4137931   7.25862069  8.10344828  8.94827586  9.79310345
+ 10.63793103 11.48275862 12.32758621 13.17241379 14.01724138 14.86206897
+ 15.70689655 16.55172414 17.39655172 18.24137931 19.0862069  19.93103448
+ 20.77586207 21.62068966 22.46551724 23.31034483 24.15517241 25.        ]
+
+Best theta: 2.54e-01 with ll=-390400.65
+Final parameters: pi=0.7690, mu=5.5399, theta=0.2538
+Estimated global theta: 0.2538
+(Estimated global pi: 0.7690, mu: 5.5399)
+Using global theta: 0.2538 for all window sizes and thresholds.
+Using 4 workers to process 4 window sizes in parallel
+Processing window size: 50, threshold: 0.50
+Processing window size: 50, threshold: 1.34
+Processing window size: 50, threshold: 2.19
+Processing window size: 50, threshold: 3.03
+Processing window size: 50, threshold: 3.88
+Processing window size: 50, threshold: 4.72
+Processing window size: 50, threshold: 5.57
+Processing window size: 50, threshold: 6.41
+Processing window size: 50, threshold: 7.26
+Processing window size: 50, threshold: 8.10
+Processing window size: 50, threshold: 8.95
+Processing window size: 50, threshold: 9.79
+Processing window size: 50, threshold: 10.64
+Processing window size: 50, threshold: 11.48
+Processing window size: 50, threshold: 12.33
+Processing window size: 50, threshold: 13.17
+Processing window size: 50, threshold: 14.02
+Processing window size: 50, threshold: 14.86
+Processing window size: 50, threshold: 15.71
+Processing window size: 50, threshold: 16.55
+Processing window size: 50, threshold: 17.40
+Processing window size: 50, threshold: 18.24
+Processing window size: 50, threshold: 19.09
+Processing window size: 50, threshold: 19.93
+Processing window size: 50, threshold: 20.78
+Processing window size: 50, threshold: 21.62
+Processing window size: 50, threshold: 22.47
+Processing window size: 50, threshold: 23.31
+Processing window size: 50, threshold: 24.16
+Processing window size: 50, threshold: 25.00
+Processing window size: 80, threshold: 0.50
+Processing window size: 80, threshold: 1.34
+Processing window size: 80, threshold: 2.19
+Processing window size: 80, threshold: 3.03
+Processing window size: 80, threshold: 3.88
+Processing window size: 80, threshold: 4.72
+Processing window size: 80, threshold: 5.57
+Processing window size: 80, threshold: 6.41
+Processing window size: 80, threshold: 7.26
+Processing window size: 80, threshold: 8.10
+Processing window size: 80, threshold: 8.95
+Processing window size: 80, threshold: 9.79
+Processing window size: 80, threshold: 10.64
+Processing window size: 80, threshold: 11.48
+Processing window size: 80, threshold: 12.33
+Processing window size: 80, threshold: 13.17
+Processing window size: 80, threshold: 14.02
+Processing window size: 80, threshold: 14.86
+Processing window size: 80, threshold: 15.71
+Processing window size: 80, threshold: 16.55
+Processing window size: 80, threshold: 17.40
+Processing window size: 80, threshold: 18.24
+Processing window size: 80, threshold: 19.09
+Processing window size: 80, threshold: 19.93
+Processing window size: 80, threshold: 20.78
+Processing window size: 80, threshold: 21.62
+Processing window size: 80, threshold: 22.47
+Processing window size: 80, threshold: 23.31
+Processing window size: 80, threshold: 24.16
+Processing window size: 80, threshold: 25.00
+Processing window size: 30, threshold: 0.50
+Processing window size: 30, threshold: 1.34
+Processing window size: 30, threshold: 2.19
+Processing window size: 30, threshold: 3.03
+Processing window size: 30, threshold: 3.88
+Processing window size: 30, threshold: 4.72
+Processing window size: 30, threshold: 5.57
+Processing window size: 30, threshold: 6.41
+Processing window size: 30, threshold: 7.26
+Processing window size: 30, threshold: 8.10
+Processing window size: 30, threshold: 8.95
+Processing window size: 30, threshold: 9.79
+Processing window size: 30, threshold: 10.64
+Processing window size: 30, threshold: 11.48
+Processing window size: 30, threshold: 12.33
+Processing window size: 30, threshold: 13.17
+Processing window size: 30, threshold: 14.02
+Processing window size: 30, threshold: 14.86
+Processing window size: 30, threshold: 15.71
+Processing window size: 30, threshold: 16.55
+Processing window size: 30, threshold: 17.40
+Processing window size: 30, threshold: 18.24
+Processing window size: 30, threshold: 19.09
+Processing window size: 30, threshold: 19.93
+Processing window size: 30, threshold: 20.78
+Processing window size: 30, threshold: 21.62
+Processing window size: 30, threshold: 22.47
+Processing window size: 30, threshold: 23.31
+Processing window size: 30, threshold: 24.16
+Processing window size: 30, threshold: 25.00
+Processing window size: 10, threshold: 0.50
+Processing window size: 10, threshold: 1.34
+Processing window size: 10, threshold: 2.19
+Processing window size: 10, threshold: 3.03
+Processing window size: 10, threshold: 3.88
+Processing window size: 10, threshold: 4.72
+Processing window size: 10, threshold: 5.57
+Processing window size: 10, threshold: 6.41
+Processing window size: 10, threshold: 7.26
+Processing window size: 10, threshold: 8.10
+Processing window size: 10, threshold: 8.95
+Processing window size: 10, threshold: 9.79
+Processing window size: 10, threshold: 10.64
+Processing window size: 10, threshold: 11.48
+Processing window size: 10, threshold: 12.33
+Processing window size: 10, threshold: 13.17
+Processing window size: 10, threshold: 14.02
+Processing window size: 10, threshold: 14.86
+Processing window size: 10, threshold: 15.71
+Processing window size: 10, threshold: 16.55
+Processing window size: 10, threshold: 17.40
+Processing window size: 10, threshold: 18.24
+Processing window size: 10, threshold: 19.09
+Processing window size: 10, threshold: 19.93
+Processing window size: 10, threshold: 20.78
+Processing window size: 10, threshold: 21.62
+Processing window size: 10, threshold: 22.47
+Processing window size: 10, threshold: 23.31
+Processing window size: 10, threshold: 24.16
+Processing window size: 10, threshold: 25.00
+Completed processing window size: 80
+Completed processing window size: 10
+Completed processing window size: 30
+Completed processing window size: 50
+Finished processing SATAY_synthetic
