@@ -11,11 +11,11 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0
+#SBATCH --array=0-5
 
 set -euo pipefail
 
-NOISE_LEVELS=(0.15)
+NOISE_LEVELS=(0.10 0.15 0.25 0.50 0.75 1.00)
 NOISE_LEVEL="${NOISE_LEVELS[$SLURM_ARRAY_TASK_ID]}"
 
 echo "Running with noise_level=${NOISE_LEVEL}"

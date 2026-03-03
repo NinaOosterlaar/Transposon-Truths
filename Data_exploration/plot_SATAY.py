@@ -13,10 +13,10 @@ from ZINB_MLE.estimate_ZINB import estimate_zinb
 
 CHROMS = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI"]
 CPD = {
-    "I": [-720, -500, -450, -200, -70, 80, 440, 517, 720, 930],
-    "II": [-850, -680, -60, 65],
-    "III": [-900, -200, -120, 750],
-    "IV": [],
+    "I": [-720, -500, -350, -200, -70, 80],
+    "II": [-740, -580, -70, 65],
+    "III": [-900, -200, -80, 80, 750],
+    "IV": [-900, -800, -740, -500, -380, -60, 60 ],
     "V": [],
     "VI": [],    
     "VII": [],
@@ -32,6 +32,7 @@ CPD = {
 }
 
 def plot_around_centromere_x_is_centdist(
+    chrom,                 # <-- added
     filepath,
     outpath,
     n=1000,
@@ -40,9 +41,10 @@ def plot_around_centromere_x_is_centdist(
     major_tick_step=100,
     minor_tick_step=50,
     dpi=200,
-    value_max=500,   # <-- filter threshold
-    window_size=100,  # window size for ZINB parameter estimation
-    show_zinb_params=True,  # whether to show ZINB parameters
+    value_max=500,
+    window_size=100,
+    show_zinb_params=True,
+    show_cpd=True,         # <-- added
 ):
     df = pd.read_csv(filepath)
     df.columns = df.columns.str.lower().str.replace(' ', '_')
@@ -96,98 +98,108 @@ def plot_around_centromere_x_is_centdist(
     ax.set_xlabel("Centromere distance")
     ax.set_ylabel("Value")
 
-    # Estimate ZINB parameters in windows and annotate
+    # ---- CPD red dots (x = centromere_distance) ----
+    if show_cpd:
+        cpd_x_all = CPD.get(chrom, [])
+        if len(cpd_x_all) > 0:
+            x_min, x_max = win["centromere_distance"].min(), win["centromere_distance"].max()
+            cpd_x = [x for x in cpd_x_all if x_min <= x <= x_max]
+
+            if len(cpd_x) > 0:
+                # put dots near the top so they are visible regardless of the curve
+                # place CPD dots slightly below the x-axis (y=0)
+                y_min, y_max = ax.get_ylim()
+                offset = 0.03 * (y_max - y_min)   # 3% of the y-range
+                y_cpd = -offset
+
+                ax.scatter(
+                    cpd_x,
+                    [y_cpd] * len(cpd_x),
+                    s=28,
+                    marker="o",
+                    color="red",
+                    zorder=5,
+                    label="CPD"
+                )
+                ax.legend(loc="upper right", fontsize=8, framealpha=0.8)
+
+    # ---- ZINB parameter estimation annotations ----
     if show_zinb_params:
-        # Sort by position to ensure windows are sequential
         win_sorted = win.sort_values("centromere_distance").reset_index(drop=True)
         values_array = win_sorted["value"].values
         positions_array = win_sorted["centromere_distance"].values
-        
-        # Remove NaN values for ZINB estimation
+
         valid_mask = ~np.isnan(values_array)
-        
         n_points = np.sum(valid_mask)
         n_windows = int(np.ceil(n_points / window_size))
-        
-        # Store window info for annotation
+
         window_annotations = []
-        
-        # Extract valid data for windowing
         valid_values = values_array[valid_mask]
         valid_positions = positions_array[valid_mask]
-        
+
         for i in range(n_windows):
             start_idx = i * window_size
             end_idx = min((i + 1) * window_size, n_points)
             window_data = valid_values[start_idx:end_idx]
             window_positions = valid_positions[start_idx:end_idx]
-            
-            if len(window_data) < 10:  # Skip very small windows
+
+            if len(window_data) < 10:
                 continue
-            
-            # Get window center position for annotation
+
             window_center = np.mean(window_positions)
-            
-            # Round to integers and filter outliers (95th percentile)
+
             rounded_data = np.round(window_data).astype(int)
             threshold = np.percentile(rounded_data, 95)
             filtered_data = rounded_data[rounded_data <= threshold]
-            
-            if len(filtered_data) < 10:  # Skip if too few points remain
+
+            if len(filtered_data) < 10:
                 continue
-            
-            # Estimate ZINB parameters
+
             try:
                 estimates = estimate_zinb(filtered_data, max_iter=1000)
-                
-                if estimates['converged']:
-                    # Format the parameters
-                    pi_val = estimates['pi']
-                    mu_val = estimates['mu']
-                    theta_val = estimates['theta']
-                    
-                    # Create annotation text
+                if estimates.get("converged", False):
+                    pi_val = estimates["pi"]
+                    mu_val = estimates["mu"]
+                    theta_val = estimates["theta"]
                     annot_text = f"π={pi_val:.2f}\nμ={mu_val:.1f}\nθ={theta_val:.1f}"
-                    
+
                     window_annotations.append({
-                        'position': window_center,
-                        'text': annot_text,
-                        'start_pos': window_positions[0],
-                        'end_pos': window_positions[-1]
+                        "position": window_center,
+                        "text": annot_text,
+                        "end_pos": window_positions[-1],
                     })
             except Exception as e:
-                print(f"Warning: Failed to estimate ZINB for window {i+1}: {e}")
+                print(f"Warning: Failed to estimate ZINB for {chrom} window {i+1}: {e}")
                 continue
-        
-        # Add annotations to the plot
-        # Stagger vertically to avoid overlap
+
         y_max = ax.get_ylim()[1]
         annotation_heights = [0.85 * y_max, 0.70 * y_max, 0.55 * y_max]
-        
+
         for idx, annot in enumerate(window_annotations):
-            # Cycle through annotation heights
             y_pos = annotation_heights[idx % len(annotation_heights)]
-            
             ax.text(
-                annot['position'], 
+                annot["position"],
                 y_pos,
-                annot['text'],
+                annot["text"],
                 fontsize=6,
-                ha='center',
-                va='top',
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7, edgecolor='gray', linewidth=0.5)
+                ha="center",
+                va="top",
+                bbox=dict(
+                    boxstyle="round,pad=0.3",
+                    facecolor="white",
+                    alpha=0.7,
+                    edgecolor="gray",
+                    linewidth=0.5
+                )
             )
-            
-            # Draw a subtle vertical line at window boundaries
-            if idx < len(window_annotations) - 1:  # Don't draw after last window
-                ax.axvline(annot['end_pos'], color='gray', alpha=0.2, linewidth=0.5, linestyle=':')
+            if idx < len(window_annotations) - 1:
+                ax.axvline(annot["end_pos"], color="gray", alpha=0.2, linewidth=0.5, linestyle=":")
 
     ax.tick_params(axis="x", labelrotation=30)
     for lbl in ax.get_xticklabels():
         lbl.set_ha("right")
 
     fig.tight_layout()
-
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     fig.savefig(outpath, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -206,6 +218,7 @@ if __name__ == "__main__":
             continue
 
         plot_around_centromere_x_is_centdist(
+            chrom=chrom,                # <-- pass chrom
             filepath=infile,
             outpath=outfile,
             n=1000,
@@ -213,8 +226,9 @@ if __name__ == "__main__":
             minor_tick_step=50,
             strict_centromere_match=True,
             value_max=500,
-            window_size=100,  # ZINB parameter estimation window size
-            show_zinb_params=True,
+            window_size=100,
+            show_zinb_params=False,
+            show_cpd=True,
         )
 
         print(f"Saved: {outfile}")
