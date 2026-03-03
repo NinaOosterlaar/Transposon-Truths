@@ -59,21 +59,21 @@ def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_glo
         ll2 = zinb_log_likelihood(w2, mu2, theta_global, pi2, eps=eps)
         ll0 = zinb_log_likelihood(w0, mu0, theta_global, pi0, eps=eps)
 
-        # score = 2.0 * ((ll1 + ll2) - ll0)
-        # scores.append(score)
+        score = 2.0 * ((ll1 + ll2) - ll0)
+        scores.append(score)
         
-        n1, n2, n0 = len(w1), len(w2), len(w0)
+        # n1, n2, n0 = len(w1), len(w2), len(w0)
 
-        k0 = 2          # (pi, mu) with theta fixed
-        k1 = 2
-        k2 = 2
-        k_split = k1 + k2
+        # k0 = 2          # (pi, mu) with theta fixed
+        # k1 = 2
+        # k2 = 2
+        # k_split = k1 + k2
 
-        bic0 = -2*ll0 + k0*np.log(n0)
-        bic_split = (-2*ll1 + k1*np.log(n1)) + (-2*ll2 + k2*np.log(n2))
+        # bic0 = -2*ll0 + k0*np.log(n0)
+        # bic_split = (-2*ll1 + k1*np.log(n1)) + (-2*ll2 + k2*np.log(n2))
 
-        delta_bic = bic0 - bic_split   # > 0 favors split
-        score = delta_bic
+        # delta_bic = bic0 - bic_split   # > 0 favors split
+        # score = delta_bic
 
         if score > threshold:
             if (start - last_cp) >= window_size:  # Ensure minimum distance between change points
