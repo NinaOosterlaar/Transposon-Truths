@@ -119,7 +119,7 @@ if __name__ == "__main__":
     input_file = args.input_file
     window_size = [80, 10, 30, 50]
     overlap = 0.5
-    thresholds = np.linspace(0.5, 25, 30)
+    thresholds = np.linspace(0.01, 10, 30)
     print(thresholds)
     output_folder = args.output_folder
     dataset_name = args.dataset_name
