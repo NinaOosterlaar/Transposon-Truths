@@ -13,8 +13,8 @@ from AE.training.training import test
 
 # Test dataset configuration
 INPUT_FOLDER = "Data/combined_strains"
-# test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
-test_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+# test_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 train_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 
 # # Path to the trained model
@@ -35,7 +35,7 @@ train_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'Chr
 # REGULARIZER = 'l2'
 # REGULARIZATION_WEIGHT = 1e-5  # alpha
 
-MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
+MODEL_PATH = "AE/results/models/ZINBAE_20260226_195349_noconv_layers752_ep141.pt"
 # MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
 
 # Preprocessing parameters (should match training configuration)
@@ -58,7 +58,7 @@ USE_CACHED_DATA = True
 PROCESSED_DATA_DIR = "Data/processed_data"
 
 # Output directory for results and plots
-OUTPUT_DIR = "AE/results/final/testing"  # Where plots and metrics will be saved
+OUTPUT_DIR = "AE/results/final"  # Where plots and metrics will be saved
 # ================================================
 
 

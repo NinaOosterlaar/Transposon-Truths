@@ -533,7 +533,7 @@ def metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, resid
     metrics_to_save = {
         'model_type': model_type,
         'timestamp': timestamp,
-        'use_conv': use_conv,
+        'use_conv': bool(use_conv),
         'scaling_notes': {
             'all_originals': 'Normalized log counts (not used for main comparisons)',
             'all_reconstructions_mu': 'Predicted mean parameter mu in RAW COUNT SPACE',

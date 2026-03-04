@@ -150,7 +150,7 @@ if __name__ == "__main__":
         data = [int(line.strip().split(",")[1]) for line in lines]
     # theta_global = initialize_theta_global(data)
     # print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
-    theta_global = 1
+    theta_global = 5
     
     # Parallelize processing of different window sizes
     n_workers = min(args.n_workers, len(window_size))
