@@ -8,25 +8,23 @@ from Signal_processing.ZINB_MLE.estimate_ZINB import estimate_zinb
 from Signal_processing.ZINB_MLE.EM import em_zinb_step
 from Signal_processing.log_likelihoods import zinb_log_likelihood
 
-def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_global = None, tol = 1e-6, max_iter=10):
+def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10):
     data = np.asarray(data, dtype=np.float64)
     step_size = max(1, int(window_size * (1 - overlap)))
     n = len(data)
-    
+
     if theta_global is None:
         theta_global = initialize_theta_global(data, eps=eps)
-    
-    change_points = []
-    scores = []
 
-    last_cp = -np.inf
-    last_score = 0.0
-    
+    change_points, scores = [], []
+    last_cp, last_score = -np.inf, 0.0
+
     for start in range(0, n - 2 * window_size + 1, step_size):
         w1 = data[start : start + window_size]
-        w2 = data[start + step_size : start + step_size + window_size]
-        w0 = data[start : start + step_size + window_size]
-        
+        w2 = data[start + window_size : start + 2 * window_size]
+        w0 = data[start : start + 2 * window_size]  # exactly w1+w2
+
+        # init
         pi1 = np.clip(np.mean(w1 == 0), eps, 1 - eps)
         pi2 = np.clip(np.mean(w2 == 0), eps, 1 - eps)
         pi0 = np.clip(np.mean(w0 == 0), eps, 1 - eps)
@@ -34,26 +32,27 @@ def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_glo
         mu2 = np.clip(np.mean(w2) / (1 - pi2), eps, None)
         mu0 = np.clip(np.mean(w0) / (1 - pi0), eps, None)
 
-        # Estimate parameters for w1 and w2 using EM with fixed theta_global
+        # EM updates (same as you had)
         for _ in range(max_iter):
             pi1_old, mu1_old = pi1, mu1
-            result1 = em_zinb_step(w1, pi1, mu1, theta_global, eps=eps)
-            pi1, mu1 = result1['pi'], result1['mu']
+            r = em_zinb_step(w1, pi1, mu1, theta_global, eps=eps)
+            pi1, mu1 = r['pi'], r['mu']
             if abs(pi1 - pi1_old) < tol and abs(mu1 - mu1_old) < tol:
                 break
+
         for _ in range(max_iter):
             pi2_old, mu2_old = pi2, mu2
-            result2 = em_zinb_step(w2, pi2, mu2, theta_global, eps=eps)
-            pi2, mu2 = result2['pi'], result2['mu']
+            r = em_zinb_step(w2, pi2, mu2, theta_global, eps=eps)
+            pi2, mu2 = r['pi'], r['mu']
             if abs(pi2 - pi2_old) < tol and abs(mu2 - mu2_old) < tol:
                 break
+
         for _ in range(max_iter):
             pi0_old, mu0_old = pi0, mu0
-            result0 = em_zinb_step(w0, pi0, mu0, theta_global, eps=eps)
-            pi0, mu0 = result0['pi'], result0['mu']
+            r = em_zinb_step(w0, pi0, mu0, theta_global, eps=eps)
+            pi0, mu0 = r['pi'], r['mu']
             if abs(pi0 - pi0_old) < tol and abs(mu0 - mu0_old) < tol:
                 break
-
 
         ll1 = zinb_log_likelihood(w1, mu1, theta_global, pi1, eps=eps)
         ll2 = zinb_log_likelihood(w2, mu2, theta_global, pi2, eps=eps)
@@ -61,30 +60,16 @@ def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_glo
 
         score = 2.0 * ((ll1 + ll2) - ll0)
         scores.append(score)
-        
-        # n1, n2, n0 = len(w1), len(w2), len(w0)
-
-        # k0 = 2          # (pi, mu) with theta fixed
-        # k1 = 2
-        # k2 = 2
-        # k_split = k1 + k2
-
-        # bic0 = -2*ll0 + k0*np.log(n0)
-        # bic_split = (-2*ll1 + k1*np.log(n1)) + (-2*ll2 + k2*np.log(n2))
-
-        # delta_bic = bic0 - bic_split   # > 0 favors split
-        # score = delta_bic
 
         if score > threshold:
-            if (start - last_cp) >= window_size:  # Ensure minimum distance between change points
-                change_points.append(start + window_size)  # CP is at the boundary between w1 and w2
-                last_cp = start + window_size
-                last_score = score
-            elif score > last_score:  # If too close to last CP, keep the one with higher score
-                change_points[-1] = start + window_size
-                last_cp = start + window_size
-                last_score = score
-        
+            cp = start + window_size
+            if (cp - last_cp) >= window_size:
+                change_points.append(cp)
+                last_cp, last_score = cp, score
+            elif score > last_score:
+                change_points[-1] = cp
+                last_cp, last_score = cp, score
+
     return change_points, scores
     
 def initialize_theta_global(data, eps=1e-10, theta_max=1000):
