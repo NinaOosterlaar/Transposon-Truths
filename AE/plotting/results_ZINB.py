@@ -683,15 +683,49 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
         print("Using raw counts for evaluation metrics.")
         actual_counts_flat = all_raw_counts.flatten()
         comparison_label = 'Raw Counts'
-        mae = mean_absolute_error(actual_counts_flat, all_reconstructions_mu.flatten())
+        abs_err = np.abs(actual_counts_flat - all_reconstructions_mu.flatten())
+        mae = abs_err.mean()
+        mae_std = abs_err.std(ddof=1)  # variability of absolute errors
+        # mean and SD of pi for actual zeros vs non-zeros
+        if all_pi is not None:
+            all_pi_flat = all_pi.flatten()
+            zero_mask = actual_counts_flat == 0
+            non_zero_mask = ~zero_mask
+            mean_pi_zeros = all_pi_flat[zero_mask].mean() if np.any(zero_mask) else 0
+            mean_pi_nonzeros = all_pi_flat[non_zero_mask].mean() if np.any(non_zero_mask) else 0
+            std_pi_zeros = all_pi_flat[zero_mask].std(ddof=1) if np.any(zero_mask) else 0
+            std_pi_nonzeros = all_pi_flat[non_zero_mask].std(ddof=1) if np.any(non_zero_mask) else 0
+        else:
+            mean_pi_zeros, mean_pi_nonzeros, std_pi_zeros, std_pi_nonzeros = 0, 0, 0, 0
         r2 = r2_score(actual_counts_flat, all_reconstructions_mu.flatten())
     else:
         # Fallback to normalized if raw counts not available
         print("!!! Raw counts not provided; using normalized counts for evaluation metrics. !!!")
         actual_counts_flat = all_originals.flatten()
         comparison_label = 'Normalized Log Counts'
-        mae = mean_absolute_error(actual_counts_flat, all_reconstructions_mu.flatten())
+        abs_err = np.abs(actual_counts_flat - all_reconstructions_mu.flatten())
+        mae = abs_err.mean()
+        mae_std = abs_err.std(ddof=1)  # variability of absolute errors
         r2 = r2_score(actual_counts_flat, all_reconstructions_mu.flatten())
+    
+    # Save metrics to JSON for later analysis
+    print(f"MAE: {mae:.4f}, SD MEAN: {mae_std:.4f} \n R²: {r2:.4f}, Mean π (zeros): {mean_pi_zeros:.4f}, Mean π (non-zeros): {mean_pi_nonzeros:.4f}, SD π (zeros): {std_pi_zeros:.4f}, SD π (non-zeros): {std_pi_nonzeros:.4f}")
+    # metrics_to_save = {
+    #     'mae': mae,
+    #     'mae_std': mae_std,
+    #     'r2': r2,
+    #     'mean_pi_zeros': mean_pi_zeros,
+    #     'std_pi_zeros': std_pi_zeros,
+    #     'mean_pi_nonzeros': mean_pi_nonzeros,
+    #     'std_pi_nonzeros': std_pi_nonzeros, 
+    # }
+    # if metrics is not None:
+    #     metrics_to_save.update(metrics)
+    # metrics_file = os.path.join(save_dir, f'{prefix}_evaluation_metrics.json')
+    # with open(metrics_file, 'w') as f:
+    #     json.dump(metrics_to_save, f, indent=4)
+    # print(f"Evaluation metrics saved to {metrics_file}")
+        
     
     # Compute variance from ZINB parameters: variance = μ + μ²/θ
     if all_theta is not None:

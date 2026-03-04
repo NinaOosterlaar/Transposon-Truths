@@ -1,9 +1,0 @@
-Traceback (most recent call last):
-  File "/workspace/AE/training/bayesian_hyperparameter.py", line 12, in <module>
-    from AE.main import main_with_datasets
-  File "/workspace/AE/main.py", line 101, in <module>
-    plot=PLOT,
-         ^^^^
-NameError: name 'PLOT' is not defined
-srun: error: gpu26: task 0: Exited with exit code 1
-srun: launch/slurm: _step_signal: Terminating StepId=12233715.0

@@ -46,6 +46,7 @@ DROPOUT_RATE = 0.0077
 LAYERS = [752]
 REGULARIZER = 'none'
 REGULARIZATION_WEIGHT = 1e-4
+MU_OFFSET = 1.0  # Offset added to mu in ZINB loss to prevent zero variance
 
 # INPUT_FOLDER = "Data/combined_strains"
 # FEATURES = ['Centr']
@@ -110,6 +111,7 @@ def main_with_datasets(
     regularizer=REGULARIZER, 
     regularization_weight=REGULARIZATION_WEIGHT,
     sample_fraction=SAMPLE_FRACTION,
+    mu_offset=MU_OFFSET,
     plot=PLOT,
     eval_on_val=True,
     save_model=SAVE_MODEL,
@@ -178,11 +180,6 @@ def main_with_datasets(
         # CRITICAL: Use saved model_config, not current parameters!
         model_config = loaded_dict['model_config']
         
-        # Handle backward compatibility for mu_offset
-        if 'mu_offset' not in model_config:
-            print("WARNING: mu_offset not in saved model_config. Using default of 1.")
-            model_config['mu_offset'] = 1
-        
         print("Loaded model configuration:")
         for k, v in model_config.items():
             print(f"  {k}: {v}")
@@ -205,6 +202,7 @@ def main_with_datasets(
             padding=padding,
             stride=stride,
             dropout=dropout_rate,
+            mu_offset=mu_offset
         )
         
         # Free memory from train_set after dataloader is created
@@ -225,6 +223,7 @@ def main_with_datasets(
             alpha=regularization_weight,
             denoise_percent=noise_level,
             gamma=masked_recon_weight,
+            name=f"mu_offset{mu_offset:.1f}_noise{noise_level:.3f}",
             chrom=chrom,
             chrom_embedding=chrom_embedding,
             plot=plot,
@@ -252,6 +251,7 @@ def main_with_datasets(
             denoise_percent=noise_level,
             alpha=regularization_weight,
             gamma=masked_recon_weight,
+            name=f"mu_offset{mu_offset:.1f}_noise{noise_level:.3f}",
             regularizer=regularizer,
         )
     else:
@@ -267,7 +267,10 @@ def main_with_datasets(
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         conv_str = f"conv{conv_channel}" if use_conv else "noconv"
         layers_str = "_".join(map(str, layers))
-        model_filename = f"ZINBAE_{timestamp}_{conv_str}_layers{layers_str}_ep{epochs}.pt"
+        model_filename = (
+            f"ZINBAE_layers{layers_str}_ep{epochs}"
+            f"_noise{noise_level:.3f}_muoff{mu_offset:.3f}.pt"
+        )
         model_path = os.path.join(model_save_dir, model_filename)
         
         # Save model state dict and configuration
@@ -345,6 +348,7 @@ def main(
     layers=LAYERS, 
     regularizer=REGULARIZER, 
     regularization_weight=REGULARIZATION_WEIGHT,
+    mu_offset=MU_OFFSET,
     plot=PLOT,
     save_model=SAVE_MODEL,
     model_save_dir=MODEL_SAVE_DIR):
@@ -417,6 +421,7 @@ def main(
         regularizer=regularizer,
         regularization_weight=regularization_weight,
         sample_fraction=sample_fraction,
+        mu_offset=mu_offset,
         plot=plot,
         eval_on_val=eval_on_val,
         save_model=save_model,
@@ -435,6 +440,12 @@ if __name__ == "__main__":
         default=NOISE_LEVEL,
         help="Denoising percentage used in dataloader/train/test (default: %(default)s).",
     )
+    parser.add_argument(
+        "--mu_offset",
+        type=float,
+        default=1.0,
+        help="Offset added to global mean when initializing theta_global (default: %(default)s).",
+    )
     args = parser.parse_args()
 
-    main(noise_level=args.noise_level)
+    main(noise_level=args.noise_level, mu_offset=args.mu_offset)
