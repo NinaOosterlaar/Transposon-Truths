@@ -13,48 +13,48 @@ from AE.training.training import test
 
 # Test dataset configuration
 INPUT_FOLDER = "Data/combined_strains"
-test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
-# test_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+# test_chromosomes = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+test_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 # test_chromosomes = ['ChrVIII', 'ChrXIV', 'ChrXV']
 train_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
   # No validation set needed for testing
 
 # Path to the trained model
-MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
+# MODEL_PATH = "AE/results/models/ZINBAE_20260225_121351_noconv_layers1600_ep30.pt"
 
-# Preprocessing parameters (should match training configuration)
-FEATURES = ['Centr']
-BIN_SIZE = 1
-MOVING_AVERAGE = False
-DATA_POINT_LENGTH = 2000
-STEP_SIZE = 500
+# # Preprocessing parameters (should match training configuration)
+# FEATURES = ['Centr']
+# BIN_SIZE = 1
+# MOVING_AVERAGE = False
+# DATA_POINT_LENGTH = 2000
+# STEP_SIZE = 500
 
-# Training parameters (should match training configuration)
-BATCH_SIZE = 32
-NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.7
-MASKED_RECON_WEIGHT = 0.001  # gamma
-REGULARIZER = 'l2'
-REGULARIZATION_WEIGHT = 1e-5  # alpha
+# # Training parameters (should match training configuration)
+# BATCH_SIZE = 32
+# NOISE_LEVEL = 0.15
+# PI_THRESHOLD = 0.7
+# MASKED_RECON_WEIGHT = 0.001  # gamma
+# REGULARIZER = 'l2'
+# REGULARIZATION_WEIGHT = 1e-5  # alpha
 
 # MODEL_PATH = "AE/results/models/ZINBAE_20260226_195349_noconv_layers752_ep141.pt"
 # # MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
-# MODEL_PATH = "AE/results/models/ZINBAE_noise_90_noconv_layers752_ep141.pt"
+MODEL_PATH = "AE/results/models/ZINBAE_layers752_ep141_noise0.150_muoff6.000.pt"
 
-# Preprocessing parameters (should match training configuration)
-# FEATURES = ['Centr']
-# BIN_SIZE = 19
-# MOVING_AVERAGE = True
-# DATA_POINT_LENGTH = 2000
-# STEP_SIZE = 894
+# Preprocessing parameters 
+FEATURES = ['Centr']
+BIN_SIZE = 19
+MOVING_AVERAGE = True
+DATA_POINT_LENGTH = 2000
+STEP_SIZE = 894
 
-# # Training parameters (should match training configuration)
-# BATCH_SIZE = 128
-# NOISE_LEVEL = 0.15
-# PI_THRESHOLD = 0.7
-# MASKED_RECON_WEIGHT = 0.00872  # gamma
-# REGULARIZER = 'none'
-# REGULARIZATION_WEIGHT = 1e-5  # alpha
+# Training parameters 
+BATCH_SIZE = 128
+NOISE_LEVEL = 0.15
+PI_THRESHOLD = 0.7
+MASKED_RECON_WEIGHT = 0.00872  # gamma
+REGULARIZER = 'none'
+REGULARIZATION_WEIGHT = 1e-5  # alpha
 
 
 # Data caching options
