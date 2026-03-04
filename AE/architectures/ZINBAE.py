@@ -14,7 +14,7 @@ class ZINBAE(nn.Module):
         padding='same',
         stride=1,
         dropout=0.0,
-        mu_offset=0,
+        mu_offset=1,
     ):
         super().__init__()
         
