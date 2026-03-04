@@ -687,16 +687,23 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
         mae = abs_err.mean()
         mae_std = abs_err.std(ddof=1)  # variability of absolute errors
         # mean and SD of pi for actual zeros vs non-zeros
-        if all_pi is not None:
-            all_pi_flat = all_pi.flatten()
-            zero_mask = actual_counts_flat == 0
-            non_zero_mask = ~zero_mask
-            mean_pi_zeros = all_pi_flat[zero_mask].mean() if np.any(zero_mask) else 0
-            mean_pi_nonzeros = all_pi_flat[non_zero_mask].mean() if np.any(non_zero_mask) else 0
-            std_pi_zeros = all_pi_flat[zero_mask].std(ddof=1) if np.any(zero_mask) else 0
-            std_pi_nonzeros = all_pi_flat[non_zero_mask].std(ddof=1) if np.any(non_zero_mask) else 0
-        else:
-            mean_pi_zeros, mean_pi_nonzeros, std_pi_zeros, std_pi_nonzeros = 0, 0, 0, 0
+        zero_mask = actual_counts_flat == 0
+        non_zero_mask = ~zero_mask
+        all_pi_flat = all_pi.flatten()
+        mean_pi_zeros = all_pi_flat[zero_mask].mean() if np.any(zero_mask) else 0
+        mean_pi_nonzeros = all_pi_flat[non_zero_mask].mean() if np.any(non_zero_mask) else 0
+        std_pi_zeros = all_pi_flat[zero_mask].std(ddof=1) if np.any(zero_mask) else 0
+        std_pi_nonzeros = all_pi_flat[non_zero_mask].std(ddof=1) if np.any(non_zero_mask) else 0
+        # Compute the mean and standard deviation of the mu predictions for actual zeros vs non-zeros
+        mean_mu_zeros = all_reconstructions_mu.flatten()[zero_mask].mean() if np.any(zero_mask) else 0
+        mean_mu_nonzeros = all_reconstructions_mu.flatten()[non_zero_mask].mean() if np.any(non_zero_mask) else 0
+        std_mu_zeros = all_reconstructions_mu.flatten()[zero_mask].std(ddof=1) if np.any(zero_mask) else 0
+        std_mu_nonzeros = all_reconstructions_mu.flatten()[non_zero_mask].std(ddof=1) if np.any(non_zero_mask) else 0
+        # Compute the mean and standard deviation of theta, no distinction between zeros and non-zeros since theta is a dispersion parameter that applies to all positions
+        mean_theta = all_theta.flatten().mean() if all_theta is not None else 0
+        std_theta = all_theta.flatten().std(ddof=1) if all_theta is not None else 0
+
+        mean_theta_zeros = mean_theta_nonzeros = std_theta_zeros = std_theta_nonzeros = None
         r2 = r2_score(actual_counts_flat, all_reconstructions_mu.flatten())
     else:
         # Fallback to normalized if raw counts not available
@@ -709,7 +716,10 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
         r2 = r2_score(actual_counts_flat, all_reconstructions_mu.flatten())
     
     # Save metrics to JSON for later analysis
-    print(f"MAE: {mae:.4f}, SD MEAN: {mae_std:.4f} \n R²: {r2:.4f}, Mean π (zeros): {mean_pi_zeros:.4f}, Mean π (non-zeros): {mean_pi_nonzeros:.4f}, SD π (zeros): {std_pi_zeros:.4f}, SD π (non-zeros): {std_pi_nonzeros:.4f}")
+    print(f"MAE: {mae:.4f}, SD MEAN: {mae_std:.4f} \n  R²: {r2:.4f}," )
+    print(f"Mean π (zeros): {mean_pi_zeros:.4f}, Mean π (non-zeros): {mean_pi_nonzeros:.4f},  \n SD π (zeros): {std_pi_zeros:.4f}, SD π (non-zeros): {std_pi_nonzeros:.4f} \n")
+    print(f"Mean μ (zeros): {mean_mu_zeros:.4f}, Mean μ (non-zeros): {mean_mu_nonzeros:.4f},  \n SD μ (zeros): {std_mu_zeros:.4f}, SD μ (non-zeros): {std_mu_nonzeros:.4f} \n")
+    print(f"Theta mean: {mean_theta:.4f}, Theta SD: {std_theta:.4f}")
     # metrics_to_save = {
     #     'mae': mae,
     #     'mae_std': mae_std,

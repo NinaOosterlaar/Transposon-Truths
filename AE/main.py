@@ -81,7 +81,7 @@ MU_OFFSET = 1.0  # Offset added to mu in ZINB loss to prevent zero variance
 # REGULARIZATION_WEIGHT = 1e-5
 
 PLOT = True
-SAVE_MODEL = False
+SAVE_MODEL = True
 MODEL_SAVE_DIR = "AE/results/models"
 MODEL_PATH_LOAD = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
 MODEL_LOAD = False
