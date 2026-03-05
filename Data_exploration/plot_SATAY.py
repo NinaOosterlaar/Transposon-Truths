@@ -203,11 +203,18 @@ def plot_around_centromere_x_is_centdist(
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     fig.savefig(outpath, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    
+# Save the data into a CSV file for later use
+def save_data(chrom, data, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"Chr{chrom}_centromere_window.csv")
+    data.to_csv(out_path, index=False)
 
 
 if __name__ == "__main__":
     in_dir = "Data/combined_strains/strain_yEK23"
-    out_dir = "Data_exploration/plot_SATAY"
+    # out_dir = "Data_exploration/plot_SATAY"
+    out_dir = "Signal_processing/sample_data/Centromere_region"
 
     for chrom in CHROMS:
         infile = os.path.join(in_dir, f"Chr{chrom}_distances.csv")
@@ -216,19 +223,21 @@ if __name__ == "__main__":
         if not os.path.exists(infile):
             print(f"Skipping (file not found): {infile}")
             continue
+        
+        save_data(chrom, pd.read_csv(infile), out_dir)
 
-        plot_around_centromere_x_is_centdist(
-            chrom=chrom,                # <-- pass chrom
-            filepath=infile,
-            outpath=outfile,
-            n=1000,
-            major_tick_step=100,
-            minor_tick_step=50,
-            strict_centromere_match=True,
-            value_max=500,
-            window_size=100,
-            show_zinb_params=False,
-            show_cpd=True,
-        )
+        # plot_around_centromere_x_is_centdist(
+        #     chrom=chrom,                # <-- pass chrom
+        #     filepath=infile,
+        #     outpath=outfile,
+        #     n=1000,
+        #     major_tick_step=100,
+        #     minor_tick_step=50,
+        #     strict_centromere_match=True,
+        #     value_max=500,
+        #     window_size=100,
+        #     show_zinb_params=False,
+        #     show_cpd=True,
+        # )
 
-        print(f"Saved: {outfile}")
+        # print(f"Saved: {outfile}")

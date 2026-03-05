@@ -108,21 +108,30 @@ def parse_arguments():
     parser.add_argument("input_file", type=str, help="Path to the input CSV file containing the count data.")
     parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean/sliding_ZINB_CPD", help="Output folder for results.")
     parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
-    parser.add_argument("--n_workers", type=int, default=4, help="Number of parallel workers/CPUs to use.")
+    parser.add_argument("--n_workers", type=int, default=1, help="Number of parallel workers/CPUs to use.")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    input_file = args.input_file
-    window_size = [80, 10, 30, 50]
+    # args = parse_arguments()
+    # input_file = args.input_file
+    # window_size = [80, 10, 30, 50]
+    # overlap = 0.5
+    # thresholds = np.linspace(0, 40, 41)  # 41 thresholds from 0 to 40
+    # print(thresholds)
+    # output_folder = args.output_folder
+    # dataset_name = args.dataset_name
+    # # Add dataset name to output folder path
+    # output_folder = os.path.join(output_folder, dataset_name)
+    # n_workers = arg.n_workers
+    input_file = "Signal_processing/sample_data/Centromere_region/ChrI_centromere_window.csv"
+    window_size = [80, 50]
     overlap = 0.5
     thresholds = np.linspace(0, 40, 41)  # 41 thresholds from 0 to 40
     print(thresholds)
-    output_folder = args.output_folder
-    dataset_name = args.dataset_name
-    # Add dataset name to output folder path
-    output_folder = os.path.join(output_folder, dataset_name)
+    dataset_name = "ChrI_centromere_window"
+    output_folder = "Signal_processing/results/sliding_mean_SATAY/sliding_ZINB_CPD"
+    n_workers = 1
     
     # Create output folder if it doesn't exist
     if not os.path.exists(output_folder):
@@ -132,13 +141,13 @@ if __name__ == "__main__":
     # datasets = read_csv_file_with_distances(input_file)
     with open(input_file, "r") as f:
         lines = f.readlines()[1:]  # Skip header
-        data = [int(line.strip().split(",")[1]) for line in lines]
+        data = [int(float(line.strip().split(",")[1])) for line in lines]
     theta_global = initialize_theta_global(data)
     # print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
     # theta_global = 5
     
     # Parallelize processing of different window sizes
-    n_workers = min(args.n_workers, len(window_size))
+    n_workers = min(n_workers, len(window_size))
     print(f"Using {n_workers} workers to process {len(window_size)} window sizes in parallel")
     
     with ProcessPoolExecutor(max_workers=n_workers) as executor:

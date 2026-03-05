@@ -607,7 +607,16 @@ if __name__ == "__main__":
     print("\nOverall summary statistics (tolerance-independent metrics):")
     # For tolerance-independent metrics, take unique values per window/threshold combination
     unique_results = results_df.drop_duplicates(subset=['window_size', 'threshold'])
-    print(unique_results.groupby('window_size')[['annotation_error', 'hausdorff_distance', 'mae_localization', 'rand_index', 'adjusted_rand_index']].mean())
+    # Print the mean and maximum values of annotation error, Hausdorff distance, and MAE localization error for each window size
+    for window_size in sorted(unique_results['window_size'].unique()):
+        window_data = unique_results[unique_results['window_size'] == window_size]
+        print(f"\nWindow size: {window_size}")
+        print(f"  Mean annotation error: {window_data['annotation_error'].mean():.2f}")
+        print(f"  Max annotation error: {window_data['annotation_error'].max()}")
+        print(f"  Mean Hausdorff distance: {window_data['hausdorff_distance'].replace(np.inf, np.nan).mean():.2f}")
+        print(f"  Max Hausdorff distance: {window_data['hausdorff_distance'].replace(np.inf, np.nan).max()}")
+        print(f"  Mean MAE localization error: {window_data['mae_localization'].replace(np.inf, np.nan).mean():.2f}")
+        print(f"  Max MAE localization error: {window_data['mae_localization'].replace(np.inf, np.nan).max()}")
     
     # # Create overlay plots for visualization
     # print("\n" + "="*50)
