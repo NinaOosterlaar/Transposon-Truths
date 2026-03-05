@@ -133,9 +133,9 @@ if __name__ == "__main__":
     with open(input_file, "r") as f:
         lines = f.readlines()[1:]  # Skip header
         data = [int(line.strip().split(",")[1]) for line in lines]
-    # theta_global = initialize_theta_global(data)
+    theta_global = initialize_theta_global(data)
     # print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
-    theta_global = 5
+    # theta_global = 5
     
     # Parallelize processing of different window sizes
     n_workers = min(args.n_workers, len(window_size))
