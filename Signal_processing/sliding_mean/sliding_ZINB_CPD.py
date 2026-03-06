@@ -109,29 +109,32 @@ def parse_arguments():
     parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean/sliding_ZINB_CPD", help="Output folder for results.")
     parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
     parser.add_argument("--n_workers", type=int, default=1, help="Number of parallel workers/CPUs to use.")
+    parser.add_argument("--theta_global", type=float, default=None, help="Global theta value to use for all windows (if not provided, it will be estimated from the data).")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    # args = parse_arguments()
-    # input_file = args.input_file
-    # window_size = [80, 10, 30, 50]
-    # overlap = 0.5
-    # thresholds = np.linspace(0, 40, 41)  # 41 thresholds from 0 to 40
-    # print(thresholds)
-    # output_folder = args.output_folder
-    # dataset_name = args.dataset_name
-    # # Add dataset name to output folder path
-    # output_folder = os.path.join(output_folder, dataset_name)
-    # n_workers = arg.n_workers
-    input_file = "Signal_processing/sample_data/Centromere_region/ChrI_centromere_window.csv"
-    window_size = [80, 50]
+    args = parse_arguments()
+    input_file = args.input_file
+    window_size = [80, 10, 30, 50]
     overlap = 0.5
     thresholds = np.linspace(0, 40, 41)  # 41 thresholds from 0 to 40
     print(thresholds)
-    dataset_name = "ChrI_centromere_window"
-    output_folder = "Signal_processing/results/sliding_mean_SATAY/sliding_ZINB_CPD"
-    n_workers = 1
+    output_folder = args.output_folder
+    dataset_name = args.dataset_name
+    # Add dataset name to output folder path
+    output_folder = os.path.join(output_folder, dataset_name)
+    n_workers = args.n_workers
+    theta_global = args.theta_global
+    # input_file = "Signal_processing/sample_data/Centromere_region/ChrI_centromere_window.csv"
+    # window_size = [80, 50]
+    # overlap = 0.5
+    # thresholds = np.linspace(0, 40, 41)  # 41 thresholds from 0 to 40
+    # print(thresholds)
+    # dataset_name = "ChrI_centromere_window"
+    # output_folder = "Signal_processing/results/sliding_mean_SATAY/sliding_ZINB_CPD"
+    # n_workers = 1
+    # theta_global = None
     
     # Create output folder if it doesn't exist
     if not os.path.exists(output_folder):
@@ -142,9 +145,9 @@ if __name__ == "__main__":
     with open(input_file, "r") as f:
         lines = f.readlines()[1:]  # Skip header
         data = [int(float(line.strip().split(",")[1])) for line in lines]
-    theta_global = initialize_theta_global(data)
-    # print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
-    # theta_global = 5
+    if theta_global is None:
+        theta_global = initialize_theta_global(data)
+    print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
     
     # Parallelize processing of different window sizes
     n_workers = min(n_workers, len(window_size))
