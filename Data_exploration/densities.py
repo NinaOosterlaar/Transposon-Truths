@@ -676,7 +676,7 @@ def _combine_cen_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str
 
 
 # ---------- 3) Public API ----------
-def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True, absolute_distance=False):
+def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True, absolute_distance=False, base_folder = "Data_exploration/results/densities/centromere"):
     """
     Combine signed centromere-distance curves (Bin_Center, Density_per_bp) with
     unweighted means across datasets (no exposure weighting), and plot if requested.
@@ -690,7 +690,6 @@ def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True, 
     bin_size: Filter by bin size (e.g., 100, 1000) - if None, includes all
     absolute_distance: If True, use absolute distance (overlap left/right sides of centromere)
     """
-    base_folder = "Data_exploration/results/densities/centromere"
     
     # Create descriptive folder name based on filters
     folder_parts = [f"combined_{mode}"]
@@ -734,20 +733,21 @@ def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True, 
 if __name__ == "__main__":
     # Example usage:
     # Generate centromere densities with specific bin size:
-    # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=1000, boolean=True)
+    bin_size = 10000
+    # density_from_centromere("Data/combined_strains", "Data_exploration/results/densities/centromere_strains", bin=bin_size, boolean=True)
     
     # # Generate nucleosome densities:
-    # density_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/densities/nucleosome_new", boolean=True)
+    # density_from_nucleosome("Data/combined_strains", "Data_exploration/results/densities/nucleosome_strains", boolean=True)
     
     # Combine nucleosome data: 
-    combine_nucleosome_data(data="Strains", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=800)
+    combine_nucleosome_data(data="Datasets", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_strains", min_distance=0, max_distance=800)
     # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
-    bin_size = 1
+
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=bin_size, boolean=True)
-    combine_centromere_data(mode="Strains", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False)
-    combine_centromere_data(mode="Strains", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True)
+    combine_centromere_data(mode="Datasets", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/densities/centromere_strains")
+    combine_centromere_data(mode="Datasets", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True, base_folder="Data_exploration/results/densities/centromere_strains")
     # combine_centromere_data(mode="Chromosomes", boolean=True, bin_size=bin_size, plot=True)
     
 

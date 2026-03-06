@@ -23,18 +23,18 @@ CPD = {
     "II": [-740, -580, -70, 65, 800],
     "III": [-900, -200, -80, 80, 750],
     "IV": [-900, -800, -740, -500, -380, -60, 60 ],
-    "V": [],
-    "VI": [],    
-    "VII": [],
-    "VIII": [],
-    "IX": [],
-    "X": [],
-    "XI": [],
-    "XII": [],
-    "XIII": [],
-    "XIV": [],
-    "XV": [],
-    "XVI": [],
+    "V": [-620, -280, -70, 90, 200, 480],
+    "VI": [-960, -860, 460],    
+    "VII": [-440, -110, 70, 260, 320, 730],
+    "VIII": [-860, -510, -80, 80, 200, 370, 580, ],
+    "IX": [-400, -60, 80, 200, 300, 760],
+    "X": [-920, -480, -80, 60, 200 ],
+    "XI": [-660, -380 ,-70, 60, 180, 280, 470],
+    "XII": [-180, -75, 70, 460 ],
+    "XIII": [-770, -420, -300, -140, -65, 80, 780],
+    "XIV": [-920, -140, -65, 80, ],
+    "XV": [-740, -120, 60, 380, 930],
+    "XVI": [-580, -170, -70, 80,],
 }
 input_folder = "Signal_processing/results/sliding_mean_SATAY/sliding_ZINB_CPD"
 data_folder = "Signal_processing/sample_data/Centromere_region"
@@ -47,7 +47,7 @@ def get_available_chromosomes(input_folder, data_folder, cpd_dict):
     """Find chromosomes that have both result files and non-empty true change points.
     
     Args:
-        input_folder: Folder containing result files organized by window size
+        input_folder: Folder containing chromosome folders with window subfolders
         data_folder: Folder containing chromosome data files
         cpd_dict: Dictionary with true change points per chromosome
     
@@ -55,18 +55,6 @@ def get_available_chromosomes(input_folder, data_folder, cpd_dict):
         List of chromosome names (e.g., ["I", "II", "III"])
     """
     available_chroms = []
-    
-    # Get window folders
-    window_folders = [f for f in os.listdir(input_folder) 
-                     if os.path.isdir(os.path.join(input_folder, f)) and f.startswith("window")]
-    
-    if not window_folders:
-        print(f"No window folders found in {input_folder}")
-        return available_chroms
-    
-    # Check first window folder for available chromosomes
-    first_window = os.path.join(input_folder, window_folders[0])
-    result_files = os.listdir(first_window)
     
     for chrom in CHROMS:
         # Check if chromosome has non-empty true change points
@@ -78,13 +66,24 @@ def get_available_chromosomes(input_folder, data_folder, cpd_dict):
         if not os.path.exists(data_file):
             continue
         
-        # Check if result files exist for this chromosome
-        chrom_files = [f for f in result_files if f.startswith(f"Chr{chrom}_")]
-        if len(chrom_files) == 0:
+        # Check if chromosome folder exists
+        chrom_folder = os.path.join(input_folder, f"Chr{chrom}")
+        if not os.path.exists(chrom_folder) or not os.path.isdir(chrom_folder):
             continue
         
+        # Check if there are window folders inside
+        window_folders = [f for f in os.listdir(chrom_folder) 
+                         if os.path.isdir(os.path.join(chrom_folder, f)) and f.startswith("window")]
+        
+        if len(window_folders) == 0:
+            continue
+        
+        # Count result files in the first window folder
+        first_window = os.path.join(chrom_folder, window_folders[0])
+        result_files = [f for f in os.listdir(first_window) if f.endswith('.txt')]
+        
         available_chroms.append(chrom)
-        print(f"Chromosome {chrom}: Found {len(chrom_files)} result files and data file")
+        print(f"Chromosome {chrom}: Found {len(window_folders)} window sizes, {len(result_files)} result files per window")
     
     return available_chroms
 
@@ -131,14 +130,15 @@ def evaluate_chromosome(chrom, input_folder, data_folder, cpd_dict):
     results = []
     window_threshold_cps = {}  # For ROC curves
     
-    # Get all window folders
-    window_folders = [f for f in os.listdir(input_folder) 
-                     if os.path.isdir(os.path.join(input_folder, f)) and f.startswith("window")]
+    # Get all window folders from the chromosome-specific folder
+    chrom_folder = os.path.join(input_folder, f"Chr{chrom}")
+    window_folders = [f for f in os.listdir(chrom_folder) 
+                     if os.path.isdir(os.path.join(chrom_folder, f)) and f.startswith("window")]
     window_folders.sort()
     
     for window_folder in window_folders:
         window_size = int(window_folder.replace("window", ""))
-        window_path = os.path.join(input_folder, window_folder)
+        window_path = os.path.join(chrom_folder, window_folder)
         
         # Define tolerances based on window size
         tolerances = {
@@ -267,17 +267,31 @@ def evaluate_all_chromosomes(input_folder, data_folder, output_folder, cpd_dict)
     os.makedirs(output_plots_folder, exist_ok=True)
     
     # Tolerance-independent metric plots (combined across all chromosomes)
-    plot_all_metrics_comparison(combined_df, output_plots_folder, "All_Chromosomes")
+    # Average metrics across chromosomes for each window_size/threshold combination
+    aggregated_df = combined_df.groupby(['window_size', 'threshold', 'tolerance_type']).agg({
+        'annotation_error': 'mean',
+        'hausdorff_distance': 'mean',
+        'mae_localization': 'mean',
+        'rand_index': 'mean',
+        'adjusted_rand_index': 'mean',
+        'precision': 'mean',
+        'recall': 'mean',
+        'F1': 'mean',
+        'num_detected': 'sum',
+        'num_true': 'sum'
+    }).reset_index()
     
-    plot_metric_vs_threshold(combined_df, 'annotation_error', output_plots_folder, "All_Chromosomes",
+    plot_all_metrics_comparison(aggregated_df, output_plots_folder, "All_Chromosomes")
+    
+    plot_metric_vs_threshold(aggregated_df, 'annotation_error', output_plots_folder, "All_Chromosomes",
                             metric_label='Annotation Error (|#predicted - #true|)', use_log_scale=False)
-    plot_metric_vs_threshold(combined_df, 'hausdorff_distance', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(aggregated_df, 'hausdorff_distance', output_plots_folder, "All_Chromosomes",
                             metric_label='Hausdorff Distance', use_log_scale=True, exclude_inf=True)
-    plot_metric_vs_threshold(combined_df, 'mae_localization', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(aggregated_df, 'mae_localization', output_plots_folder, "All_Chromosomes",
                             metric_label='MAE Localization Error', use_log_scale=True, exclude_inf=True)
-    plot_metric_vs_threshold(combined_df, 'rand_index', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(aggregated_df, 'rand_index', output_plots_folder, "All_Chromosomes",
                             metric_label='Rand Index', use_log_scale=False)
-    plot_metric_vs_threshold(combined_df, 'adjusted_rand_index', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(aggregated_df, 'adjusted_rand_index', output_plots_folder, "All_Chromosomes",
                             metric_label='Adjusted Rand Index', use_log_scale=False)
     
     # Precision-Recall and ROC curves for each tolerance

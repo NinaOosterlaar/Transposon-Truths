@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0-5
+#SBATCH --array=0
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ cd "$PROJECT_DIR"
 
 DATASET_NAME="SATAY_synthetic"
 INPUT_FILE="Signal_processing/sample_data/SATAY_synthetic.csv"
-THETAS=("None" "0.5" "1" "5" "10" "100")
+THETAS=("0")
 
 THETA_GLOBAL="${THETAS[$SLURM_ARRAY_TASK_ID]}"
 
