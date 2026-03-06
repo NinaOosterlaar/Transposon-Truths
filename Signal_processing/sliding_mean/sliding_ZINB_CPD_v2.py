@@ -53,9 +53,9 @@ def sliding_ZINB_CPD(data, nucleosome_distances, window_size, overlap, threshold
         nucl_dist0 = nucleosome_distances[start : start + 2 * window_size]
         nucl_dist1 = nucleosome_distances[start : start + window_size]
         nucl_dist2 = nucleosome_distances[start + window_size : start + 2 * window_size]
-        temp0_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values[0] for d in nucl_dist0])
-        temp1_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values[0] for d in nucl_dist1])
-        temp2_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values[0] for d in nucl_dist2])
+        temp0_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values for d in nucl_dist0])
+        temp1_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values for d in nucl_dist1])
+        temp2_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values for d in nucl_dist2])
 
         pi1 = np.clip(pi0 * (temp1_nucl / temp0_nucl), eps, 1 - eps)
         pi2 = np.clip(pi0 * (temp2_nucl / temp0_nucl), eps, 1 - eps)

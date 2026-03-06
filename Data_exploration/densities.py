@@ -730,6 +730,542 @@ def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True, 
         raise ValueError("mode must be one of: 'All', 'Chromosomes', 'Strains', 'Datasets'")
 
 
+# ========================================
+# MEAN VALUE FUNCTIONS FOR NON-ZERO VALUES
+# ========================================
+
+def process_single_dataset_centromere_mean(strain_name, dataset_path, dataset_name, output_folder, bin=100, max_distance_global=None, min_distance_global=None):
+    """Process a single dataset and compute mean of non-zero values by centromere distance.
+    
+    Args:
+        strain_name (str): Name of the strain
+        dataset_path (str): Path to the dataset folder
+        dataset_name (str): Name of the dataset
+        output_folder (str): Base output folder
+        bin (int): Size of the sliding window for mean calculation
+        max_distance_global (int): Maximum distance to consider
+        min_distance_global (int): Minimum distance to consider
+    """
+    # Create output folders
+    strain_output_folder = os.path.join(output_folder, strain_name)
+    dataset_output_folder = os.path.join(strain_output_folder, dataset_name)
+    os.makedirs(dataset_output_folder, exist_ok=True)
+    
+    # Load only one dataset's data
+    dataset_data = {}
+    csv_files = [f for f in os.listdir(dataset_path) if f.endswith(".csv")]
+    
+    for csv_file in csv_files:
+        chrom = csv_file.split("_")[0]
+        file_path = os.path.join(dataset_path, csv_file)
+        dataset_data[chrom] = pd.read_csv(file_path)
+    
+    # Process each chromosome in this dataset
+    for chrom in dataset_data:
+        if chrom == "ChrM": continue  # Skip mitochondrial chromosome
+        if chrom == "ChrXV":
+            dataset_data[chrom].loc[dataset_data[chrom]['Position'] == 565392, 'Value'] = 0
+            
+        df = dataset_data[chrom]
+
+        if max_distance_global is not None:
+            max_distance = max_distance_global
+        else:
+            max_distance = df['Centromere_Distance'].max()
+        if min_distance_global is not None:
+            min_distance = min_distance_global
+        else:
+            min_distance = df['Centromere_Distance'].min()
+            
+        # Create bins aligned around centromere (position 0)
+        data_range = max(abs(min_distance), abs(max_distance))
+        n_bins_each_side = int(np.ceil(data_range / bin)) + 1
+        bin_centers = np.arange(-n_bins_each_side * bin, (n_bins_each_side + 1) * bin, bin)
+        bin_edges = bin_centers - bin/2
+        bin_edges = np.append(bin_edges, bin_edges[-1] + bin)
+        
+        df['Distance_Bin'] = pd.cut(df['Centromere_Distance'], bins=bin_edges, right=False, include_lowest=True)
+
+        # Filter only non-zero values
+        df_nonzero = df[df['Value'] > 0].copy()
+        
+        # Remove top 5% percentile values (outliers)
+        if len(df_nonzero) > 0:
+            percentile_95 = df_nonzero['Value'].quantile(0.95)
+            df_nonzero = df_nonzero[df_nonzero['Value'] <= percentile_95]
+        
+        # Compute mean of non-zero values per bin
+        mean_data = df_nonzero.groupby('Distance_Bin')['Value'].agg(['mean', 'std', 'count']).reset_index()
+        mean_data['Bin_Center'] = mean_data['Distance_Bin'].apply(lambda x: x.left + bin / 2)
+        mean_data = mean_data.rename(columns={'mean': 'Mean_Nonzero', 'std': 'Std_Nonzero', 'count': 'Count_Nonzero'})
+        
+        if mean_data.empty:
+            print(f"No valid mean data for {chrom} in {strain_name}/{dataset_name}. Skipping.")
+            continue
+        
+        # Save to CSV immediately
+        output_file = os.path.join(dataset_output_folder, f"{chrom}_bin:{bin}_centromere_mean.csv")
+        mean_data[['Bin_Center', 'Mean_Nonzero', 'Std_Nonzero', 'Count_Nonzero']].to_csv(output_file, index=False)
+    
+    # Clear dataset from memory
+    del dataset_data
+
+
+def mean_from_centromere(input_folder, output_folder, bin=1000, max_distance_global=None, min_distance_global=None):
+    """Compute mean of non-zero values from centromere distances for all datasets.
+    
+    Args:
+        input_folder (str): Path to the folder containing distance CSV files (strain/dataset structure).
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+        bin (int): Size of the sliding window for mean calculation.
+        max_distance_global (int): Maximum distance to consider globally.
+        min_distance_global (int): Minimum distance to consider globally.
+    """
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Collect all datasets without loading data
+    datasets_to_process = []
+    
+    for root, dirs, files in os.walk(input_folder):
+        csv_files = [f for f in files if f.endswith(".csv")]
+        if csv_files:  # Only process folders that contain CSV files
+            path_parts = root.split("/")
+            strain_name = path_parts[-2] if len(path_parts) >= 2 else "unknown_strain"
+            dataset_name = path_parts[-1]
+            datasets_to_process.append((strain_name, root, dataset_name))
+    
+    # Process each dataset individually
+    for strain_name, dataset_path, dataset_name in datasets_to_process:
+        process_single_dataset_centromere_mean(strain_name, dataset_path, dataset_name, output_folder, 
+                                bin, max_distance_global, min_distance_global)
+
+
+def process_single_dataset_nucleosome_mean(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization):
+    """Process a single dataset for nucleosome distances and compute mean of non-zero values.
+    
+    Args:
+        strain_name (str): Name of the strain
+        dataset_path (str): Path to the dataset folder
+        dataset_name (str): Name of the dataset
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+        nucleosomes_normalization (dict): Normalization factors per chromosome
+    """
+    # Create output folders
+    strain_output_folder = os.path.join(output_folder, strain_name)
+    dataset_output_folder = os.path.join(strain_output_folder, dataset_name)
+    os.makedirs(dataset_output_folder, exist_ok=True)
+    
+    # Load only one dataset's data
+    counts = {}
+    csv_files = [f for f in os.listdir(dataset_path) if f.endswith(".csv")]
+    
+    for csv_file in csv_files:
+        chrom = csv_file.split("_")[0]
+        if chrom == "ChrM": continue
+        file_path = os.path.join(dataset_path, csv_file)
+        df = pd.read_csv(file_path)
+        
+        # Filter non-zero values only
+        df_nonzero = df[df['Value'] > 0].copy()
+        
+        # Change the value of position 565392 in chromosome XV to 0
+        if chrom == "ChrXV":
+            df_nonzero = df_nonzero[df_nonzero['Position'] != 565392]
+        
+        # Remove top 5% percentile values (outliers)
+        if len(df_nonzero) > 0:
+            percentile_95 = df_nonzero['Value'].quantile(0.95)
+            df_nonzero = df_nonzero[df_nonzero['Value'] <= percentile_95]
+        
+        # Group by nucleosome distance and compute mean
+        mean_by_distance = df_nonzero.groupby('Nucleosome_Distance')['Value'].agg(['mean', 'std', 'count']).reset_index()
+        
+        counts[chrom] = {}
+        for _, row in mean_by_distance.iterrows():
+            distance = int(row['Nucleosome_Distance'])
+            if distance in nucleosomes_normalization[chrom]:
+                # Store mean and count info
+                counts[chrom][distance] = {
+                    'mean': row['mean'],
+                    'std': row['std'] if not pd.isna(row['std']) else 0,
+                    'count': row['count']
+                }
+        
+        # Add zeros for distances with no non-zero values
+        for distance in nucleosomes_normalization[chrom]:
+            if distance not in counts[chrom]:
+                counts[chrom][distance] = {'mean': 0, 'std': 0, 'count': 0}
+
+        # Save the processed counts to a CSV file
+        output_file = os.path.join(dataset_output_folder, f"{chrom}_nucleosome_mean.csv")
+        with open(output_file, "w") as f:
+            f.write("distance,mean_nonzero,std_nonzero,count_nonzero\n")
+            for dist, data in counts[chrom].items():
+                f.write(f"{dist},{data['mean']},{data['std']},{data['count']}\n")
+
+    # Clear counts from memory
+    del counts
+
+
+def mean_from_nucleosome(input_folder, output_folder):
+    """Compute mean of non-zero values from nucleosome distances for all datasets.
+    
+    Args:
+        input_folder (str): Path to the folder containing distance CSV files (strain/dataset structure).
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+    """
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    nucleosomes = Nucleosomes()
+    nucleosomes_normalization = {}
+    for chrom in chromosome_length.keys():
+        if chrom == "ChrM": continue  # Skip mitochondrial chromosome
+        normalized_counts = nucleosomes.compute_exposure(chrom)
+        nucleosomes_normalization[chrom] = normalized_counts
+
+    # Collect all datasets without loading data
+    datasets_to_process = []
+    
+    for root, dirs, files in os.walk(input_folder):
+        csv_files = [f for f in files if f.endswith(".csv")]
+        if csv_files:  # Only process folders that contain CSV files
+            path_parts = root.split("/")
+            strain_name = path_parts[-2] if len(path_parts) >= 2 else "unknown_strain"
+            dataset_name = path_parts[-1]
+            datasets_to_process.append((strain_name, root, dataset_name))
+    
+    # Process each dataset individually
+    for strain_name, dataset_path, dataset_name in datasets_to_process:
+        process_single_dataset_nucleosome_mean(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization)
+
+
+# ========================================
+# COMBINING AND PLOTTING MEAN VALUES
+# ========================================
+
+def _load_nuc_mean_tables(base_folder: str) -> pd.DataFrame:
+    """Load nucleosome mean value tables from all datasets.
+    
+    Returns:
+        DataFrame with columns: chrom, strain, dataset, distance, mean_nonzero, std_nonzero, count_nonzero, path
+    """
+    rows = []
+    suffix = "_nucleosome_mean.csv"
+
+    for root, dirs, files in os.walk(base_folder):
+        for file in files:
+            if not file.endswith(suffix):
+                continue
+            path = os.path.join(root, file)
+
+            # infer metadata: .../<strain>/<dataset>/file.csv
+            parts = os.path.normpath(root).split(os.sep)
+            strain = parts[-2] if len(parts) >= 2 else "unknown_strain"
+            dataset = parts[-1] if len(parts) >= 1 else "unknown_dataset"
+            chrom = file.split("_")[0]
+
+            df = pd.read_csv(path)
+            required = {"distance", "mean_nonzero"}
+            if not required.issubset(df.columns):
+                continue
+
+            df["distance"] = pd.to_numeric(df["distance"], errors="coerce")
+            df["mean_nonzero"] = pd.to_numeric(df["mean_nonzero"], errors="coerce")
+            if "std_nonzero" in df.columns:
+                df["std_nonzero"] = pd.to_numeric(df["std_nonzero"], errors="coerce")
+            else:
+                df["std_nonzero"] = np.nan
+            if "count_nonzero" in df.columns:
+                df["count_nonzero"] = pd.to_numeric(df["count_nonzero"], errors="coerce")
+            else:
+                df["count_nonzero"] = 1
+                
+            df = df.dropna(subset=["distance", "mean_nonzero"])
+            df["chrom"] = chrom
+            df["strain"] = strain
+            df["dataset"] = dataset
+            df["path"] = path
+            rows.append(df[["chrom", "strain", "dataset", "distance", "mean_nonzero", "std_nonzero", "count_nonzero", "path"]])
+
+    if not rows:
+        return pd.DataFrame(columns=["chrom", "strain", "dataset", "distance", "mean_nonzero", "std_nonzero", "count_nonzero", "path"])
+    return pd.concat(rows, ignore_index=True)
+
+
+def _combine_mean_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, plot: bool, min_distance=None, max_distance=None):
+    """
+    Combine mean value curves across datasets.
+    Writes one combined CSV (and PNG if plot=True) per group.
+    CSV columns: distance, mean_of_means, sd_of_means, se_of_means, n_datasets
+    """
+    if df.empty:
+        print("[combine_mean] no data found.")
+        return
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Filter by distance range if specified
+    if min_distance is not None:
+        df = df[df["distance"] >= min_distance]
+    if max_distance is not None:
+        df = df[df["distance"] <= max_distance]
+
+    if df.empty:
+        return
+
+    # Normalize by chromosome length if not grouping by chromosome
+    if group_by != ["chrom"]:
+        for chrom in chromosome_length:
+            if chrom in df['chrom'].values:
+                df.loc[df['chrom'] == chrom, 'mean_nonzero'] *= chromosome_length[chrom] / mean_chrom_length
+
+    keys = group_by + ["distance"]
+    combined = (df.groupby(keys, as_index=False)
+                  .agg(mean_of_means=("mean_nonzero", "mean"),
+                       sd_of_means=("mean_nonzero", "std"),
+                       n_datasets=("mean_nonzero", "size"),
+                       se_of_means=("mean_nonzero", "sem")))
+    combined = combined.sort_values(keys)
+
+    # Write and plot per group
+    for keys, sub in combined.groupby(group_by if group_by else [lambda _: True]):
+        if not group_by:
+            label = "ALL"
+        else:
+            if not isinstance(keys, tuple): keys = (keys,)
+            label = "_".join(f"{col}-{val}" for col, val in zip(group_by, keys))
+
+        out_csv = os.path.join(out_dir, f"{label}_combined_{tag}.csv")
+        sub.to_csv(out_csv, index=False)
+
+        if plot:
+            # Filter out rows with mean=0 or very small means for cleaner plotting
+            sub_filtered = sub[sub["mean_of_means"] > 0]
+            
+            if len(sub_filtered) > 0:
+                fig, ax = plt.subplots(figsize=(7, 4))
+                # main line
+                ax.plot(sub_filtered["distance"], sub_filtered["mean_of_means"], label="Mean", color='black')
+                # ribbon: ±2 SE (approximately 95% confidence interval)
+                lo = sub_filtered["mean_of_means"] - 2 * sub_filtered["se_of_means"].fillna(0)
+                hi = sub_filtered["mean_of_means"] + 2 * sub_filtered["se_of_means"].fillna(0)
+                ax.fill_between(sub_filtered["distance"], lo, hi, alpha=0.15, label="±2 SE", color='black')
+
+                ax.set_xlabel("Distance from nucleosome (bp)")
+                ax.set_ylabel("Mean Transposon Count ")
+                ax.set_title(f"Mean transposon count at nucleosome distance — {label}")
+                ax.legend(loc="best")
+                ax.grid(True, which='both', axis='both', alpha=0.4, linestyle='--')
+                ax.minorticks_on()
+
+                fig.tight_layout()
+
+                out_png = os.path.join(out_dir, f"{label}_combined_{tag}.png")
+                fig.savefig(out_png, dpi=150)
+                plt.close(fig)
+
+
+def combine_nucleosome_mean_data(data="All", plot=False, base_folder="Data_exploration/results/means/nucleosome", min_distance=None, max_distance=None):
+    """
+    Combine nucleosome mean value curves across datasets and optionally plot.
+
+    Args:
+        data: "All", "Chromosomes", "Strains", or "Datasets"
+        plot: if True, saves a PNG next to each CSV
+        base_folder: base folder containing the mean data
+        min_distance: if specified, only include distances >= min_distance
+        max_distance: if specified, only include distances <= max_distance
+    """
+    out_base = os.path.join(base_folder, f"combined_{data}")
+    os.makedirs(out_base, exist_ok=True)
+
+    df = _load_nuc_mean_tables(base_folder)
+    if df.empty:
+        print("[combine_mean] no matching files found.")
+        return
+
+    tag = "nucleosome_mean"
+
+    if data == "All":
+        _combine_mean_curves(df, group_by=[], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    elif data == "Chromosomes":
+        _combine_mean_curves(df, group_by=["chrom"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    elif data == "Strains":
+        _combine_mean_curves(df, group_by=["strain"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    elif data == "Datasets":
+        _combine_mean_curves(df, group_by=["dataset"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    else:
+        raise ValueError("data must be one of: 'All', 'Chromosomes', 'Strains', 'Datasets'")
+
+
+def _load_cen_mean_tables(base_folder: str, bin_size: int = None) -> pd.DataFrame:
+    """
+    Load centromere mean value tables and return one long DataFrame.
+    Filters by bin_size if specified.
+    """
+    rows = []
+    for root, dirs, files in os.walk(base_folder):
+        for file in files:
+            if not file.endswith("_centromere_mean.csv"):
+                continue
+            
+            # Extract bin size from filename: ChrI_bin:10000_centromere_mean.csv
+            file_parts = file.split("_")
+            file_bin_size = None
+            
+            for part in file_parts:
+                if part.startswith("bin:"):
+                    file_bin_size = int(part.split(":")[1])
+            
+            # Skip files that don't match the filter
+            if bin_size is not None and file_bin_size != bin_size:
+                continue
+                
+            path = os.path.join(root, file)
+
+            # infer metadata: .../<strain>/<dataset>/file.csv
+            root_parts = os.path.normpath(root).split(os.sep)
+            strain = root_parts[-2] if len(root_parts) >= 2 else "unknown_strain"
+            dataset = root_parts[-1] if len(root_parts) >= 1 else "unknown_dataset"
+            chrom = file_parts[0]
+
+            df = pd.read_csv(path)
+            required = {"Bin_Center", "Mean_Nonzero"}
+            if not required.issubset(df.columns):
+                print(f"[skip] {path} missing {required - set(df.columns)}")
+                continue
+
+            df["Bin_Center"] = pd.to_numeric(df["Bin_Center"], errors="coerce")
+            df["Mean_Nonzero"] = pd.to_numeric(df["Mean_Nonzero"], errors="coerce")
+            if "Std_Nonzero" in df.columns:
+                df["Std_Nonzero"] = pd.to_numeric(df["Std_Nonzero"], errors="coerce")
+            if "Count_Nonzero" in df.columns:
+                df["Count_Nonzero"] = pd.to_numeric(df["Count_Nonzero"], errors="coerce")
+            
+            df = df.dropna(subset=["Bin_Center", "Mean_Nonzero"])
+
+            df["chrom"] = chrom
+            df["strain"] = strain
+            df["dataset"] = dataset
+            df["bin_size"] = file_bin_size
+            df["path"] = path
+            rows.append(df[["chrom", "strain", "dataset", "bin_size", "Bin_Center", "Mean_Nonzero", "Std_Nonzero", "Count_Nonzero", "path"]])
+
+    if not rows:
+        return pd.DataFrame(columns=["chrom", "strain", "dataset", "bin_size", "Bin_Center", "Mean_Nonzero", "Std_Nonzero", "Count_Nonzero", "path"])
+    return pd.concat(rows, ignore_index=True)
+
+
+def _combine_cen_mean_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, plot: bool, bin_size: int, absolute_distance: bool = False):
+    """
+    Combine centromere mean value curves across datasets.
+    Writes one CSV (and PNG if plot=True) per group.
+    CSV columns: Bin_Center, mean_of_means, sd_of_means, se_of_means, n_datasets
+    """
+    if df.empty:
+        print("[centromere_mean] no data found.")
+        return
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Convert to absolute distance if requested
+    if absolute_distance:
+        df = df.copy()
+        df["Bin_Center"] = df["Bin_Center"].abs()
+
+    within_keys = group_by + ["Bin_Center"]
+    combined = (df.groupby(within_keys, as_index=False).agg(
+                mean_of_means=("Mean_Nonzero", "mean"),
+                sd_of_means=("Mean_Nonzero", "std"),
+                n_datasets=("Mean_Nonzero", "size"),
+                se_of_means=("Mean_Nonzero", "sem"),
+            ))
+
+    # Write and plot per group
+    group_iter = [((), combined)] if not group_by else combined.groupby(group_by, dropna=False)
+
+    for keys, sub in group_iter:
+        label = "ALL" if not group_by else "_".join(
+            f"{col}-{val}" for col, val in zip(group_by, keys if isinstance(keys, tuple) else (keys,))
+        )
+
+        out_csv = os.path.join(out_dir, f"{label}_combined_{tag}.csv")
+        sub.to_csv(out_csv, index=False)
+        
+        if not plot:
+            continue
+        
+        sub_filtered = sub[sub["mean_of_means"] > 0]
+
+        if len(sub_filtered) > 0:
+            sub_sorted = sub_filtered.sort_values("Bin_Center").copy()
+            fig, ax = plt.subplots(figsize=(7, 4))
+            ax.plot(sub_sorted["Bin_Center"], sub_sorted["mean_of_means"], label="Mean", color='black')
+            # ribbon: ±2 SE
+            lo = sub_sorted["mean_of_means"] - 2 * sub_sorted["se_of_means"].fillna(0)
+            hi = sub_sorted["mean_of_means"] + 2 * sub_sorted["se_of_means"].fillna(0)
+            ax.fill_between(sub_sorted["Bin_Center"], lo, hi, alpha=0.15, label="±2 SE", color='black')
+            # Only show centromere line at x=0 when using signed distances
+            if not absolute_distance:
+                ax.axvline(0, linestyle="--", linewidth=1, color="red", alpha=0.7, label="Centromere")
+            ax.set_xlabel("Distance from centromere (bp)")
+            ax.set_ylabel("Mean Transposon Count")
+            ax.set_title(f"Mean transposon count at centromere distance — {label}, Bin:{bin_size}")
+            ax.legend(loc="best")
+            ax.grid(True, which='both', axis='both', alpha=0.4, linestyle='--')
+            ax.minorticks_on()
+            fig.tight_layout()
+            out_png = os.path.join(out_dir, f"{label}_combined_{tag}.png")
+            fig.savefig(out_png, dpi=150)
+            plt.close(fig)
+
+
+def combine_centromere_mean_data(mode="All", bin_size=None, plot=True, absolute_distance=False, base_folder="Data_exploration/results/means/centromere"):
+    """
+    Combine centromere mean value curves across datasets and optionally plot.
+
+    Args:
+        mode: "All", "Chromosomes", "Strains", or "Datasets"
+        bin_size: Filter by bin size (e.g., 100, 1000) - if None, includes all
+        plot: if True, creates plots
+        absolute_distance: If True, use absolute distance (overlap left/right sides of centromere)
+        base_folder: base folder containing the mean data
+    """
+    # Create descriptive folder name based on filters
+    folder_parts = [f"combined_{mode}"]
+    if bin_size is not None:
+        folder_parts.append(f"bin_{bin_size}")
+    if absolute_distance:
+        folder_parts.append("absolute")
+    
+    out_dir = os.path.join(base_folder, "_".join(folder_parts))
+    os.makedirs(out_dir, exist_ok=True)
+
+    df = _load_cen_mean_tables(base_folder, bin_size=bin_size)
+    if df.empty:
+        print(f"[centromere_mean] no matching files found for bin_size={bin_size}.")
+        return
+
+    # Create descriptive tag for output files
+    tag_parts = ["centromere_mean"]
+    if bin_size is not None:
+        tag_parts.append(f"bin_{bin_size}")
+    if absolute_distance:
+        tag_parts.append("absolute")
+    tag = "_".join(tag_parts)
+
+    if mode == "All":
+        _combine_cen_mean_curves(df, group_by=[], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size, absolute_distance=absolute_distance)
+    elif mode == "Chromosomes":
+        _combine_cen_mean_curves(df, group_by=["chrom"], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size, absolute_distance=absolute_distance)
+    elif mode == "Strains":
+        _combine_cen_mean_curves(df, group_by=["strain"], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size, absolute_distance=absolute_distance)
+    elif mode == "Datasets":
+        _combine_cen_mean_curves(df, group_by=["dataset"], out_dir=out_dir, tag=tag, plot=plot, bin_size=bin_size, absolute_distance=absolute_distance)
+    else:
+        raise ValueError("mode must be one of: 'All', 'Chromosomes', 'Strains', 'Datasets'")
+
+
 if __name__ == "__main__":
     # Example usage:
     # Generate centromere densities with specific bin size:
@@ -741,15 +1277,26 @@ if __name__ == "__main__":
     
     # Combine nucleosome data: 
     # combine_nucleosome_data(data="Datasets", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_strains", min_distance=0, max_distance=458)
-    combine_nucleosome_data(data="All", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=458)
+    # combine_nucleosome_data(data="All", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=458)
     # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
 
     # density_from_centromere("Data_exploration/results/distances", "Data_exploration/results/densities/centromere", bin=bin_size, boolean=True)
-    combine_centromere_data(mode="Datasets", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/densities/centromere_strains")
-    combine_centromere_data(mode="Datasets", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True, base_folder="Data_exploration/results/densities/centromere_strains")
+    # combine_centromere_data(mode="Datasets", boolean=True, bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/densities/centromere_strains")
+    # combine_centromere_data(mode="Datasets", boolean=True, bin_size=bin_size, plot=True, absolute_distance=True, base_folder="Data_exploration/results/densities/centromere_strains")
     # combine_centromere_data(mode="Chromosomes", boolean=True, bin_size=bin_size, plot=True)
     
+    # ========== MEAN VALUES ==========
+    # Generate mean values from raw data:
+    mean_from_centromere("Data/distances_with_zeros_new", "Data_exploration/results/means/centromere", bin=bin_size)
+    mean_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/means/nucleosome")
+    
+    # Combine and plot mean values:
+    combine_nucleosome_mean_data(data="All", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
+    # combine_nucleosome_mean_data(data="Datasets", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
+    combine_centromere_mean_data(mode="All", bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/means/centromere")
+    # combine_centromere_mean_data(mode="Datasets", bin_size=bin_size, plot=True, absolute_distance=True, base_folder="Data_exploration/results/means/centromere")
+        
 
     
