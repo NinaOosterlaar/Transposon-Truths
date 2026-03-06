@@ -199,6 +199,11 @@ def plot_density_vs_distance(file_path, counts, centromere_distances, nucleosome
         if np.sum(bin_mask) > 0:
             density = np.mean(counts[bin_mask] > 0)
             nucleosome_density.append((nucleosome_distance_bins[i-1], density))
+    # Save nucleosome density and centromere density to CSV for later analysis
+    pd.DataFrame(centromere_density, columns=['Centromere_Distance_Bin', 'NonZero_Density']).to_csv(file_path.replace('.png', '_centromere_density.csv'), index=False)
+    pd.DataFrame(nucleosome_density, columns=['Nucleosome_Distance_Bin', 'NonZero_Density']).to_csv(file_path.replace('.png', '_nucleosome_density.csv'), index=False)
+    
+    
             
     # Plotting
     plt.figure(figsize=(12, 5))
@@ -265,9 +270,9 @@ def plot_random_segments(counts, distances, centromere_distances, num_segments=5
 if __name__ == "__main__":
     plot = True
     plot_random = True
-    create_new = False
-    save_intermediate_files = False  # Only save final chromosome files if False
-    create_chromosome_files = True  # Generate 16 chromosome files
+    create_new = True
+    save_intermediate_files = True  # Only save final chromosome files if False
+    create_chromosome_files = False  # Generate 16 chromosome files
     
     total_size = 500000
     mu_mean = 4.4

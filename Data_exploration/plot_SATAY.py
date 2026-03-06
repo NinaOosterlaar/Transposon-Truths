@@ -10,9 +10,10 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root / "Signal_processing"))
 from ZINB_MLE.estimate_ZINB import estimate_zinb
+from retrieve_pred_from_cpd import retrieve_pred_from_cpd
 
 CHROMS = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI"]
-CPD = {
+cpd = {
     "I": [-910, -780, -500, -350, -200, -70, 80, 760],
     "II": [-740, -580, -70, 65, 800],
     "III": [-900, -200, -80, 80, 750],
@@ -31,24 +32,46 @@ CPD = {
     "XVI": [-580, -170, -70, 80,],
 }
 
-pred = {
-    "I": [640, 920, 1080, 1720], 
-    "II": [240, 400, 600, 680, 920, 1080, 1200, 1280, 1400, 1480, 1560, 1640, 1800, 1920 ],
-    "III": [960, 1080],
-    "IV": [920, 1080],
-    "V": [160, 280, 480, 680, 840, 960, 1080, 1200, 1400 ],
-    "VI": [880, 1480],    
-    "VII": [560, 1040, 1240],
-    "VIII": [920, 1080, 1680, 1760],
-    "IX": [960, 1080, 1200],
-    "X": [520, 920, 1040, 1200],
-    "XI": [840, 920, 1040, 1160, 1480],
-    "XII": [800, 920, 1040, 1440],
-    "XIII": [680, 840, 960, 1080, 1160, 1240],
-    "XIV": [840, 960, 1080],
-    "XV": [720, 880, 1080, 1160],
-    "XVI": [960, 1080],
-}
+# pred = {
+#     "I": [640, 920, 1080, 1720], 
+#     "II": [240, 400, 600, 680, 920, 1080, 1200, 1280, 1400, 1480, 1560, 1640, 1800, 1920 ],
+#     "III": [960, 1080],
+#     "IV": [920, 1080],
+#     "V": [160, 280, 480, 680, 840, 960, 1080, 1200, 1400 ],
+#     "VI": [880, 1480],    
+#     "VII": [560, 1040, 1240],
+#     "VIII": [920, 1080, 1680, 1760],
+#     "IX": [960, 1080, 1200],
+#     "X": [520, 920, 1040, 1200],
+#     "XI": [840, 920, 1040, 1160, 1480],
+#     "XII": [800, 920, 1040, 1440],
+#     "XIII": [680, 840, 960, 1080, 1160, 1240],
+#     "XIV": [840, 960, 1080],
+#     "XV": [720, 880, 1080, 1160],
+#     "XVI": [960, 1080],
+# }
+
+# pred = {
+#     "I": [240, 640, 800, 920, 1080, 1440, 1520, 1720, 1800],
+#     "II": [960, 180 ],
+#     "III": [960, 180],
+#     "IV": [920, 1080],
+#     "V": [480, 680, 760, 840, 1200 ],
+#     "VI": [],
+#     "VII": [560],
+#     "VIII": [920, 1080, 1360, 1680, 1760],
+#     "IX": [960, 1080, 1200],
+#     "X": [920],
+#     "XI": [840, 920, 1040, 1160, 1480],
+#     "XII": [800],
+#     "XIII": [840, 960, 1080, 1160, 1240],
+#     "XIV": [840, 960, 1080],
+#     "XV": [720, 1040, 1160],
+#     "XVI": [960, 1080],
+# }
+
+    
+    
 
 window = 80
 
@@ -123,7 +146,7 @@ def plot_around_centromere_x_is_centdist(
     if show_cpd:
         x_min, x_max = win["centromere_distance"].min(), win["centromere_distance"].max()
 
-        cpd_x_all = CPD.get(chrom, [])
+        cpd_x_all = cpd.get(chrom, [])
         cpd_x = [x for x in cpd_x_all if x_min <= x <= x_max]
 
         pred_x_all = pred.get(chrom, [])
@@ -298,9 +321,13 @@ def save_data(chrom, data, out_dir, flank_bp=1000,
 
 
 if __name__ == "__main__":
+    threshold = 7
+    window_size = 80
+    base_dir = Path("Signal_processing/results/sliding_mean_SATAY/sliding_ZINB_CPD_v2")
+    pred = retrieve_pred_from_cpd(window_size, threshold, base_dir)
     in_dir = "Data/combined_strains/strain_yEK23"
     # out_dir = "Data_exploration/plot_SATAY"
-    out_dir_figures = "Data_exploration/plot_SATAY"
+    out_dir_figures = "Data_exploration/plot_SATAY/version2"
     out_dir_samples = "Signal_processing/sample_data/Centromere_region"
 
     for chrom in CHROMS:

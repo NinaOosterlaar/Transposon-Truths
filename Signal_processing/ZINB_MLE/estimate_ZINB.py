@@ -6,7 +6,7 @@ from log_likelihoods import zinb_log_likelihood
 from ZINB_MLE.EM import em_zinb_step
 
 
-def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.1, theta_max=100, 
+def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.1, theta_max=1, 
                   n_theta_grid=200):
     """
     Estimate ZINB parameters (pi, mu, theta) using profile likelihood for theta.

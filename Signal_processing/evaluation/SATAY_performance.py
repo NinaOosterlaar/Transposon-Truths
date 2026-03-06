@@ -36,11 +36,7 @@ CPD = {
     "XV": [-740, -120, 60, 380, 930],
     "XVI": [-580, -170, -70, 80,],
 }
-input_folder = "Signal_processing/results/sliding_mean_SATAY/sliding_ZINB_CPD"
-data_folder = "Signal_processing/sample_data/Centromere_region"
-output_folder = "Signal_processing/results/sliding_cpd_performance/SATAY_CPD/"
-# make folder if not exists 
-os.makedirs(output_folder, exist_ok=True)
+
 
 
 def get_available_chromosomes(input_folder, data_folder, cpd_dict):
@@ -267,31 +263,17 @@ def evaluate_all_chromosomes(input_folder, data_folder, output_folder, cpd_dict)
     os.makedirs(output_plots_folder, exist_ok=True)
     
     # Tolerance-independent metric plots (combined across all chromosomes)
-    # Average metrics across chromosomes for each window_size/threshold combination
-    aggregated_df = combined_df.groupby(['window_size', 'threshold', 'tolerance_type']).agg({
-        'annotation_error': 'mean',
-        'hausdorff_distance': 'mean',
-        'mae_localization': 'mean',
-        'rand_index': 'mean',
-        'adjusted_rand_index': 'mean',
-        'precision': 'mean',
-        'recall': 'mean',
-        'F1': 'mean',
-        'num_detected': 'sum',
-        'num_true': 'sum'
-    }).reset_index()
+    plot_all_metrics_comparison(combined_df, output_plots_folder, "All_Chromosomes")
     
-    plot_all_metrics_comparison(aggregated_df, output_plots_folder, "All_Chromosomes")
-    
-    plot_metric_vs_threshold(aggregated_df, 'annotation_error', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(combined_df, 'annotation_error', output_plots_folder, "All_Chromosomes",
                             metric_label='Annotation Error (|#predicted - #true|)', use_log_scale=False)
-    plot_metric_vs_threshold(aggregated_df, 'hausdorff_distance', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(combined_df, 'hausdorff_distance', output_plots_folder, "All_Chromosomes",
                             metric_label='Hausdorff Distance', use_log_scale=True, exclude_inf=True)
-    plot_metric_vs_threshold(aggregated_df, 'mae_localization', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(combined_df, 'mae_localization', output_plots_folder, "All_Chromosomes",
                             metric_label='MAE Localization Error', use_log_scale=True, exclude_inf=True)
-    plot_metric_vs_threshold(aggregated_df, 'rand_index', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(combined_df, 'rand_index', output_plots_folder, "All_Chromosomes",
                             metric_label='Rand Index', use_log_scale=False)
-    plot_metric_vs_threshold(aggregated_df, 'adjusted_rand_index', output_plots_folder, "All_Chromosomes",
+    plot_metric_vs_threshold(combined_df, 'adjusted_rand_index', output_plots_folder, "All_Chromosomes",
                             metric_label='Adjusted Rand Index', use_log_scale=False)
     
     # Precision-Recall and ROC curves for each tolerance
@@ -416,6 +398,11 @@ if __name__ == "__main__":
     print("="*60)
     print("SATAY Change Point Detection Performance Evaluation")
     print("="*60)
+    input_folder = "Signal_processing/temp"
+    data_folder = "Signal_processing/sample_data/Centromere_region"
+    output_folder = "Signal_processing/temp/sliding_cpd_performance"
+    # make folder if not exists 
+    os.makedirs(output_folder, exist_ok=True)
     
     results_df = evaluate_all_chromosomes(input_folder, data_folder, output_folder, CPD)
     

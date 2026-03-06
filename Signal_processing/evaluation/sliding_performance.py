@@ -591,10 +591,11 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
 
 if __name__ == "__main__":
     # Specify which dataset to analyze
+    theta = 10
     dataset_name = 'SATAY_synthetic'  # Options: 'pretty_data', 'realistic_data', 'noisy_data', 'SATAY_synthetic'
-    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/{dataset_name}"
+    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/{dataset_name}/{theta}/{dataset_name}"
     data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
-    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift"
+    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_synthetic/{theta}"
     other_file = True
     
     # Evaluate performance metrics

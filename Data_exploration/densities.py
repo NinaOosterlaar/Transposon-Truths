@@ -740,7 +740,8 @@ if __name__ == "__main__":
     # density_from_nucleosome("Data/combined_strains", "Data_exploration/results/densities/nucleosome_strains", boolean=True)
     
     # Combine nucleosome data: 
-    combine_nucleosome_data(data="Datasets", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_strains", min_distance=0, max_distance=800)
+    # combine_nucleosome_data(data="Datasets", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_strains", min_distance=0, max_distance=458)
+    combine_nucleosome_data(data="All", boolean=True, plot=True, base_folder="Data_exploration/results/densities/nucleosome_new", min_distance=0, max_distance=458)
     # combine_nucleosome_data(data="Chromosomes", boolean=True, plot=True)
     
     # Combine centromere data with specific filters:
