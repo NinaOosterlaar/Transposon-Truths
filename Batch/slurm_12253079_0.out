@@ -1,0 +1,3 @@
+Running sliding ZINB CPD on dataset: SATAY_synthetic
+Input file: Signal_processing/sample_data/SATAY_synthetic.csv
+Theta global: None

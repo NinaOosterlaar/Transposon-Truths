@@ -1,0 +1,8 @@
+usage: sliding_ZINB_CPD.py [-h] [--output_folder OUTPUT_FOLDER]
+                           [--dataset_name DATASET_NAME]
+                           [--n_workers N_WORKERS]
+                           [--theta_global THETA_GLOBAL]
+                           input_file
+sliding_ZINB_CPD.py: error: argument --theta_global: invalid float value: 'None'
+srun: error: influ4: task 0: Exited with exit code 2
+srun: launch/slurm: _step_signal: Terminating StepId=12253080.0
