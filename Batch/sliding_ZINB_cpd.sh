@@ -10,7 +10,7 @@
 #SBATCH --mail-user=n.i.m.oosterlaar@student.tudelft.nl
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
-#SBATCH --array=0
+#SBATCH --array=0-5
 
 set -euo pipefail
 
@@ -19,14 +19,15 @@ export PROJECT_DIR="/tudelft.net/staff-umbrella/SATAYanalysis/Nina/Thesis"
 
 cd "$PROJECT_DIR"
 
-# Array of dataset names
-DATASETS=("SATAY_synthetic")
-
-DATASET_NAME=${DATASETS[$SLURM_ARRAY_TASK_ID]}
+DATASET_NAME="SATAY_synthetic"
 INPUT_FILE="Signal_processing/sample_data/SATAY_synthetic.csv"
+THETAS=("None" "0.5" "1" "5" "10" "100")
+
+THETA_GLOBAL="${THETAS[$SLURM_ARRAY_TASK_ID]}"
 
 echo "Running sliding ZINB CPD on dataset: ${DATASET_NAME}"
 echo "Input file: ${INPUT_FILE}"
+echo "Theta global: ${THETA_GLOBAL}"
 
 srun apptainer exec \
     --bind "$PROJECT_DIR":/workspace \
@@ -36,7 +37,7 @@ srun apptainer exec \
     "$INPUT_FILE" \
     --dataset_name "${DATASET_NAME}" \
     --n_workers 4 \
-    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD/"
+    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD/${THETA_GLOBAL}" \
+    --theta_global "${THETA_GLOBAL}"
 
 echo "Finished processing ${DATASET_NAME}"
-
