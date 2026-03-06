@@ -104,12 +104,12 @@ def save_results(output_folder, dataset_name, change_points, scores, theta_globa
         f.write(f"window_size: {window_size}, overlap: {overlap}, threshold: {threshold}\n")
     
 
-def process_window_size(ws, data, nucleosome_distances, overlap, thresholds, theta_global, output_folder, dataset_name):
+def process_window_size(ws, data, nucleosome_distances, overlap, thresholds, theta_global, output_folder, dataset_name, nucleosome_file):
     """Process all thresholds for a given window size."""
     window_output_folder = os.path.join(output_folder, f"window{ws}")
     for threshold in thresholds:
         print(f"Processing window size: {ws}, threshold: {threshold:.2f}")
-        change_points, scores = sliding_ZINB_CPD(data, nucleosome_distances, ws, overlap, threshold, theta_global=theta_global)
+        change_points, scores = sliding_ZINB_CPD(data, nucleosome_distances, ws, overlap, threshold, theta_global=theta_global, nucleosome_file=nucleosome_file)
         save_results(window_output_folder, dataset_name, change_points, scores, theta_global, ws, overlap, threshold)
     return ws
 
@@ -126,7 +126,8 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     input_file = args.input_file
-    nucleosome_file = "Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv"
+    # nucleosome_file = "Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv"
+    nucleosome_file = "Signal_processing/sample_data/SATAY_synthetic/density_vs_distance_nucleosome_density.csv" # Change this when using real data 
     window_size = [80, 10, 30, 50]
     overlap = 0.5
     thresholds = np.linspace(0, 40, 41)  # 41 thresholds from 0 to 40
@@ -161,7 +162,8 @@ if __name__ == "__main__":
     with open(input_file, "r") as f:
         lines = f.readlines()[1:]  # Skip header
         data = [int(float(line.strip().split(",")[1])) for line in lines]
-        nucleosome_distance = [int(float(line.strip().split(",")[2])) for line in lines]
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        nucleosome_distance = [int(float(line.strip().split(",")[3])) for line in lines] # CHANGE THIS WHEN USING REAL DATA TO 2 INSTEAD OF 3!!!!!!!!!!!
     if theta_global == 0:
         theta_global = initialize_theta_global(data)
     print(f"Using global theta: {theta_global:.4f} for all window sizes and thresholds.")
@@ -172,7 +174,7 @@ if __name__ == "__main__":
     
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
         futures = [
-            executor.submit(process_window_size, ws, data, nucleosome_distance, overlap, thresholds, theta_global, output_folder, dataset_name)
+            executor.submit(process_window_size, ws, data, nucleosome_distance, overlap, thresholds, theta_global, output_folder, dataset_name, nucleosome_file = nucleosome_file)
             for ws in window_size
         ]
         for future in futures:
