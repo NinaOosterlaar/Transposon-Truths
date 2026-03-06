@@ -81,8 +81,8 @@ def zinb_nll(x, mu, theta, pi, eps=1e-8, reduction='sum'):
     log_pi = torch.log(pi)
     log_1_minus_pi = torch.log1p(-pi)
 
-    # log_prob_zero = torch.logaddexp(log_pi, log_1_minus_pi + log_nb)
-    log_prob_zero = log_pi
+    log_prob_zero = torch.logaddexp(log_pi, log_1_minus_pi + log_nb)
+    # log_prob_zero = log_pi
     log_prob_nonzero = log_1_minus_pi + log_nb
 
     log_prob = torch.where(is_zero, log_prob_zero, log_prob_nonzero)

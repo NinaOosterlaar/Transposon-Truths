@@ -17,6 +17,25 @@ CPD = {
     "II": [-740, -580, -70, 65, 800],
     "III": [-900, -200, -80, 80, 750],
     "IV": [-900, -800, -740, -500, -380, -60, 60 ],
+    "V": [-620, -280, -70, 90, 200, 480],
+    "VI": [-960, -860, 460],    
+    "VII": [-440, -110, 70, 260, 320, 730],
+    "VIII": [-860, -510, -80, 80, 200, 370, 580, ],
+    "IX": [-400, -60, 80, 200, 300, 760],
+    "X": [-920, -480, -80, 60, 200 ],
+    "XI": [-660, -380 ,-70, 60, 180, 280, 470],
+    "XII": [-180, -75, 70, 460 ],
+    "XIII": [-770, -420, -300, -140, -65, 80, 780],
+    "XIV": [-920, -140, -65, 80, ],
+    "XV": [-740, -120, 60, 380, 930],
+    "XVI": [-580, -170, -70, 80,],
+}
+
+pred = {
+    "I": [640, 920, 1080, 1720], 
+    "II": [],
+    "III": [],
+    "IV": [],
     "V": [],
     "VI": [],    
     "VII": [],
@@ -31,8 +50,10 @@ CPD = {
     "XVI": [],
 }
 
+window = 80
+
 def plot_around_centromere_x_is_centdist(
-    chrom,                 # <-- added
+    chrom,
     filepath,
     outpath,
     n=1000,
@@ -44,7 +65,7 @@ def plot_around_centromere_x_is_centdist(
     value_max=500,
     window_size=100,
     show_zinb_params=True,
-    show_cpd=True,         # <-- added
+    show_cpd=True,
 ):
     df = pd.read_csv(filepath)
     df.columns = df.columns.str.lower().str.replace(' ', '_')
@@ -98,30 +119,60 @@ def plot_around_centromere_x_is_centdist(
     ax.set_xlabel("Centromere distance")
     ax.set_ylabel("Value")
 
-    # ---- CPD red dots (x = centromere_distance) ----
+    # ---- CPD red dots + PRED dots + transparent window bands ----
     if show_cpd:
+        x_min, x_max = win["centromere_distance"].min(), win["centromere_distance"].max()
+
         cpd_x_all = CPD.get(chrom, [])
-        if len(cpd_x_all) > 0:
-            x_min, x_max = win["centromere_distance"].min(), win["centromere_distance"].max()
-            cpd_x = [x for x in cpd_x_all if x_min <= x <= x_max]
+        cpd_x = [x for x in cpd_x_all if x_min <= x <= x_max]
 
-            if len(cpd_x) > 0:
-                # put dots near the top so they are visible regardless of the curve
-                # place CPD dots slightly below the x-axis (y=0)
-                y_min, y_max = ax.get_ylim()
-                offset = 0.03 * (y_max - y_min)   # 3% of the y-range
-                y_cpd = -offset
+        pred_x_all = pred.get(chrom, [])
+        pred_x_shifted = [x - 1000 for x in pred_x_all]  # shift into centromere_distance coords
+        pred_x = [x for x in pred_x_shifted if x_min <= x <= x_max]
+        print("pred_x_shifted:", pred_x_shifted)
+        print("pred_x_in_range:", pred_x)
+       
+        # place dots slightly below the x-axis (y=0) based on current y-range
+        y_min, y_max = ax.get_ylim()
+        offset = 0.03 * (y_max - y_min)
+        y_cpd = -offset
 
-                ax.scatter(
-                    cpd_x,
-                    [y_cpd] * len(cpd_x),
-                    s=28,
-                    marker="o",
-                    color="red",
-                    zorder=5,
-                    label="CPD"
-                )
-                ax.legend(loc="upper right", fontsize=8, framealpha=0.8)
+        # Plot CPD dots (red)
+        if len(cpd_x) > 0:
+            ax.scatter(
+                cpd_x,
+                [y_cpd] * len(cpd_x),
+                s=28,
+                marker="o",
+                color="red",
+                zorder=5,
+                label="CPD"
+            )
+
+        # Transparent windows centered on each pred (width = global `window`)
+        for x in pred_x:
+            ax.axvspan(
+                x - window / 2,
+                x + window / 2,
+                alpha=0.12,
+                zorder=1
+            )
+
+        # Plot Pred dots (smaller, same y as CPD)
+        if len(pred_x) > 0:
+            ax.scatter(
+                pred_x,
+                [y_cpd] * len(pred_x),
+                s=14,
+                marker="o",
+                color="tab:blue",
+                zorder=6,
+                label="Pred"
+            )
+
+        # Only show legend if something was actually plotted
+        if (len(cpd_x) > 0) or (len(pred_x) > 0):
+            ax.legend(loc="upper right", fontsize=8, framealpha=0.8)
 
     # ---- ZINB parameter estimation annotations ----
     if show_zinb_params:
@@ -204,40 +255,76 @@ def plot_around_centromere_x_is_centdist(
     fig.savefig(outpath, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     
-# Save the data into a CSV file for later use
-def save_data(chrom, data, out_dir):
+def save_data(chrom, data, out_dir, flank_bp=1000,
+              centdist_col="centromere_distance", position_col="Position"):
     os.makedirs(out_dir, exist_ok=True)
+
+    df = data.copy()
+
+    # normalize internal column names for access
+    df.columns = df.columns.str.lower().str.replace(" ", "_")
+    centdist_col_l = centdist_col.lower()
+    position_col_l = position_col.lower()  # "position"
+
+    if centdist_col_l not in df.columns:
+        raise KeyError(
+            f"Expected '{centdist_col}' in input data. Got columns: {list(df.columns)}"
+        )
+
+    # keep only ±flank_bp around centromere
+    df_out = df.loc[df[centdist_col_l].between(-flank_bp, flank_bp)].copy()
+
+    # Put centromere_distance into the Position column (overwrite or create)
+    df_out[position_col_l] = df_out[centdist_col_l].astype(float)
+
+    # Also keep centromere_distance as a separate column with nice casing
+    df_out["centromere_distance_copy"] = df_out[centdist_col_l].astype(float)
+
+    # Now rename columns to requested output casing
+    df_out.rename(columns={
+        position_col_l: "Position",
+        "centromere_distance_copy": "Centromere_Distance",
+    }, inplace=True)
+
+    # (Optional) keep the original centromere_distance too, but usually you don't need 3 copies.
+    # If you DO want to keep it as well, comment out the next line.
+    df_out.drop(columns=[centdist_col_l], inplace=True)
+
+    # sort by Position for readability
+    df_out = df_out.sort_values("Position")
+
     out_path = os.path.join(out_dir, f"Chr{chrom}_centromere_window.csv")
-    data.to_csv(out_path, index=False)
+    df_out.to_csv(out_path, index=False)
 
 
 if __name__ == "__main__":
     in_dir = "Data/combined_strains/strain_yEK23"
     # out_dir = "Data_exploration/plot_SATAY"
-    out_dir = "Signal_processing/sample_data/Centromere_region"
+    out_dir_figures = "Data_exploration/plot_SATAY"
+    out_dir_samples = "Signal_processing/sample_data/Centromere_region"
 
     for chrom in CHROMS:
         infile = os.path.join(in_dir, f"Chr{chrom}_distances.csv")
-        outfile = os.path.join(out_dir, f"Chr{chrom}_centromere_window.png")
+        outfile = os.path.join(out_dir_figures, f"Chr{chrom}_centromere_window.png")
 
         if not os.path.exists(infile):
             print(f"Skipping (file not found): {infile}")
             continue
         
-        save_data(chrom, pd.read_csv(infile), out_dir)
+        save_data(chrom, pd.read_csv(infile), out_dir_samples)
 
-        # plot_around_centromere_x_is_centdist(
-        #     chrom=chrom,                # <-- pass chrom
-        #     filepath=infile,
-        #     outpath=outfile,
-        #     n=1000,
-        #     major_tick_step=100,
-        #     minor_tick_step=50,
-        #     strict_centromere_match=True,
-        #     value_max=500,
-        #     window_size=100,
-        #     show_zinb_params=False,
-        #     show_cpd=True,
-        # )
+        plot_around_centromere_x_is_centdist(
+            chrom=chrom,                # <-- pass chrom
+            filepath=infile,
+            outpath=outfile,
+            n=1000,
+            major_tick_step=100,
+            minor_tick_step=50,
+            strict_centromere_match=True,
+            value_max=500,
+            window_size=100,
+            show_zinb_params=False,
+            show_cpd=True,
+        )
 
-        # print(f"Saved: {outfile}")
+        print(f"Saved: {outfile}")

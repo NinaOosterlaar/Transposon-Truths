@@ -78,7 +78,7 @@ search_space = [
     # Preprocessing
     Categorical(FEATURES_OPTIONS, name='features'),
     Real(0.25, 1.0, name='step_size'),  # STEP_SIZES as continuous
-    Integer(1, 50, name='bin_size'),  # BIN_SIZES range
+    Integer(1, 20, name='bin_size'),  # BIN_SIZES range
     Real(0.25, 1.0, name='sample_fraction'),  # SAMPLE_FRACTIONS as continuous
     Categorical(MOVING_AVERAGE_OPTIONS, name='moving_average'),
     
@@ -121,6 +121,7 @@ FIXED_PARAMS = {
 
 # Optimization metric: which loss to minimize from VALIDATION set
 # 'zinb_nll': Only ZINB reconstruction loss (no masked loss)
+# 'masked_loss': Only masked reconstruction loss (no ZINB loss)
 # 'total_loss': Includes zinb_nll + weighted masked_loss + regularization (optimizer can game this!)
 # 'combined': zinb_nll + masked_loss (unweighted, no regularization - best option)
 OPTIMIZATION_METRIC = 'combined'  # Default, can be overridden by command line arg
@@ -754,8 +755,8 @@ if __name__ == "__main__":
     parser.add_argument('--n_jobs', type=int, default=1,
                        help='Number of parallel jobs (-1 for all cores, 1 for sequential)')
     parser.add_argument('--metric', type=str, default=OPTIMIZATION_METRIC,
-                       choices=['zinb_nll', 'combined', 'total_loss'],
-                       help='Optimization metric to minimize (zinb_nll or combined)')
+                       choices=['zinb_nll', 'masked_loss', 'combined', 'total_loss'],
+                       help='Optimization metric to minimize (zinb_nll, masked_loss, combined, or total_loss)')
     parser.add_argument('--resume_from', type=str, default=None,
                        help='Path to checkpoint file to resume optimization from')
     
