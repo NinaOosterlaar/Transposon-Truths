@@ -940,6 +940,105 @@ def mean_from_nucleosome(input_folder, output_folder):
         process_single_dataset_nucleosome_mean(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization)
 
 
+def process_single_dataset_nucleosome_median(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization):
+    """Process a single dataset for nucleosome distances and compute median of non-zero values.
+    
+    Args:
+        strain_name (str): Name of the strain
+        dataset_path (str): Path to the dataset folder
+        dataset_name (str): Name of the dataset
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+        nucleosomes_normalization (dict): Normalization factors per chromosome
+    """
+    # Create output folders
+    strain_output_folder = os.path.join(output_folder, strain_name)
+    dataset_output_folder = os.path.join(strain_output_folder, dataset_name)
+    os.makedirs(dataset_output_folder, exist_ok=True)
+    
+    # Load only one dataset's data
+    counts = {}
+    csv_files = [f for f in os.listdir(dataset_path) if f.endswith(".csv")]
+    
+    for csv_file in csv_files:
+        chrom = csv_file.split("_")[0]
+        if chrom == "ChrM": continue
+        file_path = os.path.join(dataset_path, csv_file)
+        df = pd.read_csv(file_path)
+        
+        # Filter non-zero values only
+        df_nonzero = df[df['Value'] > 0].copy()
+        
+        # Change the value of position 565392 in chromosome XV to 0
+        if chrom == "ChrXV":
+            df_nonzero = df_nonzero[df_nonzero['Position'] != 565392]
+        
+        # Remove top 5% percentile values (outliers)
+        if len(df_nonzero) > 0:
+            percentile_95 = df_nonzero['Value'].quantile(0.95)
+            df_nonzero = df_nonzero[df_nonzero['Value'] <= percentile_95]
+        
+        # Group by nucleosome distance and compute median
+        median_by_distance = df_nonzero.groupby('Nucleosome_Distance')['Value'].agg(['median', 'std', 'count']).reset_index()
+        
+        counts[chrom] = {}
+        for _, row in median_by_distance.iterrows():
+            distance = int(row['Nucleosome_Distance'])
+            if distance in nucleosomes_normalization[chrom]:
+                # Store median and count info
+                counts[chrom][distance] = {
+                    'median': row['median'],
+                    'std': row['std'] if not pd.isna(row['std']) else 0,
+                    'count': row['count']
+                }
+        
+        # Add zeros for distances with no non-zero values
+        for distance in nucleosomes_normalization[chrom]:
+            if distance not in counts[chrom]:
+                counts[chrom][distance] = {'median': 0, 'std': 0, 'count': 0}
+
+        # Save the processed counts to a CSV file
+        output_file = os.path.join(dataset_output_folder, f"{chrom}_nucleosome_median.csv")
+        with open(output_file, "w") as f:
+            f.write("distance,median_nonzero,std_nonzero,count_nonzero\n")
+            for dist, data in counts[chrom].items():
+                f.write(f"{dist},{data['median']},{data['std']},{data['count']}\n")
+
+    # Clear counts from memory
+    del counts
+
+
+def median_from_nucleosome(input_folder, output_folder):
+    """Compute median of non-zero values from nucleosome distances for all datasets.
+    
+    Args:
+        input_folder (str): Path to the folder containing distance CSV files (strain/dataset structure).
+        output_folder (str): Path to the folder where the output CSV files will be saved.
+    """
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    nucleosomes = Nucleosomes()
+    nucleosomes_normalization = {}
+    for chrom in chromosome_length.keys():
+        if chrom == "ChrM": continue  # Skip mitochondrial chromosome
+        normalized_counts = nucleosomes.compute_exposure(chrom)
+        nucleosomes_normalization[chrom] = normalized_counts
+
+    # Collect all datasets without loading data
+    datasets_to_process = []
+    
+    for root, dirs, files in os.walk(input_folder):
+        csv_files = [f for f in files if f.endswith(".csv")]
+        if csv_files:  # Only process folders that contain CSV files
+            path_parts = root.split("/")
+            strain_name = path_parts[-2] if len(path_parts) >= 2 else "unknown_strain"
+            dataset_name = path_parts[-1]
+            datasets_to_process.append((strain_name, root, dataset_name))
+    
+    # Process each dataset individually
+    for strain_name, dataset_path, dataset_name in datasets_to_process:
+        process_single_dataset_nucleosome_median(strain_name, dataset_path, dataset_name, output_folder, nucleosomes_normalization)
+
+
 # ========================================
 # COMBINING AND PLOTTING MEAN VALUES
 # ========================================
@@ -1095,6 +1194,165 @@ def combine_nucleosome_mean_data(data="All", plot=False, base_folder="Data_explo
         _combine_mean_curves(df, group_by=["strain"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
     elif data == "Datasets":
         _combine_mean_curves(df, group_by=["dataset"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    else:
+        raise ValueError("data must be one of: 'All', 'Chromosomes', 'Strains', 'Datasets'")
+
+
+# ========================================
+# COMBINING AND PLOTTING MEDIAN VALUES
+# ========================================
+
+def _load_nuc_median_tables(base_folder: str) -> pd.DataFrame:
+    """Load nucleosome median value tables from all datasets.
+    
+    Returns:
+        DataFrame with columns: chrom, strain, dataset, distance, median_nonzero, std_nonzero, count_nonzero, path
+    """
+    rows = []
+    suffix = "_nucleosome_median.csv"
+
+    for root, dirs, files in os.walk(base_folder):
+        for file in files:
+            if not file.endswith(suffix):
+                continue
+            path = os.path.join(root, file)
+
+            # infer metadata: .../<strain>/<dataset>/file.csv
+            parts = os.path.normpath(root).split(os.sep)
+            strain = parts[-2] if len(parts) >= 2 else "unknown_strain"
+            dataset = parts[-1] if len(parts) >= 1 else "unknown_dataset"
+            chrom = file.split("_")[0]
+
+            df = pd.read_csv(path)
+            required = {"distance", "median_nonzero"}
+            if not required.issubset(df.columns):
+                continue
+
+            df["distance"] = pd.to_numeric(df["distance"], errors="coerce")
+            df["median_nonzero"] = pd.to_numeric(df["median_nonzero"], errors="coerce")
+            if "std_nonzero" in df.columns:
+                df["std_nonzero"] = pd.to_numeric(df["std_nonzero"], errors="coerce")
+            else:
+                df["std_nonzero"] = np.nan
+            if "count_nonzero" in df.columns:
+                df["count_nonzero"] = pd.to_numeric(df["count_nonzero"], errors="coerce")
+            else:
+                df["count_nonzero"] = 1
+                
+            df = df.dropna(subset=["distance", "median_nonzero"])
+            df["chrom"] = chrom
+            df["strain"] = strain
+            df["dataset"] = dataset
+            df["path"] = path
+            rows.append(df[["chrom", "strain", "dataset", "distance", "median_nonzero", "std_nonzero", "count_nonzero", "path"]])
+
+    if not rows:
+        return pd.DataFrame(columns=["chrom", "strain", "dataset", "distance", "median_nonzero", "std_nonzero", "count_nonzero", "path"])
+    return pd.concat(rows, ignore_index=True)
+
+
+def _combine_median_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str, plot: bool, min_distance=None, max_distance=None):
+    """
+    Combine median value curves across datasets.
+    Writes one combined CSV (and PNG if plot=True) per group.
+    CSV columns: distance, mean_of_medians, sd_of_medians, se_of_medians, n_datasets
+    """
+    if df.empty:
+        print("[combine_median] no data found.")
+        return
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Filter by distance range if specified
+    if min_distance is not None:
+        df = df[df["distance"] >= min_distance]
+    if max_distance is not None:
+        df = df[df["distance"] <= max_distance]
+
+    if df.empty:
+        return
+
+    # Normalize by chromosome length if not grouping by chromosome
+    if group_by != ["chrom"]:
+        for chrom in chromosome_length:
+            if chrom in df['chrom'].values:
+                df.loc[df['chrom'] == chrom, 'median_nonzero'] *= chromosome_length[chrom] / mean_chrom_length
+
+    keys = group_by + ["distance"]
+    combined = (df.groupby(keys, as_index=False)
+                  .agg(mean_of_medians=("median_nonzero", "mean"),
+                       sd_of_medians=("median_nonzero", "std"),
+                       n_datasets=("median_nonzero", "size"),
+                       se_of_medians=("median_nonzero", "sem")))
+    combined = combined.sort_values(keys)
+
+    # Write and plot per group
+    for keys, sub in combined.groupby(group_by if group_by else [lambda _: True]):
+        if not group_by:
+            label = "ALL"
+        else:
+            if not isinstance(keys, tuple): keys = (keys,)
+            label = "_".join(f"{col}-{val}" for col, val in zip(group_by, keys))
+
+        out_csv = os.path.join(out_dir, f"{label}_combined_{tag}.csv")
+        sub.to_csv(out_csv, index=False)
+
+        if plot:
+            # Filter out rows with median=0 or very small medians for cleaner plotting
+            sub_filtered = sub[sub["mean_of_medians"] > 0]
+            
+            if len(sub_filtered) > 0:
+                fig, ax = plt.subplots(figsize=(7, 4))
+                # main line
+                ax.plot(sub_filtered["distance"], sub_filtered["mean_of_medians"], label="Mean of Medians", color='black')
+                # ribbon: ±2 SE (approximately 95% confidence interval)
+                lo = sub_filtered["mean_of_medians"] - 2 * sub_filtered["se_of_medians"].fillna(0)
+                hi = sub_filtered["mean_of_medians"] + 2 * sub_filtered["se_of_medians"].fillna(0)
+                ax.fill_between(sub_filtered["distance"], lo, hi, alpha=0.15, label="±2 SE", color='black')
+
+                ax.set_xlabel("Distance from nucleosome (bp)")
+                ax.set_ylabel("Median Transposon Count")
+                ax.set_title(f"Median transposon count at nucleosome distance — {label}")
+                ax.legend(loc="best")
+                ax.grid(True, which='both', axis='both', alpha=0.4, linestyle='--')
+                ax.minorticks_on()
+
+                fig.tight_layout()
+
+                out_png = os.path.join(out_dir, f"{label}_combined_{tag}.png")
+                fig.savefig(out_png, dpi=150)
+                plt.close(fig)
+
+
+def combine_nucleosome_median_data(data="All", plot=False, base_folder="Data_exploration/results/medians/nucleosome", min_distance=None, max_distance=None):
+    """
+    Combine nucleosome median value curves across datasets and optionally plot.
+
+    Args:
+        data: "All", "Chromosomes", "Strains", or "Datasets"
+        plot: if True, saves a PNG next to each CSV
+        base_folder: base folder containing the median data
+        min_distance: if specified, only include distances >= min_distance
+        max_distance: if specified, only include distances <= max_distance
+    """
+    out_base = os.path.join(base_folder, f"combined_{data}")
+    os.makedirs(out_base, exist_ok=True)
+
+    df = _load_nuc_median_tables(base_folder)
+    if df.empty:
+        print("[combine_median] no matching files found.")
+        return
+
+    tag = "nucleosome_median"
+
+    if data == "All":
+        _combine_median_curves(df, group_by=[], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    elif data == "Chromosomes":
+        _combine_median_curves(df, group_by=["chrom"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    elif data == "Strains":
+        _combine_median_curves(df, group_by=["strain"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
+    elif data == "Datasets":
+        _combine_median_curves(df, group_by=["dataset"], out_dir=out_base, tag=tag, plot=plot, min_distance=min_distance, max_distance=max_distance)
     else:
         raise ValueError("data must be one of: 'All', 'Chromosomes', 'Strains', 'Datasets'")
 
@@ -1289,14 +1547,23 @@ if __name__ == "__main__":
     
     # ========== MEAN VALUES ==========
     # Generate mean values from raw data:
-    mean_from_centromere("Data/distances_with_zeros_new", "Data_exploration/results/means/centromere", bin=bin_size)
-    mean_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/means/nucleosome")
+    # mean_from_centromere("Data/distances_with_zeros_new", "Data_exploration/results/means/centromere", bin=bin_size)
+    # mean_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/means/nucleosome")
     
     # Combine and plot mean values:
-    combine_nucleosome_mean_data(data="All", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
+    # combine_nucleosome_mean_data(data="All", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
     # combine_nucleosome_mean_data(data="Datasets", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
-    combine_centromere_mean_data(mode="All", bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/means/centromere")
+    # combine_centromere_mean_data(mode="All", bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/means/centromere")
     # combine_centromere_mean_data(mode="Datasets", bin_size=bin_size, plot=True, absolute_distance=True, base_folder="Data_exploration/results/means/centromere")
+    
+    # ========== MEDIAN VALUES ==========
+    # Generate median values from raw data:
+    median_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/medians/nucleosome")
+    # Combine and plot median values:
+    combine_nucleosome_median_data(data="All", plot=True, base_folder="Data_exploration/results/medians/nucleosome", min_distance=0, max_distance=458)
+    # combine_nucleosome_median_data(data="Datasets", plot=True, base_folder="Data_exploration/results/medians/nucleosome", min_distance=0, max_distance=458)
+
+    
         
 
     
