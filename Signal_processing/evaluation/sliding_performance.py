@@ -595,9 +595,9 @@ if __name__ == "__main__":
     # Specify which dataset to analyze
     # theta = 0
     dataset_name = 'SATAY_synthetic'  # Options: 'pretty_data', 'realistic_data', 'noisy_data', 'SATAY_synthetic'
-    input_folder = f"Signal_processing/results/sliding_mean/sliding_NB_CPD/{dataset_name}"
+    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD_v3/{dataset_name}"
     data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
-    output_folder = f"Signal_processing/results/sliding_cpd_performance/NB_shift/"
+    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_synthetic_v3/"
     other_file = True
     
     # Evaluate performance metrics
