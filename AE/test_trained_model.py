@@ -39,31 +39,48 @@ train_chromosomes = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'Chr
 
 # MODEL_PATH = "AE/results/models/ZINBAE_20260226_195349_noconv_layers752_ep141.pt"
 # # MODEL_PATH = "AE/results/models/ZINBAE_20260227_153016_noconv_layers752_ep141.pt"
-MODEL_PATH = "AE/results/models/ZINBAE_layers752_ep141_noise0.150_muoff1.000.pt"
+# MODEL_PATH = "AE/results/models/ZINBAE_layers752_ep141_noise0.150_muoff1.000.pt"
+
+# # Preprocessing parameters 
+# FEATURES = ['Centr']
+# BIN_SIZE = 19
+# MOVING_AVERAGE = True
+# DATA_POINT_LENGTH = 2000
+# STEP_SIZE = 894
+
+# # Training parameters 
+# BATCH_SIZE = 128
+# NOISE_LEVEL = 0.15
+# PI_THRESHOLD = 0.7
+# MASKED_RECON_WEIGHT = 0.00872  # gamma
+# REGULARIZER = 'none'
+# REGULARIZATION_WEIGHT = 1e-5  # alpha
+
+MODEL_PATH = "AE/results/models/ZINBAE_layers304_152_ep92_noise0.150_muoff1.000.pt"
+
 
 # Preprocessing parameters 
-FEATURES = ['Centr']
-BIN_SIZE = 19
-MOVING_AVERAGE = True
+FEATURES = ['Nucl']
+BIN_SIZE = 17
+MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 894
+STEP_SIZE = int(0.3907556688327776 * 2000)  # 781 from optimization
 
 # Training parameters 
 BATCH_SIZE = 128
 NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.7
-MASKED_RECON_WEIGHT = 0.00872  # gamma
+PI_THRESHOLD = 0.37875473712129304  # Exact value from optimization
+MASKED_RECON_WEIGHT = 0.12691255120039938  # gamma - exact value
 REGULARIZER = 'none'
-REGULARIZATION_WEIGHT = 1e-5  # alpha
-
+REGULARIZATION_WEIGHT = 4.219834598042279e-05  # alpha - exact value
 
 # Data caching options
-USE_CACHED_DATA = True  
-PROCESSED_DATA_DIR = "Data/processed_data"
+USE_CACHED_DATA = True  # Set to True after first run to use cached data with correct parameters
 
 # Output directory for results and plots
 OUTPUT_DIR = "AE/results/final"  # Where plots and metrics will be saved
 MU_OFFSET = 1
+PROCESSED_DATA_DIR = "Data/processed_data"  # Where preprocessed data will be cached
 # ================================================
 
 
@@ -167,9 +184,26 @@ def load_model_and_test():
     # Extract model configuration from checkpoint
     model_config = checkpoint['model_config']
     
-    print(f"\nModel Architecture:")
+    print(f"\nModel Architecture from checkpoint:")
     for key, value in model_config.items():
         print(f"  {key}: {value}")
+    
+    # Calculate expected input dimension based on model config
+    seq_len = model_config.get('seq_length', 2000)
+    feat_dim = model_config.get('feature_dim', 8)
+    use_conv = model_config.get('use_conv', False)
+    
+    if use_conv:
+        pool_size = model_config.get('pool_size', 2)
+        conv_channels = model_config.get('conv_channels', 64)
+        pooled_seq_length = seq_len // pool_size
+        expected_input_dim = pooled_seq_length * conv_channels
+        print(f"\n  Expected input (with conv): ({BATCH_SIZE}, {seq_len}, {feat_dim}) -> flattened after conv+pool: ({BATCH_SIZE}, {expected_input_dim})")
+    else:
+        expected_input_dim = seq_len * feat_dim
+        print(f"\n  Expected input (no conv): ({BATCH_SIZE}, {seq_len * feat_dim})")
+    
+    print(f"  Model expects feature_dim={feat_dim}, use_conv={use_conv}")
     
     print(f"\nTest Configuration:")
     print(f"  features: {FEATURES}")
@@ -186,11 +220,9 @@ def load_model_and_test():
     print(f"  use_cached_data: {USE_CACHED_DATA}")
     print(f"  output_dir: {OUTPUT_DIR}")
     
-    # Adjust data_point_length for preprocessing (reverse the transformation from main.py)
-    if not MOVING_AVERAGE:
-        preprocessing_length = DATA_POINT_LENGTH * BIN_SIZE
-    else:
-        preprocessing_length = DATA_POINT_LENGTH
+    # In bayesian optimization, preprocessing_length = data_point_length (NOT multiplied by bin_size)
+    # The preprocess function internally handles bin_size
+    preprocessing_length = DATA_POINT_LENGTH
     
     # Check if chromosome feature is used
     chrom = 'Chr' in FEATURES
@@ -210,6 +242,9 @@ def load_model_and_test():
     )
     
     print(f"\nTest set size: {len(test_set)}")
+    print(f"Test set shape: {test_set.shape}")
+    print(f"  - Sequence length: {test_set.shape[1]}")
+    print(f"  - Feature dimension from data: {test_set.shape[2]}")
     
     # Create chromosome embedding if needed
     chrom_embedding = ChromosomeEmbedding() if chrom else None

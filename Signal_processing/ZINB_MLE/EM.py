@@ -28,7 +28,7 @@ def nb_pmf_zero(mu, theta, eps=1e-10):
     return float(np.exp(log_p0))
 
 
-def em_zinb_step(data, pi, mu, theta, eps=1e-10):
+def em_zinb_step(data, pi, mu, theta, eps=1e-10, pi_min = 0.15, pi_max = 0.9):
     """
     Perform ONE iteration of the EM algorithm for ZINB (E-step + M-step).
     
@@ -79,7 +79,7 @@ def em_zinb_step(data, pi, mu, theta, eps=1e-10):
     # ===== M-STEP =====
     # Update pi: pi = (1/N) * sum P(z_i=1|y_i)
     pi_new = np.mean(z_prob)
-    pi_new = np.clip(pi_new, eps, 1.0 - eps)
+    pi_new = np.clip(pi_new, pi_min, pi_max)  # Ensure pi stays within reasonable bounds
     
     # Compute weights for mu and theta estimation: a_i = P(z_i=0|y_i) = 1 - P(z_i=1|y_i)
     weights = 1.0 - z_prob
