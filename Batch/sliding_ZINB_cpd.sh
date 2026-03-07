@@ -37,7 +37,7 @@ srun apptainer exec \
     "$INPUT_FILE" \
     --dataset_name "${DATASET_NAME}" \
     --n_workers 4 \
-    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD1.1/${THETA_GLOBAL}" \
+    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD/${THETA_GLOBAL}" \
     --theta_global "${THETA_GLOBAL}"
 
 echo "Finished processing ${DATASET_NAME}"
