@@ -29,10 +29,9 @@ srun apptainer exec \
   --pwd /workspace \
   "$APPTAINER_IMAGE" \
   python AE/training/bayesian_hyperparameter.py \
-    --n_calls 170 \
+    --n_calls 150 \
     --n_initial_points 20 \
     --random_state 42 \
     --n_jobs 1 \
-    --metric "zinb_nll" \
-    --resume_from "AE/results/bayesian_optimization/checkpoints/checkpoint_zinb_nll_20260217_105918.pkl" \
+    --metric "masked_loss" \
 
