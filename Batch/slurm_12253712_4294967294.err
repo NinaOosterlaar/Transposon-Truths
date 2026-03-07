@@ -8,12 +8,15 @@ Traceback (most recent call last):
     change_points, scores = sliding_ZINB_CPD(data, nucleosome_distances, ws, overlap, threshold, theta_global=theta_global, nucleosome_file=nucleosome_file)
                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/workspace/Signal_processing/sliding_mean/sliding_ZINB_CPD_v2.py", line 56, in sliding_ZINB_CPD
-    temp0_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values[0] for d in nucl_dist0])
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/workspace/Signal_processing/sliding_mean/sliding_ZINB_CPD_v2.py", line 56, in <listcomp>
-    temp0_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values[0] for d in nucl_dist0])
-                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
-IndexError: index 0 is out of bounds for axis 0 with size 0
+    temp0_nucl = np.mean([nucleosome_df.loc[nucleosome_df['distance'] == d, 'mean_density'].values for d in nucl_dist0])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/numpy/_core/fromnumeric.py", line 3824, in mean
+    return _methods._mean(a, axis=axis, dtype=dtype,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/numpy/_core/_methods.py", line 116, in _mean
+    arr = asanyarray(a)
+          ^^^^^^^^^^^^^
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (160,) + inhomogeneous part.
 """
 
 The above exception was the direct cause of the following exception:
@@ -27,6 +30,6 @@ Traceback (most recent call last):
            ^^^^^^^^^^^^^^^^^^^
   File "/opt/conda/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
     raise self._exception
-IndexError: index 0 is out of bounds for axis 0 with size 0
-srun: error: influ5: task 0: Exited with exit code 1
-srun: launch/slurm: _step_signal: Terminating StepId=12253546.0
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (160,) + inhomogeneous part.
+srun: error: influ4: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12253712.0

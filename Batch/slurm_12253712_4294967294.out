@@ -8,7 +8,7 @@ Estimated global theta: 0.2673
 (Estimated global pi: 0.7752, mu: 5.6330)
 Using global theta: 0.2673 for all window sizes and thresholds.
 Using 4 workers to process 4 window sizes in parallel
+Processing window size: 80, threshold: 0.00
 Processing window size: 50, threshold: 0.00
 Processing window size: 30, threshold: 0.00
 Processing window size: 10, threshold: 0.00
-Processing window size: 80, threshold: 0.00
