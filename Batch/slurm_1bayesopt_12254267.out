@@ -1,0 +1,37 @@
+Device: cuda
+
+================================================================================
+Determining chromosome split (will be consistent across all trials)...
+================================================================================
+
+
+Chromosome split determined:
+  Train chromosomes: ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
+  Validation chromosomes: ['ChrVIII', 'ChrXIV', 'ChrXV']
+  Test chromosomes: ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
+
+Chromosome split saved to: AE/results/bayesian_optimization/chromosome_split_20260307_112623.json
+
+
+================================================================================
+Resuming from checkpoint: AE/results/bayesian_optimization/checkpoints/checkpoint_zinb_nll_20260217_105918.pkl
+================================================================================
+
+Loaded 150 previous trials
+Best score so far: 0.889181
+
+Adjusting n_calls: 170 total - 150 completed = 20 remaining
+
+
+################################################################################
+# Starting Bayesian Hyperparameter Optimization
+# Optimizing metric: zinb_nll on VALIDATION set
+# Resuming with 150 previous trials
+# Running 20 additional trials
+# Initial random points: 20
+# Random state: 42
+# Parallel jobs: 1
+# Checkpoint will be saved to: AE/results/bayesian_optimization/checkpoints/checkpoint_zinb_nll_20260307_112623.pkl
+################################################################################
+
+Iteration No: 1 started. Evaluating function at random point.
