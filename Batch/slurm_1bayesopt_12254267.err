@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 766, in <module>
+    result = run_bayesian_optimization(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/AE/training/bayesian_hyperparameter.py", line 483, in run_bayesian_optimization
+    result = gp_minimize(
+             ^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/gp.py", line 281, in gp_minimize
+    return base_minimize(
+           ^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/base.py", line 324, in base_minimize
+    result = optimizer.tell(x0, y0)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/skopt/optimizer/optimizer.py", line 559, in tell
+    check_x_in_space(x, self.space)
+  File "/opt/conda/lib/python3.11/site-packages/skopt/utils.py", line 184, in check_x_in_space
+    raise ValueError("Not all points are within the bounds of" " the space.")
+ValueError: Not all points are within the bounds of the space.
+srun: error: gpu33: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=12254267.0
