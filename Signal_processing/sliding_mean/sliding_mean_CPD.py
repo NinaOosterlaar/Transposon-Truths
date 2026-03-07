@@ -78,7 +78,7 @@ def save_results(output_folder, dataset_name, change_points, means, sigmas, wind
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Apply a sliding window mean change point detection algorithm on discrete count data.")
     parser.add_argument("input_file", type=str, help="Path to the input CSV file containing the count data.")
-    parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean_CPD", help="Output folder for results.")
+    parser.add_argument("--output_folder", type=str, default="Signal_processing/results/sliding_mean/sliding_mean_CPD", help="Output folder for results.")
     parser.add_argument("--dataset_name", type=str, default="dataset", help="Name of the dataset being processed.")
     return parser.parse_args()
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         np.linspace(2, 6, 15),     # Your current range
         np.linspace(6, 10, 8)      # High thresholds for high precision
     ])
-    output_folder = args.output_folder
+    output_folder = args.output_folder + f"/{args.dataset_name}"
     dataset_name = args.dataset_name
     
     # Read data

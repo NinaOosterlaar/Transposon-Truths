@@ -675,7 +675,6 @@ def _combine_cen_curves(df: pd.DataFrame, group_by: list, out_dir: str, tag: str
             plt.close(fig)
 
 
-# ---------- 3) Public API ----------
 def combine_centromere_data(mode="All", boolean=None, bin_size=None, plot=True, absolute_distance=False, base_folder = "Data_exploration/results/densities/centromere"):
     """
     Combine signed centromere-distance curves (Bin_Center, Density_per_bp) with
@@ -1553,14 +1552,14 @@ if __name__ == "__main__":
     # Combine and plot mean values:
     # combine_nucleosome_mean_data(data="All", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
     # combine_nucleosome_mean_data(data="Datasets", plot=True, base_folder="Data_exploration/results/means/nucleosome", min_distance=0, max_distance=458)
-    # combine_centromere_mean_data(mode="All", bin_size=bin_size, plot=True, absolute_distance=False, base_folder="Data_exploration/results/means/centromere")
+    combine_centromere_mean_data(mode="All", bin_size=bin_size, plot=True, base_folder="Data_exploration/results/means/centromere", absolute_distance=True)
     # combine_centromere_mean_data(mode="Datasets", bin_size=bin_size, plot=True, absolute_distance=True, base_folder="Data_exploration/results/means/centromere")
     
     # ========== MEDIAN VALUES ==========
     # Generate median values from raw data:
-    median_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/medians/nucleosome")
+    # median_from_nucleosome("Data/distances_with_zeros_new", "Data_exploration/results/medians/nucleosome")
     # Combine and plot median values:
-    combine_nucleosome_median_data(data="All", plot=True, base_folder="Data_exploration/results/medians/nucleosome", min_distance=0, max_distance=458)
+    combine_nucleosome_median_data(data="All", plot=True, base_folder="Data_exploration/results/medians/nucleosome", min_distance=0, max_distance=458, absolute_distance=True)
     # combine_nucleosome_median_data(data="Datasets", plot=True, base_folder="Data_exploration/results/medians/nucleosome", min_distance=0, max_distance=458)
 
     
