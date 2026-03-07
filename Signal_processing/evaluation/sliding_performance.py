@@ -585,6 +585,8 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
                             metric_label='Rand Index', use_log_scale=False)
     plot_metric_vs_threshold(results_df, 'adjusted_rand_index', output_plots_folder, dataset_name,
                             metric_label='Adjusted Rand Index', use_log_scale=False)
+    # Print succesfully saved to output folder
+    print(f"\nAll performance plots saved to {output_plots_folder}")
     
     return results_df
 
@@ -593,9 +595,9 @@ if __name__ == "__main__":
     # Specify which dataset to analyze
     theta = 0
     dataset_name = 'SATAY_synthetic'  # Options: 'pretty_data', 'realistic_data', 'noisy_data', 'SATAY_synthetic'
-    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD_v2/{dataset_name}"#/{theta}/{dataset_name}"
+    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/{dataset_name}/{theta}/{dataset_name}"
     data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
-    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_synthetic_v2/{theta}"
+    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_synthetic/{theta}"
     other_file = True
     
     # Evaluate performance metrics
