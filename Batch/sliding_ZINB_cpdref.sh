@@ -26,6 +26,6 @@ srun apptainer exec \
     "Signal_processing/sample_data/SATAY_synthetic.csv" \
     --dataset_name "SATAY_synthetic" \
     --n_workers 4 \
-    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD_ref" \
-    --theta_global "0.5"
+    --output_folder "Signal_processing/results/sliding_mean/sliding_ZINB_CPD_ref/0" \
+    --theta_global "0"
 
