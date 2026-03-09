@@ -344,7 +344,6 @@ def plot_relative_errors(results_df, output_dir='results/ZINB_estimation_errors'
     ax.set_ylabel('Absolute Relative Error of π', fontsize=12)
     ax.set_title('θ Estimated', fontsize=14, fontweight='bold')
     ax.set_ylim(pi_ylim)
-    ax.legend()
     ax.grid(True, alpha=0.3, which='both')
     
     # Subplot 2: Pi with theta provided
@@ -357,7 +356,6 @@ def plot_relative_errors(results_df, output_dir='results/ZINB_estimation_errors'
     ax.set_ylabel('Absolute Relative Error of π', fontsize=12)
     ax.set_title('True θ Provided', fontsize=14, fontweight='bold')
     ax.set_ylim(pi_ylim)
-    ax.legend()
     ax.grid(True, alpha=0.3, which='both')
     
     fig_pi.suptitle('Absolute Relative Error of π vs θ', fontsize=16, fontweight='bold', y=1.02)

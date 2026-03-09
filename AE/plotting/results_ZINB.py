@@ -953,20 +953,20 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
     # plot_parameter_distributions(all_reconstructions_mu, all_theta, all_pi, all_variance, 
     #                              model_type=model_type, save_dir=save_dir, prefix=prefix)
     # 2. Actual vs Predicted with Density Plot (RAW COUNTS)
-    density_plots(actual_counts_flat, all_reconstructions_mu, residuals, comparison_label, model_type, save_dir, prefix, r2, mae, all_pi)
-    # 3. Zero-Inflation Analysis (if π available)
-    zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts , 
-                            model_type, save_dir, prefix)
-    # 4. Zero Imputation Analysis (always for ZINB models)
-    zero_imputation_analysis(all_reconstructions_mu, all_pi, all_raw_counts,
-                            model_type, save_dir, prefix)
-    # 5. Masked Values Analysis (only when denoise_percent > 0)
-    if denoise_percent > 0 and all_masks is not None:
-        masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks, all_theta,
+    # density_plots(actual_counts_flat, all_reconstructions_mu, residuals, comparison_label, model_type, save_dir, prefix, r2, mae, all_pi)
+    # # 3. Zero-Inflation Analysis (if π available)
+    # zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts , 
+    #                         model_type, save_dir, prefix)
+    # # 4. Zero Imputation Analysis (always for ZINB models)
+    # zero_imputation_analysis(all_reconstructions_mu, all_pi, all_raw_counts,
+    #                         model_type, save_dir, prefix)
+    # # 5. Masked Values Analysis (only when denoise_percent > 0)
+    # if denoise_percent > 0 and all_masks is not None:
+    masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks, all_theta,
                               model_type, save_dir, prefix, pi_threshold)
-    # 6. Example Reconstructions with ZINB Parameters and Uncertainty
-    reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 
-                    n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix, pi_threshold=pi_threshold)
+    # # 6. Example Reconstructions with ZINB Parameters and Uncertainty
+    # reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 
+    #                 n_examples=n_examples, model_type=model_type, save_dir=save_dir, prefix=prefix, pi_threshold=pi_threshold)
     # 7. Metrics Summary
     if metrics is not None:
         metrics_summary(all_originals, all_reconstructions_mu, all_raw_counts, residuals, 

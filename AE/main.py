@@ -13,11 +13,11 @@ from AE.training.training import train, test
 # Preprocessing
 INPUT_FOLDER = "Data/combined_strains"
 FEATURES = ['Centr']
-BIN_SIZE = 19
-MOVING_AVERAGE = True
+BIN_SIZE = 17
+MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = 894
-SAMPLE_FRACTION = 0.94
+STEP_SIZE = int(2000*0.391)
+SAMPLE_FRACTION = 1.0
 
 TRAIN_CHROM = ['ChrIII', 'ChrIV', 'ChrIX', 'ChrVI', 'ChrVII', 'ChrX', 'ChrXI', 'ChrXIII', 'ChrXVI']
 TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
@@ -28,21 +28,21 @@ TEST_CHROM = ['ChrI', 'ChrII', 'ChrV', 'ChrXII']
 # TEST_CHROM = []
 VAL_CHROM = []  # No validation set
 
-USE_CONV = False
-CONV_CHANNEL = 85
-POOL_SIZE = 4
+USE_CONV = True
+CONV_CHANNEL = 48
+POOL_SIZE = 6
 POOLING_OPERATION = 'max'
 KERNEL_SIZE = 3
 PADDING = 'same'
 STRIDE = 1
 
-EPOCHS = 141
+EPOCHS = 92
 BATCH_SIZE = 128
 NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.7
-MASKED_RECON_WEIGHT = 0.0087 # gamma: weight for masked reconstruction loss
-LEARNING_RATE = 0.000102
-DROPOUT_RATE = 0.0077
+PI_THRESHOLD = 0.38
+MASKED_RECON_WEIGHT = 0.127# gamma: weight for masked reconstruction loss
+LEARNING_RATE = 0.00619
+DROPOUT_RATE = 0.219
 LAYERS = [752]
 REGULARIZER = 'none'
 REGULARIZATION_WEIGHT = 1e-4
