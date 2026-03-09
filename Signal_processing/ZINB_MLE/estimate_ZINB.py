@@ -54,9 +54,9 @@ def estimate_zinb(data, max_iter=100, tol=1e-6, eps=1e-10, theta_min=0.1, theta_
     
     # ===== CREATE THETA GRID =====
     # Log-spaced grid from theta_min to theta_max
-    # theta_grid = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta_grid)
+    theta_grid = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta_grid)
     # Uniform grid from theta_min to theta_max
-    theta_grid = np.linspace(theta_min, theta_max, n_theta_grid)
+    # theta_grid = np.linspace(theta_min, theta_max, n_theta_grid)
     
     # Storage for results
     ll_grid = np.zeros(n_theta_grid)

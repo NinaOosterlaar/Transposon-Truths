@@ -428,9 +428,9 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
         
         # Define tolerances based on window size
         tolerances = {
-            "full_window": window_size,
-            "half_window": window_size // 2,
-            "quarter_window": window_size // 4
+            "full window": window_size,
+            "half window": window_size // 2,
+            "quarter window": window_size // 4
         }
         
         window_path = os.path.join(base_results_folder, window_folder)
@@ -506,7 +506,7 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
     print(f"\nResults saved to {output_csv}")
     
     # Create precision-recall curves for each window and tolerance using evaluation.py functions
-    for tol_name in ["full_window", "half_window", "quarter_window"]:
+    for tol_name in ["full window", "half window", "quarter window"]:
         pr_curves_data = []
         auc_values = []  # Store AUC values for title
         
@@ -629,9 +629,9 @@ if __name__ == "__main__":
     # Specify which dataset to analyze
     # theta = 0
     dataset_name = 'SATAY_synthetic'  # Options: 'pretty_data', 'realistic_data', 'noisy_data', 'SATAY_synthetic'
-    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD_ref/{dataset_name}"
+    input_folder = f"Signal_processing/results/sliding_mean/sliding_ZINB_CPD/0/{dataset_name}"
     data_file = f"Signal_processing/sample_data/{dataset_name}.csv"
-    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift_synthetic_ref/"
+    output_folder = f"Signal_processing/results/sliding_cpd_performance/ZINB_shift/"
     other_file = True
     
     # Evaluate performance metrics

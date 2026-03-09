@@ -542,7 +542,7 @@ def main():
     dataset_ids = range(1, 11)  # Datasets 1 through 10
     
     # Determine number of workers (leave some CPUs free for system)
-    n_workers = 1
+    n_workers = max(1, multiprocessing.cpu_count() - 2)
     
     print(f"Configuration:")
     print(f"  Window sizes: {window_sizes}")
