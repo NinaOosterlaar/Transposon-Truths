@@ -3,7 +3,7 @@
 #SBATCH --partition=general,insy
 #SBATCH --account=ewi-insy-prb
 #SBATCH --time=36:00:00
-#SBATCH --QOS=medium
+#SBATCH --qos=medium
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=16G
