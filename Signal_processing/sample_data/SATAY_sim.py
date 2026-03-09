@@ -269,10 +269,12 @@ def plot_random_segments(counts, distances, centromere_distances, num_segments=5
 
 if __name__ == "__main__":
     plot = True
-    plot_random = True
+    plot_random = False
     create_new = True
-    save_intermediate_files = True  # Only save final chromosome files if False
+    save_intermediate_files = False  # Only save final chromosome files if False
     create_chromosome_files = False  # Generate 16 chromosome files
+    file_path = "Signal_processing/final/SATAY_synthetic"
+    number_of_samples = 10
     
     total_size = 500000
     mu_mean = 4.4
@@ -299,6 +301,7 @@ if __name__ == "__main__":
             print(f"\n{'='*60}")
             print(f"Creating synthetic data for Chr{chr_name} ({i+1}/16)...")
             print(f"{'='*60}")
+                
             
             # Generate NB sample
             counts, region_boundaries, means = generate_NB_sample(mu_mean, mu_std, theta, size=total_size, length_range=length_range)
@@ -372,106 +375,113 @@ if __name__ == "__main__":
         print(f"{'='*60}\n")
         
     elif create_new:
-        # Generate new data (single file)
-        print("Creating new synthetic data...")
-        
-        # Generate NB sample
-        output_path = f"Signal_processing/sample_data/SATAY_synthetic/SATAY_without_pi.csv"
-        counts, region_boundaries, means = generate_NB_sample(mu_mean, mu_std, theta, size=total_size, length_range=length_range)
-        print(f"Generated {len(counts)} counts with mean={mu_mean}, std={mu_std}, theta={theta}")
-        positions = np.arange(len(counts))
-        new_total_size = len(counts)
-        df = pd.DataFrame({"Position": positions, "Value": counts})
-        df.to_csv(output_path, index=False)
-        # Save params
-        params_df = pd.DataFrame({
-            "region_start": region_boundaries[:-1],
-            "region_end": region_boundaries[1:],
-            "region_mean": means
-        })
-        params_df.to_csv(f"Signal_processing/sample_data/SATAY_synthetic/SATAY_without_pi_params.csv", index=False)
+        for i in range(number_of_samples):
+            file_path = "Signal_processing/final/SATAY_synthetic/"
+            file_path = file_path + f"{i+1}"
+            # Create output directory for this sample
+            if not os.path.exists(file_path):
+                os.makedirs(file_path, exist_ok=True)
+            # Generate new data (single file)
+            print(f"Creating new synthetic data {i+1}...")
+            
+            # Generate NB sample
+            output_path = f"{file_path}/SATAY_without_pi.csv"
+            counts, region_boundaries, means = generate_NB_sample(mu_mean, mu_std, theta, size=total_size, length_range=length_range)
+            print(f"Generated {len(counts)} counts with mean={mu_mean}, std={mu_std}, theta={theta}")
+            positions = np.arange(len(counts))
+            new_total_size = len(counts)
+            df = pd.DataFrame({"Position": positions, "Value": counts})
+            df.to_csv(output_path, index=False)
+            # Save params
+            params_df = pd.DataFrame({
+                "region_start": region_boundaries[:-1],
+                "region_end": region_boundaries[1:],
+                "region_mean": means
+            })
+            params_df.to_csv(f"{file_path}/SATAY_without_pi_params.csv", index=False)
 
-        # Generate nucleosome distances
-        nucl_mean = 166.95
-        nucl_std = 33.77
-        distances = create_nucleosomes_distances(nucl_mean, nucl_std, new_total_size)
-        output_path = f"Signal_processing/sample_data/SATAY_synthetic/nucleosome_distances.csv"
-        pd.DataFrame({"Distance": distances}).to_csv(output_path, index=False)
-        
-        # Generate centromere distances
-        middle_position = total_size // 2 
-        centromere_distances = [abs(pos - middle_position) for pos in range(new_total_size)]
-        output_path = f"Signal_processing/sample_data/SATAY_synthetic/centromere_distances.csv"
-        pd.DataFrame({"Distance": centromere_distances}).to_csv(output_path, index=False)
-        
-        # Generate pi values
-        baseline_pi = 0.6
-        baseline_centromere_density = 0.038
-        baseline_nucleosome_density = 0.179
-        nucleosome_file = "Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv"
-        centromere_file = "Data_exploration/results/densities/centromere/combined_All_Boolean_True_bin_10000_absolute/ALL_combined_centromere_density_Boolean_True_bin_10000_absolute.csv"
-        
-        print("Generating pi values...")
-        pi_df = genereate_pi_values(
-            baseline_pi=baseline_pi,
-            baseline_centromere_density=baseline_centromere_density,
-            baseline_nucleosome_density=baseline_nucleosome_density,
-            centromere_distances=centromere_distances,
-            nucleosome_distances=distances,
-            nucleosome_file=nucleosome_file,
-            centromere_file=centromere_file
-        )
-        output_path = "Signal_processing/sample_data/SATAY_synthetic/pi_values.csv"
-        pi_df.to_csv(output_path, index=False)
-        print(f"Pi values saved to {output_path}")
-        print(f"Pi value statistics: mean={pi_df['pi_value'].mean():.4f}, std={pi_df['pi_value'].std():.4f}, min={pi_df['pi_value'].min():.4f}, max={pi_df['pi_value'].max():.4f}")
-        
-        # Apply pi to counts
-        final_counts = apply_pi_to_counts(counts, pi_df['pi_value'].values)
-        output_path = f"Signal_processing/sample_data/SATAY_synthetic/SATAY_with_pi.csv"
-        final_df = pd.DataFrame({
-            "Position": np.arange(len(final_counts)),
-            "Value": final_counts,
-            "Centromere_distance": centromere_distances,
-            "Nucleosome_distance": distances,
-        })
-        final_df.to_csv(output_path, index=False)
-        print(f"Final counts with pi applied saved to {output_path}")
-        
-    else:
-        # Load existing data
-        print("Loading existing synthetic data...")
-        
-        # Load final data with pi
-        final_df = pd.read_csv("Signal_processing/sample_data/SATAY_synthetic/SATAY_with_pi.csv")
-        final_counts = final_df['Value'].values
-        centromere_distances = final_df['Centromere_distance'].values
-        distances = final_df['Nucleosome_distance'].values
-        
-        # Load initial counts without pi
-        counts_df = pd.read_csv("Signal_processing/sample_data/SATAY_synthetic/SATAY_without_pi.csv")
-        counts = counts_df['Value'].values
-        
-        print(f"Loaded {len(final_counts)} positions")
-        print(f"Final counts statistics: mean={final_counts.mean():.4f}, std={final_counts.std():.4f}, non-zero={np.sum(final_counts > 0)/len(final_counts):.4f}")
-    
-    # Only plot if not creating chromosome files (single file mode)
-    if not create_chromosome_files:
-        if plot:
-            plot_density_vs_distance(
-                file_path="Signal_processing/sample_data/SATAY_synthetic/density_vs_distance.png",
-                counts=final_counts,
+            # Generate nucleosome distances
+            nucl_mean = 166.95
+            nucl_std = 33.77
+            distances = create_nucleosomes_distances(nucl_mean, nucl_std, new_total_size)
+            if save_intermediate_files:
+                pd.DataFrame({"Distance": distances}).to_csv(output_path, index=False)
+            
+            # Generate centromere distances
+            middle_position = total_size // 2 
+            centromere_distances = [abs(pos - middle_position) for pos in range(new_total_size)]
+            output_path = f"{file_path}/centromere_distances.csv"
+            if save_intermediate_files:
+                pd.DataFrame({"Distance": centromere_distances}).to_csv(output_path, index=False)
+            
+            # Generate pi values
+            baseline_pi = 0.6
+            baseline_centromere_density = 0.038
+            baseline_nucleosome_density = 0.179
+            nucleosome_file = "Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv"
+            centromere_file = "Data_exploration/results/densities/centromere/combined_All_Boolean_True_bin_10000_absolute/ALL_combined_centromere_density_Boolean_True_bin_10000_absolute.csv"
+            
+            print("Generating pi values...")
+            pi_df = genereate_pi_values(
+                baseline_pi=baseline_pi,
+                baseline_centromere_density=baseline_centromere_density,
+                baseline_nucleosome_density=baseline_nucleosome_density,
                 centromere_distances=centromere_distances,
                 nucleosome_distances=distances,
-                bin_size=10000
+                nucleosome_file=nucleosome_file,
+                centromere_file=centromere_file
             )
+            output_path = f"{file_path}/pi_values.csv"
+            pi_df.to_csv(output_path, index=False)
+            print(f"Pi values saved to {output_path}")
+            print(f"Pi value statistics: mean={pi_df['pi_value'].mean():.4f}, std={pi_df['pi_value'].std():.4f}, min={pi_df['pi_value'].min():.4f}, max={pi_df['pi_value'].max():.4f}")
+            
+            # Apply pi to counts
+            final_counts = apply_pi_to_counts(counts, pi_df['pi_value'].values)
+            output_path = f"{file_path}/SATAY_with_pi.csv"
+            final_df = pd.DataFrame({
+                "Position": np.arange(len(final_counts)),
+                "Value": final_counts,
+                "Centromere_distance": centromere_distances,
+                "Nucleosome_distance": distances,
+            })
+            final_df.to_csv(output_path, index=False)
+            print(f"Final counts with pi applied saved to {output_path}")
+            
+        else:
+            # Load existing data
+            print("Loading existing synthetic data...")
+            
+            # Load final data with pi
+            final_df = pd.read_csv(f"{file_path}/SATAY_with_pi.csv")
+            final_counts = final_df['Value'].values
+            centromere_distances = final_df['Centromere_distance'].values
+            distances = final_df['Nucleosome_distance'].values
+            
+            # Load initial counts without pi
+            counts_df = pd.read_csv(f"{file_path}/SATAY_without_pi.csv")
+            counts = counts_df['Value'].values
+            
+            print(f"Loaded {len(final_counts)} positions")
+            print(f"Final counts statistics: mean={final_counts.mean():.4f}, std={final_counts.std():.4f}, non-zero={np.sum(final_counts > 0)/len(final_counts):.4f}")
         
-        if plot_random:
-            plot_random_segments(
-                counts=final_counts,
-                distances=distances,
-                centromere_distances=centromere_distances,
-                num_segments=5,
-                segment_size=2000,
-                save_dir="Signal_processing/sample_data/SATAY_synthetic/"
-            )
+        # Only plot if not creating chromosome files (single file mode)
+        if not create_chromosome_files:
+            if plot:
+                plot_density_vs_distance(
+                    file_path=f"{file_path}/density_vs_distance.png",
+                    counts=final_counts,
+                    centromere_distances=centromere_distances,
+                    nucleosome_distances=distances,
+                    bin_size=10000
+                )
+            
+            if plot_random:
+                plot_random_segments(
+                    counts=final_counts,
+                    distances=distances,
+                    centromere_distances=centromere_distances,
+                    num_segments=5,
+                    segment_size=2000,
+                    save_dir=f"{file_path}/"
+                )

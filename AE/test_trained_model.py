@@ -64,15 +64,14 @@ FEATURES = ['Nucl']
 BIN_SIZE = 17
 MOVING_AVERAGE = False
 DATA_POINT_LENGTH = 2000
-STEP_SIZE = int(0.3907556688327776 * 2000)  # 781 from optimization
-
+STEP_SIZE = int(0.391 * 2000)  
 # Training parameters 
 BATCH_SIZE = 128
 NOISE_LEVEL = 0.15
-PI_THRESHOLD = 0.37875473712129304  # Exact value from optimization
-MASKED_RECON_WEIGHT = 0.12691255120039938  # gamma - exact value
+PI_THRESHOLD = 0.378  
+MASKED_RECON_WEIGHT = 0.127  # gamma - exact value
 REGULARIZER = 'none'
-REGULARIZATION_WEIGHT = 4.219834598042279e-05  # alpha - exact value
+REGULARIZATION_WEIGHT = 4.22e-05  # alpha - exact value
 
 # Data caching options
 USE_CACHED_DATA = True  # Set to True after first run to use cached data with correct parameters

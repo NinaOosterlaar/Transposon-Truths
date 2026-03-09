@@ -9,7 +9,7 @@ from Signal_processing.ZINB_MLE.estimate_ZINB import estimate_zinb
 from Signal_processing.ZINB_MLE.EM import em_zinb_step
 from Signal_processing.log_likelihoods import zinb_log_likelihood
 
-def sliding_ZINB_CPD(data, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10, pi_file="Signal_processing/sample_data/SATAY_synthetic/pi_values.csv"):
+def sliding_ZINB_CPD_ref(data, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10, pi_file="Signal_processing/sample_data/SATAY_synthetic/pi_values.csv"):
     data = np.asarray(data, dtype=np.float64)
     step_size = max(1, int(window_size * (1 - overlap)))
     n = len(data)
@@ -83,7 +83,7 @@ def process_window_size(ws, data, overlap, thresholds, theta_global, output_fold
     window_output_folder = os.path.join(output_folder, f"window{ws}")
     for threshold in thresholds:
         print(f"Processing window size: {ws}, threshold: {threshold:.2f}")
-        change_points, scores = sliding_ZINB_CPD(data, ws, overlap, threshold, theta_global=theta_global)
+        change_points, scores = sliding_ZINB_CPD_ref(data, ws, overlap, threshold, theta_global=theta_global)
         save_results(window_output_folder, dataset_name, change_points, scores, theta_global, ws, overlap, threshold)
     return ws
 

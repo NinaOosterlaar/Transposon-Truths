@@ -47,7 +47,7 @@ def interpolate_density(distance, lookup_df, distance_col, density_col='mean_den
     # Use numpy's interp for linear interpolation
     return np.interp(distance, distances, densities)
 
-def sliding_ZINB_CPD(data, nucleosome_distances, centromere_distances, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10, nucleosome_file="Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv", centromere_file="Data_exploration/results/densities/centromere_new/combined_All_Boolean_True/ALL_combined_Boolean_True_centromere_density.csv"):
+def sliding_ZINB_CPD_v3(data, nucleosome_distances, centromere_distances, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10, nucleosome_file="Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv", centromere_file="Data_exploration/results/densities/centromere_new/combined_All_Boolean_True/ALL_combined_Boolean_True_centromere_density.csv"):
     data = np.asarray(data, dtype=np.float64)
     step_size = max(1, int(window_size * (1 - overlap)))
     n = len(data)

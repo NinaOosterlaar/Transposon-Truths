@@ -19,7 +19,7 @@ def load_density_lookup_tables(nucleosome_file):
     nucleosome_df = pd.read_csv(nucleosome_file)
     return nucleosome_df
 
-def sliding_ZINB_CPD(data, nucleosome_distances, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10, nucleosome_file="Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv"):
+def sliding_ZINB_CPD_v2(data, nucleosome_distances, window_size, overlap, threshold, eps=1e-10, theta_global=None, tol=1e-6, max_iter=10, nucleosome_file="Data_exploration/results/densities/nucleosome_new/combined_All_Boolean_True/ALL_combined_Boolean_True_nucleosome_density.csv"):
     data = np.asarray(data, dtype=np.float64)
     step_size = max(1, int(window_size * (1 - overlap)))
     n = len(data)

@@ -302,7 +302,7 @@ def zero_inflation_analysis(all_reconstructions_mu, all_pi, all_raw_counts, mode
                     dpi=300, bbox_inches='tight')
         plt.close()
 
-def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks, model_type, save_dir, prefix, threshold):
+def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks, all_theta, model_type, save_dir, prefix, threshold):
     """
     Analyze how well masked values (from denoising) are reconstructed.
     Only called when denoise_percent > 0.
@@ -320,6 +320,7 @@ def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_m
     mu_flat = all_reconstructions_mu.flatten()
     raw_flat = all_raw_counts.flatten()
     pi_flat = all_pi.flatten() if all_pi is not None else None
+    theta_flat = all_theta.flatten() if all_theta is not None else None
     
     # Extract masked values
     masked_actual = raw_flat[masked_positions]
@@ -329,7 +330,209 @@ def masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_m
     
     # Compute metrics for masked values
     mae_masked = mean_absolute_error(masked_actual, masked_recon)
+    abs_err = np.abs(masked_actual - masked_recon)
+    mae_std_masked = abs_err.std(ddof=1)
     r2_masked = r2_score(masked_actual, masked_recon)
+    
+    # Compute detailed statistics for masked values (similar to overall metrics)
+    zero_mask_masked = masked_actual == 0
+    non_zero_mask_masked = ~zero_mask_masked
+    
+    # π statistics for masked values
+    if pi_flat is not None:
+        masked_pi = pi_flat[masked_positions]
+        mean_pi_zeros_masked = masked_pi[zero_mask_masked].mean() if np.any(zero_mask_masked) else 0
+        mean_pi_nonzeros_masked = masked_pi[non_zero_mask_masked].mean() if np.any(non_zero_mask_masked) else 0
+        std_pi_zeros_masked = masked_pi[zero_mask_masked].std(ddof=1) if np.any(zero_mask_masked) else 0
+        std_pi_nonzeros_masked = masked_pi[non_zero_mask_masked].std(ddof=1) if np.any(non_zero_mask_masked) else 0
+    else:
+        mean_pi_zeros_masked = mean_pi_nonzeros_masked = std_pi_zeros_masked = std_pi_nonzeros_masked = 0
+    
+    # μ statistics for masked values
+    mean_mu_zeros_masked = masked_recon[zero_mask_masked].mean() if np.any(zero_mask_masked) else 0
+    mean_mu_nonzeros_masked = masked_recon[non_zero_mask_masked].mean() if np.any(non_zero_mask_masked) else 0
+    std_mu_zeros_masked = masked_recon[zero_mask_masked].std(ddof=1) if np.any(zero_mask_masked) else 0
+    std_mu_nonzeros_masked = masked_recon[non_zero_mask_masked].std(ddof=1) if np.any(non_zero_mask_masked) else 0
+    
+    # θ statistics for masked values
+    if theta_flat is not None:
+        masked_theta = theta_flat[masked_positions]
+        mean_theta_masked = masked_theta.mean()
+        std_theta_masked = masked_theta.std(ddof=1)
+    else:
+        mean_theta_masked = std_theta_masked = 0
+    
+    # Print detailed statistics for masked values
+    print("\n" + "="*60)
+    print("MASKED VALUES PERFORMANCE METRICS")
+    print("="*60)
+    print(f"MAE: {mae_masked:.4f}, SD MAE: {mae_std_masked:.4f}")
+    print(f"R²: {r2_masked:.4f}")
+    print(f"Mean π (zeros): {mean_pi_zeros_masked:.4f}, Mean π (non-zeros): {mean_pi_nonzeros_masked:.4f}")
+    print(f"SD π (zeros): {std_pi_zeros_masked:.4f}, SD π (non-zeros): {std_pi_nonzeros_masked:.4f}")
+    print(f"Mean μ (zeros): {mean_mu_zeros_masked:.4f}, Mean μ (non-zeros): {mean_mu_nonzeros_masked:.4f}")
+    print(f"SD μ (zeros): {std_mu_zeros_masked:.4f}, SD μ (non-zeros): {std_mu_nonzeros_masked:.4f}")
+    print(f"Theta mean: {mean_theta_masked:.4f}, Theta SD: {std_theta_masked:.4f}")
+    print("="*60 + "\n")
+    
+    # Baseline comparison: mean/median of neighbors
+    # Reshape data to work with sequences
+    n_samples = all_masks.shape[0]
+    seq_length = all_masks.shape[1]
+    
+    baseline_results = {
+        'neighborhood_sizes': list(range(1, 6)),
+        'mean_mae': [],
+        'mean_mae_std': [],
+        'mean_r2': [],
+        'median_mae': [],
+        'median_mae_std': [],
+        'median_r2': []
+    }
+    
+    print("Computing baseline predictions using neighborhood mean/median of reconstructed values...")
+    for n_size in baseline_results['neighborhood_sizes']:
+        # Pre-allocate arrays for better performance
+        all_mean_preds = []
+        all_median_preds = []
+        all_actual_values = []  # Actual raw values at masked positions
+        
+        # Create offset array once (excluding 0)
+        offsets = np.concatenate([np.arange(-n_size, 0), np.arange(1, n_size + 1)])
+        
+        # Process each sequence
+        for seq_idx in range(n_samples):
+            seq_mask = all_masks[seq_idx]
+            seq_recon_mu = all_reconstructions_mu[seq_idx]  # Use model's reconstructed μ values
+            seq_raw = all_raw_counts[seq_idx]  # Actual raw values
+            
+            # Find masked positions in this sequence
+            masked_pos = np.where(seq_mask)[0]
+            
+            if len(masked_pos) == 0:
+                continue
+            
+            # Vectorized: compute all neighbor indices for all masked positions at once
+            # Shape: (num_masked_positions, num_offsets)
+            neighbor_indices = masked_pos[:, np.newaxis] + offsets[np.newaxis, :]
+            
+            # Create validity mask: only check within bounds (allow masked neighbors now)
+            within_bounds = (neighbor_indices >= 0) & (neighbor_indices < seq_length)
+            valid_mask = within_bounds
+            
+            # Get neighbor RECONSTRUCTED values for all positions
+            neighbor_values = seq_recon_mu[np.clip(neighbor_indices, 0, seq_length - 1)]
+            
+            # Create masked array where invalid neighbors are masked
+            masked_neighbors = np.ma.array(neighbor_values, mask=~valid_mask)
+            
+            # Compute mean and median for each masked position
+            has_valid = valid_mask.any(axis=1)
+            if np.any(has_valid):
+                means = np.ma.mean(masked_neighbors[has_valid], axis=1).data
+                medians = np.ma.median(masked_neighbors[has_valid], axis=1).data
+                actual_values_batch = seq_raw[masked_pos[has_valid]]  # Actual raw values at masked positions
+                
+                all_mean_preds.extend(means)
+                all_median_preds.extend(medians)
+                all_actual_values.extend(actual_values_batch)
+        
+        # Calculate metrics for this neighborhood size
+        if len(all_actual_values) > 0:
+            actual_values = np.array(all_actual_values)  # Actual raw values at masked positions
+            mean_preds = np.array(all_mean_preds)
+            median_preds = np.array(all_median_preds)
+            
+            # Mean-based metrics (comparing baseline to actual values)
+            mean_abs_err = np.abs(actual_values - mean_preds)
+            baseline_results['mean_mae'].append(np.mean(mean_abs_err))
+            baseline_results['mean_mae_std'].append(np.std(mean_abs_err, ddof=1))
+            baseline_results['mean_r2'].append(r2_score(actual_values, mean_preds))
+            
+            # Median-based metrics (comparing baseline to actual values)
+            median_abs_err = np.abs(actual_values - median_preds)
+            baseline_results['median_mae'].append(np.mean(median_abs_err))
+            baseline_results['median_mae_std'].append(np.std(median_abs_err, ddof=1))
+            baseline_results['median_r2'].append(r2_score(actual_values, median_preds))
+        else:
+            # No valid predictions for this neighborhood size
+            baseline_results['mean_mae'].append(np.nan)
+            baseline_results['mean_mae_std'].append(np.nan)
+            baseline_results['mean_r2'].append(np.nan)
+            baseline_results['median_mae'].append(np.nan)
+            baseline_results['median_mae_std'].append(np.nan)
+            baseline_results['median_r2'].append(np.nan)
+    
+    # Create baseline comparison plot
+    fig_baseline, axes_baseline = plt.subplots(1, 2, figsize=(14, 5))
+    
+    neighborhood_sizes = baseline_results['neighborhood_sizes']
+    
+    # MAE comparison - bar plot
+    # Model bar at position 0, baselines at positions 1-10
+    bar_width = 0.35
+    
+    # Model bar on the left (position 0)
+    axes_baseline[0].bar(0, mae_masked, 
+                         width=bar_width*2, label=f'Model: {mae_masked:.4f}',
+                         yerr=mae_std_masked,
+                         error_kw={'ecolor': 'black', 'linewidth': 1.5, 'capsize': 3},
+                         alpha=0.8, color=COLORS['red'])
+    
+    # Baseline bars starting at position 1.5 (with gap after model)
+    x_pos_baseline = np.arange(len(neighborhood_sizes)) + 1.5
+    axes_baseline[0].bar(x_pos_baseline - bar_width/2, baseline_results['mean_mae'], 
+                         width=bar_width, label='Mean of neighbors', 
+                         yerr=baseline_results['mean_mae_std'], 
+                         error_kw={'ecolor': 'black', 'linewidth': 1.5, 'capsize': 3},
+                         alpha=0.8, color=COLORS['blue'])
+    axes_baseline[0].bar(x_pos_baseline + bar_width/2, baseline_results['median_mae'], 
+                         width=bar_width, label='Median of neighbors',
+                         yerr=baseline_results['median_mae_std'],
+                         error_kw={'ecolor': 'black', 'linewidth': 1.5, 'capsize': 3},
+                         alpha=0.8, color=COLORS['orange'])
+    
+    axes_baseline[0].set_xlabel('Neighborhood Size')
+    axes_baseline[0].set_ylabel('MAE ')
+    axes_baseline[0].set_title(f'{model_type}: Baseline MAE')
+    axes_baseline[0].set_xticks(np.concatenate([[0], x_pos_baseline]))
+    axes_baseline[0].set_xticklabels(['Model'] + [str(s) for s in neighborhood_sizes])
+    axes_baseline[0].legend(fontsize=9)
+    axes_baseline[0].grid(True, alpha=0.3, axis='y')
+    axes_baseline[0].set_ylim(bottom=0)
+    
+    # R² comparison - bar plot
+    # Model bar on the left (position 0)
+    axes_baseline[1].bar(0, r2_masked,
+                         width=bar_width*2, label=f'Model: {r2_masked:.4f}',
+                         alpha=0.8, color=COLORS['red'])
+    
+    # Baseline bars starting at position 1.5 (with gap after model)
+    axes_baseline[1].bar(x_pos_baseline - bar_width/2, baseline_results['mean_r2'],
+                         width=bar_width, label='Mean of neighbors',
+                         alpha=0.8, color=COLORS['blue'])
+    axes_baseline[1].bar(x_pos_baseline + bar_width/2, baseline_results['median_r2'],
+                         width=bar_width, label='Median of neighbors',
+                         alpha=0.8, color=COLORS['orange'])
+    
+    axes_baseline[1].set_xlabel('Neighborhood Size')
+    axes_baseline[1].set_ylabel('R² ')
+    axes_baseline[1].set_title(f'{model_type}: Baseline R²')
+    axes_baseline[1].set_xticks(np.concatenate([[0], x_pos_baseline]))
+    axes_baseline[1].set_xticklabels(['Model'] + [str(s) for s in neighborhood_sizes])
+    axes_baseline[1].legend(fontsize=9)
+    axes_baseline[1].grid(True, alpha=0.3, axis='y')
+    axes_baseline[1].set_ylim(0, 1.2)  # Extended to 1.2 to avoid cramping
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, f'{prefix}_masked_baseline_comparison.png'),
+                dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print("Baseline comparison completed and saved.")
+    print(f"Note: Baseline uses mean/median of model's reconstructed values from neighbors")
+    print(f"      Comparing baseline predictions to actual raw values at masked positions")
+    print(f"      Model reference line shows model performance vs actual values")
     
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     
@@ -759,7 +962,7 @@ def plot_zinb_test_results(all_originals, all_reconstructions_mu,
                             model_type, save_dir, prefix)
     # 5. Masked Values Analysis (only when denoise_percent > 0)
     if denoise_percent > 0 and all_masks is not None:
-        masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks,
+        masked_values_analysis(all_reconstructions_mu, all_pi, all_raw_counts, all_masks, all_theta,
                               model_type, save_dir, prefix, pi_threshold)
     # 6. Example Reconstructions with ZINB Parameters and Uncertainty
     reconstructions(all_originals, all_reconstructions_mu, all_variance, all_pi, all_raw_counts, 

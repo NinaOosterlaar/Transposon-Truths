@@ -3,6 +3,7 @@ import os, sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+from sklearn.metrics import auc
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from Utils.plot_config import setup_plot_style, COLORS
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -333,6 +334,7 @@ def plot_roc_curves(roc_curves_data, output_folder, tol_name, dataset_name):
     """
     fig, ax = plt.subplots(figsize=(10, 8))
     
+    auc_values = []
     for curve_data in roc_curves_data:
         fprs = curve_data['fprs']
         tprs = curve_data['tprs']
@@ -341,15 +343,31 @@ def plot_roc_curves(roc_curves_data, output_folder, tol_name, dataset_name):
         markersize = curve_data.get('markersize', 4)
         linewidth = curve_data.get('linewidth', 2)
         
+        # Calculate AUC using sklearn
+        sort_idx = np.argsort(fprs)
+        roc_auc = auc(fprs[sort_idx], tprs[sort_idx])
+        auc_values.append(roc_auc)
+        
+        # Add AUC to label if label exists
+        if label is not None:
+            label = f"{label} (AUC={roc_auc:.3f})"
+        
         ax.plot(fprs, tprs, marker=marker, markersize=markersize, 
                linewidth=linewidth, label=label)
     
     # Plot diagonal line (random classifier)
     ax.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=1, label='Random')
     
+    # Create title with average AUC if we have data
+    if auc_values:
+        avg_auc = np.mean(auc_values)
+        title = f'ROC Curve (Tolerance: {tol_name}, Avg AUC={avg_auc:.3f})'
+    else:
+        title = f'ROC Curve (Tolerance: {tol_name})'
+    
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate (Recall)')
-    ax.set_title(f'ROC Curve (Tolerance: {tol_name})')
+    ax.set_title(title)
     ax.legend()
     ax.grid(True, alpha=0.3)
     ax.set_xlim([0, 1.05])
@@ -490,6 +508,7 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
     # Create precision-recall curves for each window and tolerance using evaluation.py functions
     for tol_name in ["full_window", "half_window", "quarter_window"]:
         pr_curves_data = []
+        auc_values = []  # Store AUC values for title
         
         for window_folder in window_folders:
             window_size = int(window_folder.replace("window", ""))
@@ -510,21 +529,36 @@ def evaluate_all_windows_and_thresholds(data_file, input_folder, output_folder, 
                     label=f'Window {window_size}'
                 )
                 
+                # Calculate AUC using sklearn
+                recalls = pr_data['recalls']
+                precisions = pr_data['precisions']
+                # Sort by recall for proper AUC calculation
+                sort_idx = np.argsort(recalls)
+                pr_auc = auc(recalls[sort_idx], precisions[sort_idx])
+                auc_values.append(pr_auc)
+                
                 pr_curves_data.append({
                     'recalls': pr_data['recalls'],
                     'precisions': pr_data['precisions'],
-                    'label': f'Window {window_size}',
+                    'label': f'Window {window_size} (AUC={pr_auc:.3f})',
                     'marker': 'o',
                     'markersize': 4,
                     'linewidth': 2
                 })
+        
+        # Create title with average AUC if we have data
+        if auc_values:
+            avg_auc = np.mean(auc_values)
+            title = f'Precision-Recall Curve (Tolerance: {tol_name}, Avg AUC={avg_auc:.3f})'
+        else:
+            title = f'Precision-Recall Curve (Tolerance: {tol_name})'
         
         # Use the evaluation.py function to create the plot
         plot_path = os.path.join(output_plots_folder, f'precision_recall_{tol_name}.png')
         plot_precision_recall_curves(
             pr_curves_data,
             output_path=plot_path,
-            title=f'Precision-Recall Curve (Tolerance: {tol_name})',
+            title=title,
             figsize=(10, 8)
         )
         print(f"Saved plot: {plot_path}")
