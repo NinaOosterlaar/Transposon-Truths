@@ -303,7 +303,7 @@ def plot_relative_errors(results_df, output_dir='results/ZINB_estimation_errors'
     ax = axes_mu[0]
     ax.errorbar(agg_full['true_theta'], agg_full['mu_mean'], 
                 yerr=agg_full['mu_std'], label='μ relative error', 
-                marker='s', capsize=5, alpha=0.7, color='tab:black')
+                marker='s', capsize=5, alpha=0.7, color='black')
     ax.set_xscale('log')
     ax.set_xlabel('True θ (log scale)', fontsize=12)
     ax.set_ylabel('Absolute Relative Error of μ', fontsize=12)
@@ -315,7 +315,7 @@ def plot_relative_errors(results_df, output_dir='results/ZINB_estimation_errors'
     ax = axes_mu[1]
     ax.errorbar(agg_fixed['true_theta'], agg_fixed['mu_mean'], 
                 yerr=agg_fixed['mu_std'], label='μ relative error', 
-                marker='s', capsize=5, alpha=0.7, color='tab:black')
+                marker='s', capsize=5, alpha=0.7, color='black')
     ax.set_xscale('log')
     ax.set_xlabel('True θ (log scale)', fontsize=12)
     ax.set_ylabel('Absolute Relative Error of μ', fontsize=12)
@@ -338,7 +338,7 @@ def plot_relative_errors(results_df, output_dir='results/ZINB_estimation_errors'
     ax = axes_pi[0]
     ax.errorbar(agg_full['true_theta'], agg_full['pi_mean'], 
                 yerr=agg_full['pi_std'], label='π relative error', 
-                marker='o', capsize=5, alpha=0.7, color='tab:black')
+                marker='o', capsize=5, alpha=0.7, color='black')
     ax.set_xscale('log')
     ax.set_xlabel('True θ (log scale)', fontsize=12)
     ax.set_ylabel('Absolute Relative Error of π', fontsize=12)
@@ -351,7 +351,7 @@ def plot_relative_errors(results_df, output_dir='results/ZINB_estimation_errors'
     ax = axes_pi[1]
     ax.errorbar(agg_fixed['true_theta'], agg_fixed['pi_mean'], 
                 yerr=agg_fixed['pi_std'], label='π relative error', 
-                marker='o', capsize=5, alpha=0.7, color='tab:black')
+                marker='o', capsize=5, alpha=0.7, color='black')
     ax.set_xscale('log')
     ax.set_xlabel('True θ (log scale)', fontsize=12)
     ax.set_ylabel('Absolute Relative Error of π', fontsize=12)
